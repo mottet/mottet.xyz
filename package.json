@@ -1,0 +1,24 @@
+{
+  "name": "root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Share canvas",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "Marvin Mottet",
+  "license": "ISC",
+  "dependencies": {
+    "connect": "^3.6.3",
+    "crypto": "^0.0.3",
+    "csprng": "^0.1.2",
+    "express": "^4.15.3",
+    "express-sslify": "^1.2.0",
+    "gravatar": "^1.6.0",
+    "mongoose": "^4.11.6",
+    "nodemailer": "^4.0.1",
+    "socket.io": "^2.0.3"
+  }
+}

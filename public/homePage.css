@@ -1,0 +1,183 @@
+body {
+	color: white;
+	text-align: center;
+}
+
+#list { 
+	list-style-type: none; 
+	margin: 0;
+	padding: 0; 
+	color: black;
+}
+
+li input {
+	font-size: 1em;
+	width: 100%;
+	height: 40px;
+}
+
+#head {
+	list-style-type: none; 
+	margin: 0; 
+	padding: 0; 
+	width: 100%;
+	font-size: 3em; 
+}
+
+li a{
+	text-decoration: none;
+	color: black;
+}
+
+#list li {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 200px;
+	font-size: 1.5em;
+	float: left;
+}
+.name {
+	background: #7EF3FF;
+	width: 90%;
+	float: left;
+}
+.periode {
+	background: #A4E87E;
+	width: 10%;
+	float: left;
+}
+.turningX {
+	background: #FFDB8B;
+	width: 33.3%;
+	float: left;
+}
+.turningY {
+	background: #E87573;
+	width: 33.4%;
+	float: left;
+}
+.turningZ {
+	background: #9F7EFF;
+	width: 33.3%;
+	float: left;
+}
+
+@media all and (min-width: 28.125em)
+{
+	#list li {
+		margin: 0.111%; 
+		padding: 0; 
+		width: 49.777%; 
+		height: 200px; 
+		font-size: 1.5em;
+		float: left;
+	}
+	.name {
+		background: #7EF3FF;
+		width: 50%;
+		float: left;
+	}
+	.periode {
+		background: #A4E87E;
+		width: 5%;
+		float: left;
+	}
+	.turningX {
+		background: #FFDB8B;
+		width: 15%;
+		float: left;
+	}
+	.turningY {
+		background: #E87573;
+		width: 15%;
+		float: left;
+	}
+	.turningZ {
+		background: #9F7EFF;
+		width: 15%;
+		float: left;
+	}
+}
+
+@media all and (min-width: 53.125em)
+{
+	#list li {
+		margin: 0.111%; 
+		padding: 0; 
+		width: 33.111%; 
+		height: 200px; 
+		font-size: 1.5em; 
+		float: left;
+	}
+	.name {
+		background: #7EF3FF;
+		width: 50%;
+		float: left;
+	}
+	.periode {
+		background: #A4E87E;
+		width: 5%;
+		float: left;
+	}
+	.turningX {
+		background: #FFDB8B;
+		width: 15%;
+		float: left;
+	}
+	.turningY {
+		background: #E87573;
+		width: 15%;
+		float: left;
+	}
+	.turningZ {
+		background: #9F7EFF;
+		width: 15%;
+		float: left;
+	}
+}
+
+
+.color1 {
+	background: #FF6264;
+}
+.borderColor1 {
+	
+	border-style: solid;
+	border-color: #FF6264;
+	border-width: 5px;
+	height: 150px;
+}
+
+.color2 {
+	background: #AE4DE8;
+}
+.borderColor2 {
+	height: 1.5em;
+	border-style: solid;
+	border-color: #AE4DE8;
+	border-width: 5px;
+	height: 150px;
+}
+
+.color3 {
+	background: #5585FF;
+}
+.borderColor3 {
+	height: 1.5em;
+	border-style: solid;
+	border-color: #5585FF;
+	border-width: 5px;
+	height: 150px;
+}
+
+.color4 {
+	background: #E8A359;
+}
+.borderColor4 {
+	height: 1.5em;
+	border-style: solid;
+	border-color: #E8A359;
+	border-width: 5px;
+	height: 150px;
+}
