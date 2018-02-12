@@ -1,34 +1,36 @@
-var fs = require('fs');
-var http = require('http');
-var https = require('https');
+const config = require('./config');
 
-var privateKey  = fs.readFileSync('/etc/letsencrypt/live/www.mottet.xyz/privkey.pem');
-var certificate = fs.readFileSync('/etc/letsencrypt/live/www.mottet.xyz/fullchain.pem');
-var credentials = {key: privateKey, cert: certificate};
+const express = require('express');
+const enforce = require('express-sslify');
+const app = express();
 
-var express = require('express');
-var enforce = require('express-sslify');
-var app = express();
-
-app.use(enforce.HTTPS());
 app.use(express.static(__dirname + '/public'));
 
-app.get('/camera', (req, res) => {
-	res.send('camera.html');
-});
+let server;
 
-var httpServer = http.createServer(app);
-var httpsServer = https.createServer(credentials, app);
+if (config.NODE_ENV === 'production') {
+	const fs = require('fs');
+	const https = require('https');
+	const privateKey  = fs.readFileSync(PRIVATE_KEY_PATH);
+	const certificate = fs.readFileSync(CERTIFICATE_PATH);
+	const credentials = {key: privateKey, cert: certificate};
 
-httpServer.listen(80);
-httpsServer.listen(443);
+	app.use(enforce.HTTPS());
+	server = https.createServer(credentials, app);
+	server.listen(443);
+} else {
+	const http = require('http');
+
+	server = http.createServer(app);
+	server.listen(8001);
+}
 
 console.log("Server is running");
 
-var socket = require('socket.io');
+const socket = require('socket.io');
 
 
-var io = socket(httpsServer);
+const io = socket(server);
 io.sockets.on('connection', newConnection);
 
 var pieceArray = [
