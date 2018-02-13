@@ -2,22 +2,17 @@
 var marvin;
 var jocelyn;
 var heart;
-var newJocelynPosition;
 
 function setup() {
   createCanvas(800,650);
   
-  marvin = createSprite(400, 150, 16, 23);
+  marvin = createSprite(100, 100, 16, 23);
   marvin.setCollider("rectangle", 0, -17, 16, 14);
   marvin.scale = 4;
   marvin.addAnimation("standing", "assets/marvin-0.png");
   marvin.addAnimation("moving", "assets/marvin-0.png", "assets/marvin-3.png");
 
-  jocelyn = createSprite(350, 150, 16, 23);
-  newJocelynPosition = {
-    x: 350,
-    y: 150
-  }
+  jocelyn = createSprite(700, 550, 16, 23);
   jocelyn.setCollider("rectangle", 0, -17, 16, 14);
   jocelyn.scale = 4;
   jocelyn.addAnimation("standing", "assets/jocelyn-0.png");
@@ -27,6 +22,7 @@ function setup() {
   heart.scale = 4;
   heart.addAnimation("beating", "assets/heart-0.png", "assets/heart-7.png");
   heart.changeAnimation("beating");
+  heart.depth = 2;
   heart.visible = false;
 
   socket = io('https://mottet.xyz');
@@ -34,11 +30,14 @@ function setup() {
 }
 
 function jocelynMove (newPosition) {
-  newJocelynPosition = newPosition;
+  jocelyn.position.x = newPosition.x;
+  jocelyn.position.y = newPosition.y;
+  jocelyn.velocity.x = newPosition.v_x;
+  jocelyn.velocity.y = newPosition.v_y;
 }
 
 function draw() {
-  background(220,81,220);
+  background(166,77,232);
   
   marvin.collide(jocelyn);
   if(keyIsDown(LEFT_ARROW) && marvin.position.x > 32) {
@@ -67,13 +66,11 @@ function draw() {
     marvin.changeAnimation("standing");
   }
 
-  if (newJocelynPosition.x !== jocelyn.position.x || newJocelynPosition.y !== jocelyn.position.y) {
-    if (newJocelynPosition.x > jocelyn.position.x)
+  if (jocelyn.velocity.x != 0 || jocelyn.velocity.y != 0) {
+    if (jocelyn.velocity.x > 0)
       jocelyn.mirrorX(1);
-    else if (newJocelynPosition.x < jocelyn.position.x)
+    else if (jocelyn.velocity.x < 0)
       jocelyn.mirrorX(-1);
-    jocelyn.position.x = newJocelynPosition.x;
-    jocelyn.position.y = newJocelynPosition.y;
     jocelyn.changeAnimation("moving");
   } else {
     jocelyn.changeAnimation("standing");
@@ -97,7 +94,9 @@ function draw() {
 
   socket.emit('marvinMove', {
     x: marvin.position.x,
-    y: marvin.position.y
+    y: marvin.position.y,
+    v_x: marvin.velocity.x,
+    v_y: marvin.velocity.y
   });
   drawSprites();
 }
