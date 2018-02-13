@@ -22,7 +22,7 @@ if (config.NODE_ENV === 'production') {
 	const http = require('http');
 
 	server = http.createServer(app);
-	server.listen(8001);
+	server.listen(80);
 }
 
 console.log("Server is running");
