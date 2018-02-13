@@ -11,8 +11,8 @@ let server;
 if (config.NODE_ENV === 'production') {
 	const fs = require('fs');
 	const https = require('https');
-	const privateKey  = fs.readFileSync(PRIVATE_KEY_PATH);
-	const certificate = fs.readFileSync(CERTIFICATE_PATH);
+	const privateKey  = fs.readFileSync(config.PRIVATE_KEY_PATH);
+	const certificate = fs.readFileSync(config.CERTIFICATE_PATH);
 	const credentials = {key: privateKey, cert: certificate};
 
 	app.use(enforce.HTTPS());
