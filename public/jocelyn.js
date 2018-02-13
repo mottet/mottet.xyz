@@ -1,6 +1,7 @@
 
 var marvin;
 var jocelyn;
+var heart;
 var newMarvinPosition;
 
 function setup() {
@@ -21,6 +22,12 @@ function setup() {
   jocelyn.scale = 4;
   jocelyn.addAnimation("standing", "assets/jocelyn-0.png");
   jocelyn.addAnimation("moving", "assets/jocelyn-0.png", "assets/jocelyn-3.png");
+
+  heart = createSprite(0, 0, 35, 35);
+  heart.scale = 4;
+  heart.addAnimation("beating", "assets/heart-0.png", "assets/heart-7.png");
+  heart.changeAnimation("beating");
+  heart.visible = false;
 
   socket = io('https://mottet.xyz');
 	socket.on('marvinMove', marvinMove);
@@ -80,9 +87,23 @@ function draw() {
     marvin.depth = 1;
   }
 
+  if (distance() < 100) {
+    heart.position.x = Math.round((marvin.position.x + jocelyn.position.x) / 2);
+    heart.position.y = Math.round((marvin.position.y + jocelyn.position.y) / 2),
+    heart.visible = true;
+  } else {
+    heart.visible = false;
+  }
+
   socket.emit('jocelynMove', {
     x: jocelyn.position.x,
     y: jocelyn.position.y
   });
   drawSprites();
+}
+
+function distance() {
+  const x = marvin.position.x - jocelyn.position.x;
+  const y = marvin.position.y - jocelyn.position.y;
+  return Math.sqrt(x*x + y*y);
 }
