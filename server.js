@@ -56,6 +56,17 @@ function newConnection(socket) {
 	socket.on('getUrPieces', getUrPiecesMsg);
 	socket.on('rollingUrDices', rollingUrDicesMsg);
 	socket.on('camera', cameraImage);
+
+	socket.on('marvinMove', marvinMove);
+	function marvinMove(data) {
+		socket.broadcast.emit('marvinMove', data);
+	}
+
+	socket.on('jocelynMove', jocelynMove);
+	function jocelynMove(data) {
+		socket.broadcast.emit('jocelynMove', data);
+	}
+
 	function cameraImage(data) {
 		socket.broadcast.emit('camera', data);
 	}
