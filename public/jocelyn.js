@@ -88,6 +88,10 @@ function draw() {
     heart.position.x = Math.round((marvin.position.x + jocelyn.position.x) / 2);
     heart.position.y = Math.round((marvin.position.y + jocelyn.position.y) / 2),
     heart.visible = true;
+    var s = 'Happy Valentine\'s Day !! \nI Love you <3';
+    textSize(80);
+    fill(255, 81, 255);
+    text(s, 20, 20, 550, 500); 
   } else {
     heart.visible = false;
   }
