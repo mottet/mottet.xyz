@@ -74,9 +74,18 @@ function newConnection(socket) {
 		socket.broadcast.emit('mouse', data);
 	}
 	function movingUrPieceMsg(data) {
-		//let index = pieceArray.findIndex((elem) => elem.id == data.id);
 		if (data.index >= 0 && data.index < pieceArray.length)
 		{
+			if (data.x < 0) {
+				data.x = 0;
+			} else if (data.x > 800) {
+				data.x = 800
+			}
+			if (data.y < 0) {
+				data.y = 0;
+			} else if (data.y > 800) {
+				data.y = 800
+			}
 			pieceArray[data.index].x = data.x;
 			pieceArray[data.index].y = data.y;
 			socket.broadcast.emit('movingUrPiece', data);
