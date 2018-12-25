@@ -31,7 +31,7 @@ function setup(){
 	stroke(51);
 	strokeWeight(width / nbXCases * 0.8);
 
-	frameRate(30);
+	frameRate(255);
 }
 
 function draw(){
@@ -76,3 +76,12 @@ function draw(){
 		}
 	}
 }
+
+function mousePressed() {
+	cases = [];
+	xPos = [];
+	yPos = [];
+	setup();
+	// prevent default
+	return false;
+  }
