@@ -52,8 +52,7 @@ function setup(){
 	button.size(220/800*side,80/800*side);
 	button.mousePressed(rollingDices);
 
-	socket = io('https://mottet.xyz', {secure: true});
-	//socket = io('http://localhost');
+	socket = io({secure: true});
 	socket.on('movingUrPiece', movingPiece);
 	socket.on('getUrPieces', getPieces);
 	socket.on('rollingUrDices', getResultDices);

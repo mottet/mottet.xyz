@@ -13,8 +13,7 @@ function setup(){
 	strokeWeight(side / 80);
 	noLoop();
 	
-
-	socket = io('https://mottet.xyz');
+	socket = io();
 	socket.on('mouse', newDrawing);
 }
 

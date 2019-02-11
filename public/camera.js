@@ -9,8 +9,7 @@ function setup() {
 	createCanvas(320, 240);
 	video = createCapture(VIDEO, ready);
 	video.size(width, height);
-	socket = io('https://mottet.xyz', {secure: true});
-	//socket = io('http://localhost');
+	socket = io({secure: true});
 	//socket.on('camera', cameraImage);
 	console.log(video.get().get());
 }

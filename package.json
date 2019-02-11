@@ -14,11 +14,11 @@
     "connect": "^3.6.3",
     "crypto": "^0.0.3",
     "csprng": "^0.1.2",
-    "express": "^4.15.3",
+    "express": "4.15.2",
     "express-sslify": "^1.2.0",
     "gravatar": "^1.6.0",
     "mongoose": "^4.11.6",
     "nodemailer": "^4.0.1",
-    "socket.io": "^2.0.3"
+    "socket.io": "^2.2.0"
   }
 }
