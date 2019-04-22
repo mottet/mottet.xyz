@@ -1,0 +1,129 @@
+.flexbox-centering {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100px;
+}
+
+.container {
+    width: 100%;
+    font-family: Comic Sans MS;
+    font-size: 70px;
+}
+
+.space-letters {
+    display: flex;
+    justify-content: space-around;
+}
+
+@keyframes pulse {
+    0% {
+        color: blue;
+    }
+    50% {
+        color: red;
+    }
+    100% {
+        color: green;
+    }
+}
+
+@keyframes rotate {
+    0%, 100% {
+        transform: rotate(-30deg);
+    }
+    25%, 75% {
+        transform: rotate(0deg);
+    }
+    50% {
+        transform: rotate(30deg);
+    }
+}
+
+.turning-letter {
+    animation: 
+        pulse 3s ease infinite alternate, 
+        rotate 5s linear infinite alternate;
+}
+
+.boulle-bleu {
+    position: relative;
+    height: 250px;
+    width: 250px;
+    margin: 0 auto;
+    background-color: blue;
+    border-radius: 100%;
+    animation:
+        full-rotatation 30s linear infinite;
+}
+
+.oeil {
+    height: 76px;
+    width: 76px;
+    background-color: white;
+    border-radius: 100%;
+    position: absolute;
+    top: 50px;
+    animation:
+        full-rotatation 5s linear infinite;
+}
+
+.oeil.droit {
+    left: 40px;
+}
+
+.oeil.gauche {
+    right: 40px;
+}
+
+.pupille {
+    height: 30px;
+    width: 30px;
+    background-color: black;
+    border-radius: 100%;
+    position: absolute;
+    right: 33px;
+    top: 33px;
+}
+
+@keyframes full-rotatation {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.bouche {
+    height: 76px;
+    width: 76px;
+    background-color: red;
+    border-radius: 100%;
+    position: absolute;
+    left: calc(125px - 38px);
+    bottom: 30px;
+    animation:
+        ouverture-bouche 3s linear infinite alternate;
+}
+
+.interieur-bouche {
+    height: 50px;
+    width: 50px;
+    background-color: blue;
+    border-radius: 100%;
+    position: absolute;
+    left: calc(38px - 25px);
+    bottom: calc(38px - 25px);
+    animation:
+        ouverture-bouche 3s linear infinite alternate;
+}
+
+@keyframes ouverture-bouche {
+    0% {
+        transform: scaleY(0.8);
+    }
+    100% {
+        transform: scaleY(1.2);
+    }
+}
