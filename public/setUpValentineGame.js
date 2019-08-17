@@ -85,6 +85,10 @@ function drawGame(yourCharacter, otherCharacter, socketMessageName) {
   yourCharacter.collide(walls, isAbove);
   yourCharacter.collide(platforms, isAbove);
   yourCharacter.collide(otherCharacter, isAbove);
+
+  otherCharacter.collide(walls);
+  otherCharacter.collide(platforms);
+  otherCharacter.collide(yourCharacter);
   
   if (!touchFloor) {
     yourCharacter.velocity.y += GRAVITY;
