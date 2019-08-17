@@ -1,9 +1,11 @@
-var socket;
+'use strict';
 
-var prevMouseX;
-var prevMouseY;
-var side;
-var canvas;
+let socket;
+
+let prevMouseX;
+let prevMouseY;
+let side;
+let canvas;
 
 function setup(){
 	side = floor((windowWidth < windowHeight ? windowWidth : windowHeight) * 0.95);
@@ -18,30 +20,31 @@ function setup(){
 }
 
 function windowResized() {
-	var newSide = floor((windowWidth < windowHeight ? windowWidth : windowHeight) * 0.95);
+	let newSide = floor((windowWidth < windowHeight ? windowWidth : windowHeight) * 0.95);
 	if (newSide === side)
 		return;
 	
 	loadPixels();
-	var d = pixelDensity();
-	var lengthNew = 4 * newSide * d * newSide * d;
-	var newPixels = new Uint8ClampedArray(lengthNew);
-	var lengthOld = 4 * side * d * side * d;
-	var ratio = newSide / side;
-	var ligneNew = 0;
-	var ligneOld = 0;
-	var nbCopyLigne = ratio;
+	let d = pixelDensity();
+	let lengthNew = 4 * newSide * d * newSide * d;
+	let newPixels = new Uint8ClampedArray(lengthNew);
+	let lengthOld = 4 * side * d * side * d;
+	let ratio = newSide / side;
+	let ligneNew = 0;
+	let ligneOld = 0;
+	let nbCopyLigne = ratio;
+	let nbCopyCol = ratio;
 
-	var newWidth = 4 * newSide * d * d;
-	var oldWidth = 4 * side * d * d;
+	let newWidth = 4 * newSide * d * d;
+	let oldWidth = 4 * side * d * d;
 
 	while (ligneOld < side && ligneNew < newSide)
 	{
 		while (nbCopyLigne >= 1 && ligneNew < newSide)
 		{
-			var indexOld = ligneOld * oldWidth;
-			var indexNew = ligneNew * newWidth;
-			var nbCopyCol = ratio;
+			let indexOld = ligneOld * oldWidth;
+			let indexNew = ligneNew * newWidth;
+			let nbCopyCol = ratio;
 			while (indexOld < (ligneOld + 1) * oldWidth && indexNew < (ligneNew + 1) * newWidth)
 			{
 				while (nbCopyCol >= 1 && indexNew < (ligneNew + 1) * newWidth)
@@ -72,8 +75,8 @@ function windowResized() {
 	}
 	while(ligneNew < newSide)
 	{
-		var indexOld = (side - 1) * oldWidth;
-		var indexNew = ligneNew * newWidth;
+		let indexOld = (side - 1) * oldWidth;
+		let indexNew = ligneNew * newWidth;
 		while (indexOld < (ligneOld + 1) * oldWidth && indexNew < (ligneNew + 1) * newWidth)
 		{
 			while (nbCopyCol >= 1 && indexNew < (ligneNew + 1) * newWidth)
@@ -122,7 +125,7 @@ function mousePressed(){
 
 function mouseDragged(){
 
-	var data = {
+	let data = {
 		prevX: prevMouseX / side,
 		prevY: prevMouseY / side,
 		x: mouseX / side,
@@ -142,7 +145,7 @@ function mouseDragged(){
 
 function mouseReleased(){
 
-	var data = {
+	let data = {
 		prevX: prevMouseX / side,
 		prevY: prevMouseY / side,
 		x: mouseX / side,

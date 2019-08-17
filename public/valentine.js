@@ -1,3 +1,4 @@
+'use strict';
 
 function setup() {
   setupGame('jocelynMove', jocelynMove);

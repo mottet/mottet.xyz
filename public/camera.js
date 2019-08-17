@@ -1,9 +1,11 @@
-var canvas;
-var video;
-var receiveVideo = null;
-var socket;
+'use strict';
 
-var camReady = false;
+let canvas;
+let video;
+let receiveVideo = null;
+let socket;
+
+let camReady = false;
 
 function setup() {
 	createCanvas(320, 240);

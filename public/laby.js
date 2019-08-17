@@ -1,10 +1,11 @@
+'use strict';
 
-var nbXCases;
-var nbYCases;
+let nbXCases;
+let nbYCases;
 
-var cases = [];
-var xPos = [];
-var yPos = [];
+let cases = [];
+let xPos = [];
+let yPos = [];
 
 function setup(){
 	createCanvas(windowWidth * 0.95, windowHeight * 0.95);
@@ -15,8 +16,8 @@ function setup(){
 	stroke(255, 0 , 100);
 	strokeWeight(5);
 	
-	for (var x = 0; x < nbXCases; ++x) {
-		for (var y = 0; y < nbYCases; ++y) {
+	for (let x = 0; x < nbXCases; ++x) {
+		for (let y = 0; y < nbYCases; ++y) {
 			cases[x + y * nbXCases] = 0;
 			rect(x * width / nbXCases, y * height / nbYCases, width / nbXCases, height / nbYCases);
 		}
@@ -35,9 +36,9 @@ function setup(){
 }
 
 function draw(){
-	for (var i = xPos.length - 1; i >= 0; i--) {
+	for (let i = xPos.length - 1; i >= 0; i--) {
 		//console.log();
-		var possible = [];
+		let possible = [];
 		if (yPos[i] > 0 && cases[xPos[i] + (yPos[i] - 1) * nbXCases] == 0)
 			possible.push([xPos[i], (yPos[i] - 1)]);
 		if (yPos[i] < nbYCases - 1 && cases[xPos[i] + (yPos[i] + 1) * nbXCases] == 0)
@@ -53,9 +54,9 @@ function draw(){
 		}
 		else
 		{
-			var pick = floor(random(0, possible.length));
-			var prevX = xPos[i];
-			var prevY = yPos[i];
+			let pick = floor(random(0, possible.length));
+			let prevX = xPos[i];
+			let prevY = yPos[i];
 			xPos[i] = possible[pick][0];
 			yPos[i] = possible[pick][1];
 			cases[xPos[i] + yPos[i] * nbXCases] = 1;

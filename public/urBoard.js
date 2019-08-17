@@ -1,11 +1,13 @@
-var socket;
+'use strict';
 
-var board = [
-	{id: 0, x: 360, y:10, w:80, h:80, color: 'white'},
+let socket;
+
+const board = [
+	{id: 0, x: 360, y:10,  w:80, h:80, color:'white'},
 	{id: 1, x: 360, y:100, w:80, h:80, color:'white'},
-	{id: 0, x: 270, y:10, w:80, h:80, color: 'white'},
+	{id: 0, x: 270, y:10 , w:80, h:80, color:'white'},
 	{id: 1, x: 270, y:100, w:80, h:80, color:'yellow'},
-	{id: 0, x: 450, y:10, w:80, h:80, color: 'white'},
+	{id: 0, x: 450, y:10 , w:80, h:80, color:'white'},
 	{id: 1, x: 450, y:100, w:80, h:80, color:'yellow'},
 	{id: 2, x: 360, y:190, w:80, h:80, color:'white'},
 	{id: 3, x: 360, y:280, w:80, h:80, color:'white'},
@@ -23,23 +25,24 @@ var board = [
 	{id: 7, x: 450, y:640, w:80, h:80, color:'yellow'}
 ]
 
-var pieceArray = [];
-
-var selectPiece = -1;
-
-var button;
-
-var dices = [
+const dices = [
 	'0',
 	'1','1','1','1',
 	'2','2','2','2','2','2',
 	'3','3','3','3',
 	'4'
-	];
-var resultDices = '9';
-var isRolling = false;
+];
 
-var side;
+let pieceArray = [];
+
+let selectPiece = -1;
+
+let button;
+
+let resultDices = '9';
+let isRolling = false;
+
+let side;
 
 function setup(){
 	side = floor((windowWidth < windowHeight ? windowWidth : windowHeight) * 0.95);
@@ -61,12 +64,9 @@ function setup(){
 
 function rollingDices()
 {
-	if (isRolling)
-		resultDices = random(dices);
 	isRolling = !isRolling;
 	let data = {
-		isRolling: isRolling, 
-		resultDices: resultDices
+		isRolling,
 	};
 	socket.emit('rollingUrDices', data);
 }
@@ -131,16 +131,30 @@ function mousePressed() {
 function mouseDragged(){
 	if (selectPiece >= 0)
 	{
-		var data = {
+		let newX = mouseX/side*800;
+		let newY = mouseY/side*800;
+
+		if (newX < 0) {
+			newX = 0;
+		} else if (newX > 800) {
+			newX = 800
+		}
+		if (newY < 0) {
+			newY = 0;
+		} else if (newY > 800) {
+			newY = 800
+		}
+
+		let data = {
 			index: selectPiece,
-			x: mouseX/side*800,
-			y: mouseY/side*800
+			x: newX,
+			y: newY
 		}
 
 		socket.emit('movingUrPiece', data);
 
-		pieceArray[selectPiece].x = mouseX/side*800;
-		pieceArray[selectPiece].y = mouseY/side*800;
+		pieceArray[selectPiece].x = newX;
+		pieceArray[selectPiece].y = newY;
 	}
 	// prevent default
   	return false;

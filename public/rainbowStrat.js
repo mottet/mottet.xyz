@@ -1,29 +1,31 @@
-var socket;
+'use strict';
 
-var board = [];
-var sizeBoard = 7;
+let socket;
 
-var pawns = [
+let board = [];
+let sizeBoard = 7;
+
+let pawns = [
 	{'position': {'x':0,'y':3}, 'color':'blue', 'kill':'red'},
 	{'position': {'x':3,'y':0}, 'color':'red', 'kill':'yellow'},
 	{'position': {'x':6,'y':3}, 'color':'yellow', 'kill':'green'},
 	{'position': {'x':3,'y':6}, 'color':'green', 'kill':'blue'}
 ];
-var newPosition = [];
-var pawnColor = 0;
+let newPosition = [];
+let pawnColor = 0;
 
-var accessibleTales;
+let accessibleTales;
 
-var button;
+let button;
 
-var move = [
+let move = [
 	{'x':0,'y':-1},
 	{'x':1,'y':0},
 	{'x':0,'y':1},
 	{'x':-1,'y':0}
 ];
 
-var side;
+let side;
 
 function setup(){
 	side = floor((windowWidth < windowHeight ? windowWidth : windowHeight) * 0.95);
@@ -34,14 +36,14 @@ function setup(){
 	textSize(32);
 	noLoop();
 
-	for (var x = 0; x < sizeBoard; ++x) {
+	for (let x = 0; x < sizeBoard; ++x) {
 		board[x] = [];
-		for (var y = 0; y < sizeBoard; ++y) {
+		for (let y = 0; y < sizeBoard; ++y) {
 			board[x][y] = 'grey';
 		}
 	}
 
-	for (var i = 0; i < 0; ++i)
+	for (let i = 0; i < 0; ++i)
 	{
 		board[floor(random(sizeBoard))][floor(random(sizeBoard))] = 'blue';
 		board[floor(random(sizeBoard))][floor(random(sizeBoard))] = 'red';
@@ -72,10 +74,10 @@ function setup(){
 
 
 function whatAccessible(pawn) {
-	var accessible = [pawn.position];
+	let accessible = [pawn.position];
 	//North
-	var toTest = [];
-	for (var i = 0; i < 4; ++i) {
+	let toTest = [];
+	for (let i = 0; i < 4; ++i) {
 		if (board[pawn.position.x + move[i].x] != undefined &&
 			board[pawn.position.x + move[i].x][pawn.position.y + move[i].y] != undefined) {
 			toTest.push({'x':pawn.position.x + move[i].x, 'y':pawn.position.y + move[i].y});
@@ -97,7 +99,7 @@ function whatAccessible(pawn) {
 function findTerritory(position, color, table) {
 	table.push(position);
 
-	var toTest = [];
+	let toTest = [];
 	move.forEach((moveTo)=>{
 		if (board[position.x + moveTo.x] != undefined &&
 			board[position.x + moveTo.x][position.y + moveTo.y] != undefined) {
@@ -116,7 +118,7 @@ function findTerritory(position, color, table) {
 }
 
 function mousePressed() {
-	var clickTale = accessibleTales.find((val) => 
+	let clickTale = accessibleTales.find((val) => 
 		val.x == floor(mouseX * sizeBoard / width) && val.y == floor(mouseY * sizeBoard / height)
 	);
 	if (clickTale != undefined) {
@@ -127,9 +129,9 @@ function mousePressed() {
 		newPosition.forEach((val, index)=>{
 			pawns[index].position = val;
 		});
-		var whoDie = [];
+		let whoDie = [];
 		pawns.forEach((pawn, index) => {
-			var toCheck = index == pawns.length - 1 ? 0 : index + 1;
+			let toCheck = index == pawns.length - 1 ? 0 : index + 1;
 			if (pawn.position.x == pawns[toCheck].position.x && 
 				pawn.position.y == pawns[toCheck].position.y) {
 				whoDie.push(pawns[toCheck].color);

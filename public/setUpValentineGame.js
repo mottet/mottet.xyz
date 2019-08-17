@@ -1,3 +1,5 @@
+'use strict';
+
 let marvin;
 let jocelyn;
 let heart;
@@ -75,7 +77,7 @@ function setupGame(socketMessageToListen, socketCallback) {
 function drawGame(yourCharacter, otherCharacter, socketMessageName) {
   background(166,77,232);
 
-  var s = 'Happy Valentine\'s Day !!\nI Love you <3';
+  const s = 'Happy Valentine\'s Day !!\nI Love you <3';
   textSize(30);
   fill(255, 81, 255);
   text(s, 0, -90, 550, 500); 

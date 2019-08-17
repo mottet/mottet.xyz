@@ -1,3 +1,5 @@
+'use strict';
+
 const config = require('./config');
 
 const express = require('express');
@@ -39,7 +41,7 @@ const socket = require('socket.io');
 const io = socket(server);
 io.sockets.on('connection', newConnection);
 
-var pieceArray = [
+const pieceArray = [
 	{id: 0, x: 100, y:670, w:70, h:70, color:'blue'},
 	{id: 1, x: 100, y:590, w:70, h:70, color:'blue'},
 	{id: 2, x: 100, y:510, w:70, h:70, color:'blue'},
@@ -54,7 +56,15 @@ var pieceArray = [
 	{id: 5, x: 620, y:670, w:70, h:70, color:'red'},
 	{id: 5, x: 620, y:590, w:70, h:70, color:'red'},
 	{id: 5, x: 620, y:510, w:70, h:70, color:'red'}
-]
+];
+
+const dices = [
+	'0',
+	'1','1','1','1',
+	'2','2','2','2','2','2',
+	'3','3','3','3',
+	'4'
+];
 
 function newConnection(socket) {
 	socket.on('mouse', mouseMsg);
@@ -101,6 +111,15 @@ function newConnection(socket) {
 		socket.emit('getUrPieces', pieceArray);
 	}
 	function rollingUrDicesMsg(data){
+		let resultDices;
+		if (!data.isRolling)
+			resultDices = dices[Math.floor(Math.random()*dices.length)];;
+		data = {
+			isRolling: data.isRolling, 
+			resultDices
+		};
+		
 		socket.broadcast.emit('rollingUrDices', data);
+		socket.emit('rollingUrDices', data);
 	}
 }
