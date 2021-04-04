@@ -19,18 +19,18 @@ if (config.NODE_ENV === 'production') {
 
 	app.use(enforce.HTTPS());
 	server = https.createServer(credentials, app);
-	server.listen(443);
+	server.listen(9000);
 
 	let redirection_server = require('http');
 	redirection_server.createServer(function (req, res) {
 		res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
 		res.end();
-	}).listen(80);
+	}).listen(8080);
 } else {
 	const http = require('http');
 
 	server = http.createServer(app);
-	server.listen(80);
+	server.listen(8080);
 }
 
 console.log("Server is running");
