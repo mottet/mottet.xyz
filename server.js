@@ -7,62 +7,45 @@ const enforce = require('express-sslify');
 const app = express();
 
 app.use(express.static(__dirname + '/public'));
-
+app.get('/log', (req, res) => {
+	console.log(req.query);
+	res.send();
+})
 let server;
 
-if (config.NODE_ENV === 'production') {
-	const fs = require('fs');
-	const https = require('https');
-	const privateKey  = fs.readFileSync(config.PRIVATE_KEY_PATH);
-	const certificate = fs.readFileSync(config.CERTIFICATE_PATH);
-	const credentials = {key: privateKey, cert: certificate};
+const http = require('http');
 
-	app.use(enforce.HTTPS());
-	server = https.createServer(credentials, app);
-	server.listen(9000);
-
-	let redirection_server = require('http');
-	redirection_server.createServer(function (req, res) {
-		res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
-		res.end();
-	}).listen(8080);
-} else {
-	const http = require('http');
-
-	server = http.createServer(app);
-	server.listen(8080);
-}
-
-console.log("Server is running");
+server = http.createServer(app);
+server.listen(8080, () => {
+	console.log("Server is running");
+});
 
 const socket = require('socket.io');
-
-
 const io = socket(server);
 io.sockets.on('connection', newConnection);
 
 const pieceArray = [
-	{id: 0, x: 100, y:670, w:70, h:70, color:'blue'},
-	{id: 1, x: 100, y:590, w:70, h:70, color:'blue'},
-	{id: 2, x: 100, y:510, w:70, h:70, color:'blue'},
-	{id: 2, x: 140, y:430, w:70, h:70, color:'blue'},
-	{id: 2, x: 180, y:670, w:70, h:70, color:'blue'},
-	{id: 2, x: 180, y:590, w:70, h:70, color:'blue'},
-	{id: 2, x: 180, y:510, w:70, h:70, color:'blue'},
-	{id: 3, x: 700, y:670, w:70, h:70, color:'red'},
-	{id: 4, x: 700, y:590, w:70, h:70, color:'red'},
-	{id: 5, x: 700, y:510, w:70, h:70, color:'red'},
-	{id: 5, x: 660, y:430, w:70, h:70, color:'red'},
-	{id: 5, x: 620, y:670, w:70, h:70, color:'red'},
-	{id: 5, x: 620, y:590, w:70, h:70, color:'red'},
-	{id: 5, x: 620, y:510, w:70, h:70, color:'red'}
+	{ id: 0, x: 100, y: 670, w: 70, h: 70, color: 'blue' },
+	{ id: 1, x: 100, y: 590, w: 70, h: 70, color: 'blue' },
+	{ id: 2, x: 100, y: 510, w: 70, h: 70, color: 'blue' },
+	{ id: 2, x: 140, y: 430, w: 70, h: 70, color: 'blue' },
+	{ id: 2, x: 180, y: 670, w: 70, h: 70, color: 'blue' },
+	{ id: 2, x: 180, y: 590, w: 70, h: 70, color: 'blue' },
+	{ id: 2, x: 180, y: 510, w: 70, h: 70, color: 'blue' },
+	{ id: 3, x: 700, y: 670, w: 70, h: 70, color: 'red' },
+	{ id: 4, x: 700, y: 590, w: 70, h: 70, color: 'red' },
+	{ id: 5, x: 700, y: 510, w: 70, h: 70, color: 'red' },
+	{ id: 5, x: 660, y: 430, w: 70, h: 70, color: 'red' },
+	{ id: 5, x: 620, y: 670, w: 70, h: 70, color: 'red' },
+	{ id: 5, x: 620, y: 590, w: 70, h: 70, color: 'red' },
+	{ id: 5, x: 620, y: 510, w: 70, h: 70, color: 'red' }
 ];
 
 const dices = [
 	'0',
-	'1','1','1','1',
-	'2','2','2','2','2','2',
-	'3','3','3','3',
+	'1', '1', '1', '1',
+	'2', '2', '2', '2', '2', '2',
+	'3', '3', '3', '3',
 	'4'
 ];
 
@@ -90,8 +73,7 @@ function newConnection(socket) {
 		socket.broadcast.emit('mouse', data);
 	}
 	function movingUrPieceMsg(data) {
-		if (data.index >= 0 && data.index < pieceArray.length)
-		{
+		if (data.index >= 0 && data.index < pieceArray.length) {
 			if (data.x < 0) {
 				data.x = 0;
 			} else if (data.x > 800) {
@@ -107,18 +89,18 @@ function newConnection(socket) {
 			socket.broadcast.emit('movingUrPiece', data);
 		}
 	}
-	function getUrPiecesMsg(){
+	function getUrPiecesMsg() {
 		socket.emit('getUrPieces', pieceArray);
 	}
-	function rollingUrDicesMsg(data){
+	function rollingUrDicesMsg(data) {
 		let resultDices;
 		if (!data.isRolling)
-			resultDices = dices[Math.floor(Math.random()*dices.length)];;
+			resultDices = dices[Math.floor(Math.random() * dices.length)];;
 		data = {
-			isRolling: data.isRolling, 
+			isRolling: data.isRolling,
 			resultDices
 		};
-		
+
 		socket.broadcast.emit('rollingUrDices', data);
 		socket.emit('rollingUrDices', data);
 	}
