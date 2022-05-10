@@ -1,9 +1,6 @@
 'use strict';
 
-const config = require('./config');
-
 const express = require('express');
-const enforce = require('express-sslify');
 const app = express();
 
 app.use(express.static(__dirname + '/public'));
