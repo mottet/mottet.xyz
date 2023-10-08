@@ -6,7 +6,11 @@ const app = express();
 app.use(express.static(__dirname + '/public', {
 	setHeaders: (res, path) => {
 		if (path.endsWith('.gz')) {
-			res.setHeader("Content-Encoding", "gzip");
+			res.header("Content-Encoding", "gzip");
+		}
+		if (path.includes("chemical-rakoon")) {
+			res.header("Cross-Origin-Embedder-Policy", "require-corp");
+			res.header("Cross-Origin-Opener-Policy", "same-origin");
 		}
 	}
 }));
