@@ -13791,21 +13791,27 @@ const Preloader = /** @constructor */ function () { // eslint-disable-line no-un
 	}
 
 	function loadFetch(file, tracker, fileSize, raw) {
+    var p_file = file;
 		tracker[file] = {
 			total: fileSize || 0,
 			loaded: 0,
 			done: false,
 		};
-		return fetch(file).then(function (response) {
-			if (!response.ok) {
-				return Promise.reject(new Error(`Failed loading file '${file}'`));
-			}
-			const tr = getTrackedResponse(response, tracker[file]);
-			if (raw) {
-				return Promise.resolve(tr);
-			}
-			return tr.arrayBuffer();
-		});
+		if (file.endsWith(".wasm") || file.endsWith(".pck")) {
+      file += ".gz"
+    }
+  
+    return fetch(file).then(function (response) {
+      if (!response.ok) {
+        return Promise.reject(new Error(`Failed loading file '${file}'`));
+      }
+  
+      const tr = getTrackedResponse(response, tracker[p_file]);
+      return Promise.resolve(tr.arrayBuffer().then( buffer => {
+        return new Response(pako.inflate(buffer), { headers: tr.headers }) 
+      }))
+      
+    });
 	}
 
 	function retry(func, attempts = 1) {
@@ -13874,12 +13880,14 @@ const Preloader = /** @constructor */ function () { // eslint-disable-line no-un
 		if (typeof pathOrBuffer === 'string') {
 			const me = this;
 			return this.loadPromise(pathOrBuffer, fileSize).then(function (buf) {
-				me.preloadedFiles.push({
-					path: destPath || pathOrBuffer,
-					buffer: buf,
-				});
-				return Promise.resolve();
-			});
+        buf.arrayBuffer().then(data => {
+          me.preloadedFiles.push({
+            path: destPath || pathOrBuffer,
+            buffer: data,
+          });
+        })
+        return Promise.resolve();
+      });
 		} else if (pathOrBuffer instanceof ArrayBuffer) {
 			buffer = new Uint8Array(pathOrBuffer);
 		} else if (ArrayBuffer.isView(pathOrBuffer)) {
@@ -14200,8 +14208,6 @@ const InternalConfig = function (initConfig) { // eslint-disable-line no-unused-
 					return `${loadPath}.side.wasm`;
 				} else if (path.endsWith('.wasm')) {
 					return `${loadPath}.wasm`;
-				} else if (path.endsWith('.wasm.gz')) {
-					return `${loadPath}.wasm.gz`;
 				}
 				return path;
 			},
@@ -14303,7 +14309,7 @@ const Engine = (function () {
 	Engine.load = function (basePath, size) {
 		if (loadPromise == null) {
 			loadPath = basePath;
-			loadPromise = preloader.loadPromise(`${loadPath}.wasm.gz`, size, true);
+			loadPromise = preloader.loadPromise(`${loadPath}.wasm`, size, true);
 			requestAnimationFrame(preloader.animateProgress);
 		}
 		return loadPromise;
@@ -14343,7 +14349,7 @@ const Engine = (function () {
 						initPromise = Promise.reject(new Error('A base path must be provided when calling `init` and the engine is not loaded.'));
 						return initPromise;
 					}
-					Engine.load(basePath, this.config.fileSizes[`${basePath}.wasm.gz`]);
+					Engine.load(basePath, this.config.fileSizes[`${basePath}.wasm`]);
 				}
 				const me = this;
 				function doInit(promise) {
@@ -14461,7 +14467,7 @@ const Engine = (function () {
 				this.config.update(override);
 				// Add main-pack argument.
 				const exe = this.config.executable;
-				const pack = this.config.mainPack || `${exe}.pck.gz`;
+				const pack = this.config.mainPack || `${exe}.pck`;
 				this.config.args = ['--main-pack', pack].concat(this.config.args);
 				// Start and init with execName as loadPath if not inited.
 				const me = this;
