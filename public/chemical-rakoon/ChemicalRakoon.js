@@ -13797,9 +13797,9 @@ const Preloader = /** @constructor */ function () { // eslint-disable-line no-un
 			loaded: 0,
 			done: false,
 		};
-		if (file.endsWith(".wasm") || file.endsWith(".pck")) {
-      file += ".gz"
-    }
+		// if (file.endsWith(".wasm") || file.endsWith(".pck")) {
+    //   file += ".gz"
+    // }
   
     return fetch(file).then(function (response) {
       if (!response.ok) {
@@ -14467,7 +14467,7 @@ const Engine = (function () {
 				this.config.update(override);
 				// Add main-pack argument.
 				const exe = this.config.executable;
-				const pack = this.config.mainPack || `${exe}.pck.gz`;
+				const pack = this.config.mainPack || `${exe}.pck`;
 				this.config.args = ['--main-pack', pack].concat(this.config.args);
 				// Start and init with execName as loadPath if not inited.
 				const me = this;
