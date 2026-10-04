@@ -24,7 +24,7 @@ let server;
 const http = require('http');
 
 server = http.createServer(app);
-server.listen(8080, () => {
+server.listen(8080, '127.0.0.1', () => {
 	console.log("Server is running");
 });
 
