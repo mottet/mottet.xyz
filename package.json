@@ -5,6 +5,9 @@
   "description": "Share canvas",
   "main": "server.js",
   "scripts": {
+    "build:ur-art": "node scripts/build-ur-artwork.cjs",
+    "test:ur:garden": "node scripts/check-ur-garden.cjs",
+    "test:ur:performance": "node scripts/check-ur-performance.cjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },

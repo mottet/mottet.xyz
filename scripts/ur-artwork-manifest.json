@@ -1,0 +1,14 @@
+{
+  "board": {
+    "webp": "/assets/ur/board-3aeef09bd1.webp"
+  },
+  "walnut": {
+    "webp": "/assets/ur/walnut-c5c3c1369b.webp"
+  },
+  "shell": {
+    "png": "/assets/ur/shell-e9d1d7b433.png"
+  },
+  "lapis": {
+    "png": "/assets/ur/lapis-c1fc5515e8.png"
+  }
+}
