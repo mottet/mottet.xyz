@@ -1,0 +1,21 @@
+[Unit]
+Description=mottet.xyz Node.js website
+After=network.target
+
+[Service]
+Type=simple
+User=debian
+Group=debian
+WorkingDirectory=/home/debian/mottet.xyz
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/node /home/debian/mottet.xyz/server.js
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target
