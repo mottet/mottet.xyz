@@ -1,12 +1,86 @@
-<html>
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<script language="javascript" type="text/javascript" src="libraries/p5/p5.js"></script>
-		<script language="javascript" type="text/javascript" src="libraries/p5/p5.dom.js"></script>
-		<script src="/socket.io/socket.io.js"></script>
-	  	<script language="javascript" type="text/javascript" src="urBoard.js"></script>
-	</head>
-	<body>
-	</body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#65412c">
+	<title>The Royal Game of Ur · Mottet</title>
+	<link rel="preload" as="image" href="/assets/ur/board-3aeef09bd1.webp" type="image/webp" fetchpriority="high">
+	<link rel="preload" as="image" href="/assets/ur/walnut-c5c3c1369b.webp" type="image/webp">
+	<link rel="stylesheet" href="urBoard.css?v=ur-brussels-3">
+	<script src="/socket.io/socket.io.min.js" defer></script>
+	<script src="urGarden.js?v=ur-brussels-4" defer></script>
+	<script src="urBoard.js?v=ur-brussels-5" defer></script>
+</head>
+<body>
+	<svg id="garden-background" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"></svg>
+	<img id="counter-shell" src="/assets/ur/shell-e9d1d7b433.png" width="192" height="192" alt="" decoding="async" hidden>
+	<img id="counter-lapis" src="/assets/ur/lapis-c1fc5515e8.png" width="192" height="192" alt="" decoding="async" hidden>
+	<img id="walnut-texture" src="/assets/ur/walnut-c5c3c1369b.webp" width="512" height="1024" alt="" decoding="async" hidden>
+	<main class="game-layout" aria-label="Royal Game of Ur">
+		<section class="table-frame" aria-label="Shared game table">
+			<div class="board-surface">
+			<svg class="table-ornament" viewBox="0 0 800 800" aria-hidden="true" focusable="false">
+				<defs id="table-materials"></defs>
+				<defs>
+					<linearGradient id="table-fan-glass" x2=".3" y2="1">
+						<stop stop-color="#c6b477"/><stop offset=".45" stop-color="#999860"/><stop offset="1" stop-color="#63754f"/>
+					</linearGradient>
+					<radialGradient id="table-lamplight" cx=".2" cy=".12" r=".9">
+						<stop stop-color="#f8d899" stop-opacity=".2"/><stop offset=".55" stop-color="#e5b96c" stop-opacity=".04"/><stop offset="1" stop-color="#21150e" stop-opacity=".3"/>
+					</radialGradient>
+					<g id="table-iris" stroke="url(#table-brass)" stroke-width="2.5" stroke-linejoin="round">
+						<path d="M0 2C-20-12-16-36 0-49C16-36 20-12 0 2Z" fill="#d5bc84"/>
+						<path d="M0-6C-7-31-38-32-42-13C-44-2-25-8-20 8C-12 17-4 9 0-6ZM0-6C7-31 38-32 42-13C44-2 25-8 20 8C12 17 4 9 0-6Z" fill="#87674e"/>
+						<path d="M0-9C-10 2-6 18-23 29C-7 32-1 17 0 8C1 17 7 32 23 29C6 18 10 2 0-9Z" fill="#5d7051"/>
+						<path d="M0-37V29M-32-15Q-12-18 0-6Q12-18 32-15" fill="none"/>
+					</g>
+					<g id="table-side" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M32 776V169C32 34 238 34 238 169V776Z" fill="#201e1540" stroke="#2c2116" stroke-width="9"/>
+						<path d="M32 776V169C32 34 238 34 238 169V776Z" fill="none" stroke="url(#table-brass)" stroke-width="4"/>
+						<path d="M50 173C50 58 220 58 220 173Z" fill="url(#table-fan-glass)" stroke="#35291c" stroke-width="7"/>
+						<path d="M50 173C50 58 220 58 220 173Z" fill="url(#table-glass-texture)"/>
+						<path d="M50 173C50 58 220 58 220 173Z" fill="none" stroke="url(#table-brass)" stroke-width="3"/>
+						<path d="M50 173H220M135 173V87M135 173L88 98M135 173L182 98" fill="none" stroke="url(#table-brass)" stroke-width="4"/>
+						<path d="M50 173C75 183 107 197 135 173C163 197 195 183 220 173" fill="none" stroke="url(#table-brass)" stroke-width="3"/>
+						<path id="table-stem" d="M32 776C118 750 52 647 73 548C88 472 129 421 98 340C80 289 135 290 135 252V173M73 548C118 507 153 475 128 430M98 340C56 309 42 269 32 238M71.14 635.99C45 611 34 581 32 558M135 252C177 252 222 273 238 238" fill="none"/>
+						<use href="#table-stem" fill="none" stroke="#302419" stroke-width="9"/>
+						<use href="#table-stem" fill="none" stroke="url(#table-brass)" stroke-width="5"/>
+						<path d="M73 548C125 530 149 471 128 430C92 462 98 510 73 548ZM98 340C70 320 38 281 32 238C70 255 71 294 98 340ZM71.14 635.99C38 626 20 584 32 558C58 574 51 608 71.14 635.99Z" fill="#596346" stroke="url(#table-brass)" stroke-width="2.5"/>
+						<use href="#table-iris" transform="translate(135 252) scale(.9)"/>
+					</g>
+				</defs>
+				<rect class="table-wood" width="800" height="800" fill="url(#table-wood)"/>
+				<rect width="800" height="800" fill="url(#table-lamplight)"/>
+				<path d="M20 780V100Q20 20 100 20H700Q780 20 780 100V780Z" fill="none" stroke="#322319" stroke-width="10" stroke-linejoin="round"/>
+				<path d="M20 780V100Q20 20 100 20H700Q780 20 780 100V780Z" fill="none" stroke="url(#table-brass)" stroke-width="5" stroke-linejoin="round"/>
+				<use href="#table-side"/>
+				<use href="#table-side" transform="translate(800 0) scale(-1 1)"/>
+			</svg>
+			<picture class="board-art">
+				<img id="board-artwork" src="/assets/ur/board-3aeef09bd1.webp" width="800" height="800" alt="" decoding="async" fetchpriority="high">
+			</picture>
+			<canvas id="ur-board" width="800" height="800" tabindex="0" aria-label="Royal Game of Ur board. Drag counters to move them. With the board focused, press Tab to select a counter, arrow keys to move it, and Escape to release it."></canvas>
+			<canvas id="ur-pieces" width="800" height="800" aria-hidden="true"></canvas>
+			<section class="dice-panel" aria-label="Dice">
+				<div class="dice-tray" id="dice-tray" aria-hidden="true">
+						<svg class="die" viewBox="0 0 60 62"><path class="die-left" d="M30 5 5 48 30 57Z"/><path class="die-right" d="M30 5 55 48 30 57Z"/><path class="die-edge" d="m5 48 25-9 25 9M30 5v34"/><circle class="die-dot" cx="30" cy="15" r="3"/></svg>
+						<svg class="die" viewBox="0 0 60 62"><path class="die-left" d="M30 5 5 48 30 57Z"/><path class="die-right" d="M30 5 55 48 30 57Z"/><path class="die-edge" d="m5 48 25-9 25 9M30 5v34"/><circle class="die-dot" cx="30" cy="15" r="3"/></svg>
+						<svg class="die" viewBox="0 0 60 62"><path class="die-left" d="M30 5 5 48 30 57Z"/><path class="die-right" d="M30 5 55 48 30 57Z"/><path class="die-edge" d="m5 48 25-9 25 9M30 5v34"/><circle class="die-dot" cx="30" cy="15" r="3"/></svg>
+						<svg class="die" viewBox="0 0 60 62"><path class="die-left" d="M30 5 5 48 30 57Z"/><path class="die-right" d="M30 5 55 48 30 57Z"/><path class="die-edge" d="m5 48 25-9 25 9M30 5v34"/><circle class="die-dot" cx="30" cy="15" r="3"/></svg>
+					</div>
+				<div class="dice-controls">
+					<span id="dice-result" aria-label="Dice result">—</span>
+					<button id="roll-button" type="button" aria-label="Roll dice" disabled>
+						<svg class="roll-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 10 7-10 7Z"/></svg>
+						<svg class="stop-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6h12v12H6Z"/></svg>
+					</button>
+				</div>
+				<span class="connection-dot" id="connection-dot" role="status" aria-label="Connecting"></span>
+			</section>
+			</div>
+			<p class="visually-hidden" id="dice-announcement" role="status" aria-live="polite"></p>
+		</section>
+	</main>
+</body>
 </html>
