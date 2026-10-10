@@ -8,6 +8,7 @@
     "build:ur-art": "node scripts/build-ur-artwork.cjs",
     "test:ur:garden": "node scripts/check-ur-garden.cjs",
     "test:ur:performance": "node scripts/check-ur-performance.cjs",
+    "test:house": "node scripts/check-house-navigation.cjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },

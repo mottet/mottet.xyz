@@ -1,68 +1,43 @@
-<html>
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<link rel="stylesheet" type="text/css" href="homePage.css">
-	</head>
-	<body>
-	<ol id="head">
-		<li class="name" >mottet</li>
-		<li class="periode" >.</li>
-		<li class="turningX">x</li>
-		<li class="turningY">y</li>
-		<li class="turningZ">z</li>
-	</ol>
-	<ol id="list">
-		<li>
-			<a href="drawing.html">
-				<div class="color1">
-						Share Drawing
-				</div>
-				<div class="borderColor1">
-					Everyone on an unique sketch, sharing their drawings.
-				</div>
-			</a>
-		</li>
-		<li>
-			<a href="urBoard.html">
-				<div class="color2">
-						Royal Game of Ur
-				</div>
-				<div class="borderColor2">
-					The oldest board game whose rules are know.
-				</div>
-			</a>
-		</li>
-		<li>
-			<a href="laby.html">
-				<div class="color3">
-						Random Maze Drawing
-				</div>
-				<div class="borderColor3">
-					Algorithme which fills the window with a maze.
-				</div>
-			</a>
-		</li>
-		<li>
-			<a href="/musical-mining">
-				<div class="color1">
-					Musical Mining: The Symphony of Greed
-				</div>
-				<div class="borderColor1">
-					A rythmic game created during the Ludum Dare 52.
-				</div>
-			</a>
-		</li>
-		<li>
-			<a href="/chemical-rakoon">
-				<div class="color2">
-					Chemical Rakoon
-				</div>
-				<div class="borderColor2">
-					A platform game created during the Ludum Dare 54.
-				</div>
-			</a>
-		</li>
-	</ol>
-	</body>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eeeade">
+  <meta name="description" content="Step inside Mottet's Art Nouveau house. Five rooms of games, drawings, music, and little experiments.">
+  <title>Mottet · A house of little experiments</title>
+  <link rel="stylesheet" href="/houseNavigation.css">
+  <link rel="stylesheet" href="/homePage.css">
+  <script src="/houseNavigation.js" defer></script>
+  <script src="/houseScene.js" defer></script>
+</head>
+<body class="house-home">
+  <a class="house-skip" href="#house-scene">Skip to the rooms</a>
+  <header class="house-header">
+    <a class="house-brand" href="/" aria-label="Mottet home"><svg viewBox="0 0 40 48" aria-hidden="true"><path d="M20 45V19M20 34C3 32 4 17 8 16c2 8 12 8 12 18Zm0 0c17-2 16-17 12-18-2 8-12 8-12 18ZM20 23C2 15 13 3 20 2c7 1 18 13 0 21Z"/><path d="M20 3v20M12 8l8 15 8-15"/></svg><span>mottet<span class="house-brand-suffix">.xyz</span></span></a>
+    <button class="house-plan-trigger" type="button" data-house-map><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3ZM3 13h8V3m0 10h10m-10 0v8"/></svg>Floor plan</button>
+  </header>
+  <main>
+    <h1 class="house-visually-hidden">Mottet’s house</h1>
+    <section class="house-visit" aria-label="Explore the house">
+      <div class="house-scene-bar"><span class="house-location"><span class="house-location-dot"></span><span id="house-location-name">Hall</span></span></div>
+      <div class="house-scene" id="house-scene" tabindex="-1">
+        <div id="house-illustration" aria-hidden="true"></div>
+        <nav id="house-doors" class="house-doors" aria-label="Doors in the entrance hall">
+          <a class="house-door house-door-left" href="/drawing.html" data-room="studio"><span class="house-door-plaque"><strong>Drawing studio</strong></span></a>
+          <a class="house-door house-door-back" href="/laby.html" data-room="garden"><span class="house-door-plaque"><strong>Maze garden</strong></span></a>
+          <a class="house-door house-door-right" href="/urBoard.html" data-room="salon"><span class="house-door-plaque"><strong>Games room</strong></span></a>
+          <a class="house-stairs" href="#first-floor" data-house-floor="first" aria-label="Take the stairs"><span class="house-stairs-icon" aria-hidden="true">↗</span><span>Upstairs</span></a>
+        </nav>
+        <nav class="house-doors" id="house-upstairs-doors" aria-label="Doors on the first-floor landing" hidden>
+          <a class="house-door house-door-left" href="/musical-mining/" data-room="music"><span class="house-door-plaque"><strong>Musical Mining</strong></span></a>
+          <a class="house-door house-door-right" href="/chemical-rakoon/" data-room="laboratory"><span class="house-door-plaque"><strong>Chemical Rakoon</strong></span></a>
+          <a class="house-stairs house-stairs-down" href="#ground-floor" data-house-floor="ground" aria-label="Go downstairs"><span class="house-stairs-icon" aria-hidden="true">↙</span><span>Downstairs</span></a>
+        </nav>
+      </div>
+      <div class="house-scene-footer"><nav class="house-floor-switch" aria-label="Choose a floor"><a href="#ground-floor" data-house-floor="ground" aria-current="location">Ground</a><span aria-hidden="true">/</span><a href="#first-floor" data-house-floor="first">Upstairs <span aria-hidden="true">↑</span></a></nav></div>
+    </section>
+  </main>
+  <noscript><p class="house-noscript">Upstairs: <a href="/musical-mining/">Musical Mining</a> · <a href="/chemical-rakoon/">Chemical Rakoon</a></p></noscript>
+</body>
 </html>

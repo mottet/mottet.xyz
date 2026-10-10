@@ -1,0 +1,520 @@
+{
+  "date": "2026-10-05T13:42:59.006Z",
+  "url": "https://mottet.xyz/urBoard.html",
+  "metric": "Navigation to first painted, connected table with board, garden, and counters",
+  "network": {
+    "latencyMs": 40,
+    "downloadMbps": 4,
+    "uploadMbps": 1
+  },
+  "profiles": [
+    {
+      "name": "desktop-cold",
+      "width": 1440,
+      "height": 900,
+      "scale": 1,
+      "cpu": 1,
+      "runs": 40,
+      "p50Ms": 677,
+      "p95Ms": 735,
+      "maxMs": 815,
+      "underOneSecondPercent": 100,
+      "samples": [
+        {
+          "readyMs": 815,
+          "dclMs": 415,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 756,
+          "dclMs": 327,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 735,
+          "dclMs": 333,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 735,
+          "dclMs": 391,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 692,
+          "dclMs": 384,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 679,
+          "dclMs": 389,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 671,
+          "dclMs": 385,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 698,
+          "dclMs": 381,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 675,
+          "dclMs": 308,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 672,
+          "dclMs": 308,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 696,
+          "dclMs": 378,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 683,
+          "dclMs": 385,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 669,
+          "dclMs": 385,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 685,
+          "dclMs": 395,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 680,
+          "dclMs": 380,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 654,
+          "dclMs": 379,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 677,
+          "dclMs": 387,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 668,
+          "dclMs": 369,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 688,
+          "dclMs": 383,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 665,
+          "dclMs": 372,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 669,
+          "dclMs": 379,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 663,
+          "dclMs": 376,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 695,
+          "dclMs": 310,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 687,
+          "dclMs": 377,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 675,
+          "dclMs": 390,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 672,
+          "dclMs": 380,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 675,
+          "dclMs": 389,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 672,
+          "dclMs": 373,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 669,
+          "dclMs": 381,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 663,
+          "dclMs": 376,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 672,
+          "dclMs": 311,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 718,
+          "dclMs": 395,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 684,
+          "dclMs": 317,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 667,
+          "dclMs": 316,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 671,
+          "dclMs": 375,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 719,
+          "dclMs": 372,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 689,
+          "dclMs": 311,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 688,
+          "dclMs": 397,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 712,
+          "dclMs": 306,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 645,
+          "dclMs": 311,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        }
+      ]
+    },
+    {
+      "name": "mobile-cold",
+      "width": 390,
+      "height": 844,
+      "scale": 2,
+      "cpu": 4,
+      "runs": 40,
+      "p50Ms": 901,
+      "p95Ms": 975,
+      "maxMs": 1001,
+      "underOneSecondPercent": 97.5,
+      "samples": [
+        {
+          "readyMs": 918,
+          "dclMs": 556,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 867,
+          "dclMs": 547,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 871,
+          "dclMs": 545,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 894,
+          "dclMs": 532,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 934,
+          "dclMs": 589,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 874,
+          "dclMs": 547,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 862,
+          "dclMs": 517,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 882,
+          "dclMs": 550,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 851,
+          "dclMs": 498,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 874,
+          "dclMs": 555,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 970,
+          "dclMs": 541,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 845,
+          "dclMs": 499,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 907,
+          "dclMs": 571,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 878,
+          "dclMs": 518,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 877,
+          "dclMs": 517,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 907,
+          "dclMs": 533,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 905,
+          "dclMs": 547,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 892,
+          "dclMs": 579,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 861,
+          "dclMs": 545,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 865,
+          "dclMs": 513,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 901,
+          "dclMs": 530,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 910,
+          "dclMs": 548,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 996,
+          "dclMs": 581,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 975,
+          "dclMs": 568,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 905,
+          "dclMs": 566,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 903,
+          "dclMs": 531,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 956,
+          "dclMs": 545,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 892,
+          "dclMs": 512,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 892,
+          "dclMs": 503,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 903,
+          "dclMs": 554,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 904,
+          "dclMs": 525,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 892,
+          "dclMs": 560,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 860,
+          "dclMs": 500,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 901,
+          "dclMs": 532,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 1001,
+          "dclMs": 610,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 878,
+          "dclMs": 498,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 907,
+          "dclMs": 558,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 904,
+          "dclMs": 564,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 956,
+          "dclMs": 588,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        },
+        {
+          "readyMs": 931,
+          "dclMs": 540,
+          "transferredBytes": 66778,
+          "transport": "websocket"
+        }
+      ]
+    }
+  ]
+}

@@ -82,5 +82,36 @@
 			<p class="visually-hidden" id="dice-announcement" role="status" aria-live="polite"></p>
 		</section>
 	</main>
+	<a class="ur-house-return" id="house-return-fallback" href="/#ground-floor">← Entrance hall</a>
+	<script>
+		// Keep optional house controls out of the first playable frame's downloads.
+		// The return door is available immediately, including without JavaScript.
+		(() => {
+			let loaded = false;
+			let observer;
+			function loadHouse() {
+				if (loaded) return;
+				loaded = true;
+				observer?.disconnect();
+				const style = document.createElement('link');
+				style.rel = 'stylesheet';
+				style.href = '/houseNavigation.css';
+				style.onload = style.onerror = () => {
+					const script = document.createElement('script');
+					script.src = '/houseNavigation.js';
+					document.head.append(script);
+				};
+				document.head.append(style);
+			}
+			if ('PerformanceObserver' in window) {
+				observer = new PerformanceObserver(list => {
+					if (list.getEntries().some(entry => entry.name === 'ur-ready')) loadHouse();
+				});
+				observer.observe({ type: 'mark', buffered: true });
+			}
+			// A disconnected game must still offer the house controls.
+			window.addEventListener('load', () => setTimeout(loadHouse, 2000), { once: true });
+		})();
+	</script>
 </body>
 </html>

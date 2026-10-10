@@ -1,3 +1,28 @@
+# House navigation
+
+The five projects are rooms in a two-floor Art Nouveau house. `houseScene.js`
+draws the entrance hall and landing with reusable vectors, using the existing
+walnut texture. The doors keep the original project URLs. Floor changes use URL
+hashes so links, reloads, and browser Back all restore the right floor.
+`houseNavigation.js` supplies each room's return route and shared floor-plan
+dialog. Ur keeps an immediate return link and loads the full house controls
+after its first playable frame, so their downloads do not compete with the game.
+Its controls isolate input from the older p5 games. All links work with
+the keyboard; the dialog restores focus, and reduced-motion settings skip the
+door and entrance animations. With JavaScript disabled, the ground-floor doors
+and explicit upstairs links on the home page remain available.
+
+Run the house browser check against the local server using the same external
+Playwright installation described below:
+
+```sh
+HOUSE_TEST_TOOLS=/tmp/ur-tools/node_modules npm run test:house
+```
+
+Set `HOUSE_BASE_URL` to check another server. The check covers real journeys
+through all five doors, floor history, return routes, current-room indication,
+keyboard focus, canvas input isolation, mobile layout, and reduced motion.
+
 # Royal Game of Ur artwork and performance
 
 The Brussels Art Nouveau interior is drawn in `public/urGarden.js` as three SVG
