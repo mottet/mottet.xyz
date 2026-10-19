@@ -1,74 +1,89 @@
 @view-transition { navigation: auto; }
-:root { color-scheme: light; --house-paper: #eeeade; --house-ink: #293e34; --house-muted: #6a7165; --house-line: #d3d0be; }
+:root { color-scheme: light; --house-paper: #eeeade; --house-ink: #293e34; --house-muted: #5c6457; --house-line: #cfcbb6; --house-rose: #a9696d; --house-brass: #9c763e; --house-ratio: 1200 / 680; --house-chrome: 262px; }
 * { box-sizing: border-box; }
-body.house-home { margin: 0; background: var(--house-paper); color: var(--house-ink); font-family: Georgia, 'Times New Roman', serif; -webkit-font-smoothing: antialiased; }
+body.house-home { margin: 0; background: var(--house-paper); color: var(--house-ink); font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; font-size: 17px; -webkit-font-smoothing: antialiased; }
 .house-home a { color: inherit; text-decoration: none; }
 .house-home button { font: inherit; }
-.house-home a:focus-visible, .house-home button:focus-visible { outline: 2px solid #9c763e; outline-offset: 5px; }
-.house-header { max-width: 1600px; margin: auto; padding: 25px 5%; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--house-line); gap: 20px; }
-.house-brand { display: flex; align-items: center; gap: 12px; font-size: 31px; letter-spacing: -1.4px; }
-.house-brand svg { width: 28px; height: 37px; fill: none; stroke: currentColor; stroke-width: 1.2; }
-.house-brand-suffix { font-style: italic; font-size: .8em; letter-spacing: -.5px; }
-.house-plan-trigger { display: flex; align-items: center; gap: 9px; padding: 10px 0 10px 14px; border: 0; background: none; color: var(--house-ink); cursor: pointer; font-size: 14px !important; }
-.house-plan-trigger svg { width: 17px; height: 17px; stroke: currentColor; stroke-width: 1; fill: none; }
-.house-home main { max-width: 1440px; margin: auto; padding: 24px 5% 28px; }
-.house-visit { border: 1px solid #babca7; }
-.house-scene-bar { display: flex; align-items: center; justify-content: space-between; padding: 13px 22px; border-bottom: 1px solid #babca7; }
-.house-location { display: flex; align-items: center; gap: 10px; font-size: 14px; font-style: italic; }
-.house-location-dot { display: block; width: 5px; height: 5px; border-radius: 50%; background: #82916b; box-shadow: 0 0 0 3px #82916b17; }
-.house-scene { position: relative; aspect-ratio: 1200 / 680; overflow: hidden; isolation: isolate; background: #686d4d; }
-#house-illustration, #house-illustration svg { width: 100%; height: 100%; display: block; }
+.house-home a:focus-visible, .house-home button:focus-visible { outline: 2px solid var(--house-brass); outline-offset: 5px; }
+
+/* Header: a title in Federo, the house mark, and a drawn whiplash rule. */
+.house-header { max-width: 1600px; margin: auto; padding: 22px 5% 14px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.house-brand { display: flex; align-items: center; gap: 14px; }
+.house-brand-mark { width: 34px; height: 40px; fill: none; stroke: var(--house-ink); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.house-brand-text { display: flex; flex-direction: column; line-height: 1; }
+.house-brand-name { font-family: Federo, Georgia, serif; font-size: 34px; letter-spacing: 1.5px; text-transform: uppercase; }
+.house-brand-sub { margin-top: 5px; font-style: italic; font-size: 16px; color: var(--house-muted); letter-spacing: .2px; }
+.house-plan-trigger { display: flex; align-items: center; gap: 9px; padding: 9px 16px; border: 1px solid #b5ad92; border-radius: 16px 16px 4px 4px; background: #f5f1e4; color: var(--house-ink); cursor: pointer; font-family: Federo, Georgia, serif; font-size: 14px; letter-spacing: .8px; transition: background .2s, border-color .2s; }
+.house-plan-trigger:hover { background: #fbf8ee; border-color: var(--house-brass); }
+.house-plan-trigger svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.1; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.house-rule { position: relative; max-width: 1600px; margin: auto; padding: 0 5%; height: 20px; display: flex; align-items: center; justify-content: center; }
+.house-rule > svg { position: absolute; inset: 0 5%; width: 90%; height: 20px; fill: none; stroke: #b9b39a; stroke-width: 1; }
+.house-rule-motif { position: relative; width: 80px; height: 20px; fill: none; stroke: var(--house-brass); stroke-width: 1.1; stroke-linecap: round; }
+.house-rule-motif path:nth-child(2) { fill: #e4cfc4; stroke: var(--house-rose); }
+
+/* The visit card never exceeds the viewport height, whatever the camera. */
+.house-home main { max-width: 1440px; margin: auto; padding: 18px 5% 28px; }
+.house-visit { width: min(100%, calc((100svh - var(--house-chrome)) * (var(--house-ratio)))); min-width: min(100%, 300px); margin: auto; border: 1px solid #b2b49d; box-shadow: 0 0 0 4px var(--house-paper), 0 0 0 5px #d6d2bc; }
+.house-scene-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 20px; border-bottom: 1px solid #b2b49d; }
+.house-location { display: flex; align-items: center; gap: 8px; font-size: 16px; font-style: italic; color: var(--house-muted); }
+.house-location svg { width: 16px; height: 16px; fill: none; stroke: var(--house-brass); stroke-width: 1.2; stroke-linecap: round; stroke-linejoin: round; }
+#house-location-name { font-family: Federo, Georgia, serif; font-style: normal; font-size: 16px; letter-spacing: 1px; text-transform: uppercase; color: var(--house-ink); }
+.house-scene-hint { font-size: 15px; font-style: italic; color: var(--house-muted); white-space: nowrap; }
+.house-scene { position: relative; overflow: hidden; isolation: isolate; background: #2d3d33; }
+.house-stage { position: relative; width: 100%; aspect-ratio: var(--house-ratio); overflow: hidden; }
+#house-illustration, #house-illustration > svg { width: 100%; height: 100%; display: block; }
 #house-illustration { position: absolute; inset: 0; pointer-events: none; transition: opacity .22s, transform .32s ease-in; }
 .house-entering #house-illustration { transform: scale(1.8); }
 .house-entering .house-doors { opacity: 0; transition: opacity .18s; }
 .house-doors { position: absolute; inset: 0; }
 .house-doors[hidden] { display: none; }
-.house-door { position: absolute; display: flex; justify-content: center; align-items: end; width: 25%; top: 15%; height: 61%; text-align: center; -webkit-tap-highlight-color: transparent; }
-.house-door-left { left: 3%; }
-.house-door-right { right: 3%; }
-.house-door-back { left: 36%; width: 19%; top: 27%; height: 32%; }
-.house-door-plaque { display: block; min-width: 120px; padding: 10px 14px; color: #f2ead3; background: #243c33ed; border: 1px solid #d1bc8170; box-shadow: 0 4px 20px #17281f45, inset 0 0 0 4px #243c33; transition: background .22s, transform .22s, box-shadow .22s; }
-.house-door-plaque strong { display: block; font-size: clamp(16px, 1.65vw, 24px); line-height: 1.2; font-weight: 400; }
-.house-door:hover .house-door-plaque, .house-door:focus-visible .house-door-plaque { transform: translateY(-5px); background: #314d3f; box-shadow: 0 8px 25px #17281f70, inset 0 0 0 4px #314d3f; }
-.house-door-back .house-door-plaque { padding: 9px 12px; min-width: 110px; }
-.house-door-back .house-door-plaque strong { font-size: clamp(14px, 1.35vw, 19px); }
-.house-stairs { position: absolute; left: 58%; top: 77%; display: flex; align-items: center; gap: 11px; color: #f2ead3 !important; padding: 11px 15px; background: #263d31e8; border: 1px solid #c8b98655; box-shadow: 0 3px 12px #1b271c30; }
-.house-stairs > span:last-child { font-size: 13px; }
-.house-stairs-icon { font: 23px Georgia, serif; }
-.house-stairs:hover { background: #375440; }
-.house-stairs-down { left: 58%; top: 84%; }
-.house-scene-footer { display: flex; justify-content: flex-end; align-items: center; padding: 14px 22px; gap: 15px; }
-.house-floor-switch { display: flex; align-items: center; gap: 14px; font-size: 11px; white-space: nowrap; }
-.house-floor-switch > span { color: #b3b6a5; }
-.house-floor-switch a { color: #797d6d; padding: 4px 0; border-bottom: 1px solid transparent; }
-.house-floor-switch a[aria-current] { color: var(--house-ink); border-color: #82916b; }
-.house-noscript { text-align: center; padding: 16px; }
+
+/* Links sit exactly over the drawn doors and stair; houseScene.js sets their
+   boxes from the artwork. The name appears as a small brass plate on hover. */
+.house-door { position: absolute; left: 0; top: 0; width: 20%; height: 60%; min-width: 44px; min-height: 44px; display: flex; justify-content: center; align-items: flex-end; -webkit-tap-highlight-color: transparent; }
+/* The plate is as wide as its name, centred under the door, and pinned to the
+   frame edge instead when the door itself touches that edge. */
+.house-door-name { --house-shift: -50%; position: absolute; left: 50%; bottom: -6px; display: flex; align-items: center; gap: 6px; padding: 5px 12px 4px; white-space: nowrap; color: #2f2412; background: linear-gradient(100deg, #ead9a3, #c8ad6a 45%, #a98d53 70%, #dcc58a); border: 1px solid #5a4421; border-radius: 10px 10px 3px 3px; box-shadow: inset 0 0 0 1px #f6ebc6aa, 0 3px 12px #10201780; font-family: Federo, Georgia, serif; font-size: clamp(12px, 1.05vw, 15px); letter-spacing: .6px; opacity: 0; transform: translate(var(--house-shift), 5px); transition: opacity .18s, transform .18s; pointer-events: none; }
+.house-door:hover .house-door-name, .house-door:focus-visible .house-door-name { opacity: 1; transform: translate(var(--house-shift), 0); }
+.house-door[data-edge="left"] .house-door-name { --house-shift: 0; left: 3px; }
+.house-door[data-edge="right"] .house-door-name { --house-shift: 0; left: auto; right: 3px; }
+.house-stairs .house-door-name { bottom: 1%; }
+.house-stairs-icon { font: 15px Georgia, serif; }
 .house-leaf { transform-box: fill-box; transform-origin: left center; transition: transform .45s ease, filter .45s; }
-.house-door-art.is-hovered .house-leaf { transform: perspective(900px) rotateY(-17deg); filter: brightness(1.12); }
-@media (min-width: 1700px) { .house-scene { max-height: 760px; } }
+.house-door-glow { opacity: 0; transition: opacity .35s; }
+.house-door-art.is-hovered .house-leaf { transform: perspective(700px) rotateY(-30deg); filter: brightness(1.1); }
+.house-door-art.is-hovered .house-door-glow { opacity: 1; }
+[data-stair-art] { transition: filter .3s; }
+[data-stair-art].is-hovered { filter: brightness(1.18) drop-shadow(0 0 10px #ffe9a8aa); }
+.house-scene-footer { display: flex; justify-content: space-between; align-items: center; padding: 11px 20px; gap: 15px; border-top: 1px solid #b2b49d; }
+.house-floor-switch { display: flex; align-items: center; gap: 14px; font-family: Federo, Georgia, serif; font-size: 13px; letter-spacing: .8px; text-transform: uppercase; white-space: nowrap; }
+.house-floor-switch > span { color: var(--house-brass); }
+.house-floor-switch a { color: var(--house-muted); padding: 4px 0; border-bottom: 1px solid transparent; }
+.house-floor-switch a:hover { color: var(--house-ink); }
+.house-floor-switch a[aria-current] { color: var(--house-ink); border-color: var(--house-rose); }
+.house-noscript { text-align: center; padding: 16px; }
+@media (hover: none) {
+  /* Without a pointer to hover, the plates stay visible, inside each door. */
+  .house-door-name { opacity: 1; transform: translate(var(--house-shift), 0); bottom: 4px; padding: 3px 8px 2px; font-size: 11px; letter-spacing: .3px; }
+  .house-stairs .house-door-name { bottom: 4px; }
+}
 @media (max-width: 760px) {
-  .house-header { padding: 19px 5%; }
-  .house-brand { font-size: 27px; }
-  .house-scene { aspect-ratio: 1 / 1.12; }
-  #house-illustration { inset: 0; width: 100%; }
-  .house-scene-bar { padding: 12px; }
-  .house-location { font-size: 12px; }
-  .house-door { width: 39%; height: 61%; top: 8%; }
-  .house-door-left { left: 1%; }
-  .house-door-right { right: 1%; }
-  .house-door-plaque { min-width: 0; width: 100%; padding: 12px 8px; }
-  .house-door-plaque strong { font-size: 17px; }
-  .house-door-back { left: 29%; width: 42%; top: 13%; height: 25%; }
-  .house-door-back .house-door-plaque { min-width: 0; width: auto; padding: 10px 12px; }
-  .house-door-back .house-door-plaque strong { font-size: 15px; }
-  .house-stairs { left: 30%; top: 81%; width: 63%; justify-content: center; padding: 9px; }
-  .house-stairs-down { left: 23%; width: 55%; }
-  .house-scene-footer { padding: 13px 12px; flex-wrap: wrap; }
-  .house-floor-switch { font-size: 11px; width: 100%; justify-content: space-between;  }
+  :root { --house-chrome: 230px; }
+  .house-header { padding: 18px 5% 10px; gap: 12px; }
+  .house-brand { gap: 10px; }
+  .house-brand-mark { width: 28px; height: 33px; }
+  .house-brand-name { font-size: 26px; }
+  .house-brand-sub { font-size: 14px; }
+  .house-plan-trigger { padding: 8px 12px; font-size: 13px; }
+  .house-plan-trigger span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .house-scene-bar, .house-scene-footer { padding: 10px 12px; }
+  .house-location, .house-scene-hint { font-size: 14px; }
+  .house-scene-hint { display: none; }
+  .house-location-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .house-floor-switch { font-size: 12px; width: 100%; justify-content: space-between; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .house-leaf, .house-door-plaque, #house-illustration, .house-doors { transition: none; }
-  .house-door:hover .house-door-plaque, .house-door:focus-visible .house-door-plaque { transform: none; }
+  .house-leaf, .house-door-name, .house-door-glow, [data-stair-art], #house-illustration, .house-doors { transition: none; }
   .house-door-art.is-hovered .house-leaf { transform: none; }
   ::view-transition-group(*) { animation: none; }
 }

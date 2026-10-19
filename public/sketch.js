@@ -10,7 +10,7 @@ let canvas;
 function setup(){
 	side = floor((windowWidth < windowHeight ? windowWidth : windowHeight) * 0.95);
 	canvas = createCanvas(side, side);
-	background(51);
+	background(240, 232, 210);
 
 	strokeWeight(side / 80);
 	noLoop();
@@ -112,7 +112,7 @@ function windowResized() {
 }
 
 function newDrawing(data){
-	stroke(255, 0 , 100);
+	stroke(169, 105, 109);
 	line(data.prevX * side, data.prevY * side, data.x * side, data.y * side);
 }
 
@@ -134,7 +134,7 @@ function mouseDragged(){
 
 	socket.emit('mouse', data);
 
-	stroke(255);
+	stroke(47, 58, 51);
 	line(prevMouseX, prevMouseY, mouseX, mouseY);
 
 	prevMouseX = mouseX;
@@ -154,7 +154,7 @@ function mouseReleased(){
 
 	socket.emit('mouse', data);
 
-	stroke(255);
+	stroke(47, 58, 51);
 	line(prevMouseX, prevMouseY, mouseX, mouseY);
 
 	prevMouseX = mouseX;

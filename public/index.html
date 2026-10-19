@@ -6,6 +6,7 @@
   <meta name="theme-color" content="#eeeade">
   <meta name="description" content="Step inside Mottet's Art Nouveau house. Five rooms of games, drawings, music, and little experiments.">
   <title>Mottet · A house of little experiments</title>
+  <link rel="preload" href="/assets/fonts/federo-regular.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/houseNavigation.css">
   <link rel="stylesheet" href="/homePage.css">
   <script src="/houseNavigation.js" defer></script>
@@ -14,28 +15,35 @@
 <body class="house-home">
   <a class="house-skip" href="#house-scene">Skip to the rooms</a>
   <header class="house-header">
-    <a class="house-brand" href="/" aria-label="Mottet home"><svg viewBox="0 0 40 48" aria-hidden="true"><path d="M20 45V19M20 34C3 32 4 17 8 16c2 8 12 8 12 18Zm0 0c17-2 16-17 12-18-2 8-12 8-12 18ZM20 23C2 15 13 3 20 2c7 1 18 13 0 21Z"/><path d="M20 3v20M12 8l8 15 8-15"/></svg><span>mottet<span class="house-brand-suffix">.xyz</span></span></a>
-    <button class="house-plan-trigger" type="button" data-house-map><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3ZM3 13h8V3m0 10h10m-10 0v8"/></svg>Floor plan</button>
+    <a class="house-brand" href="/" aria-label="Mottet home">
+      <svg class="house-brand-mark" viewBox="0 0 44 52" aria-hidden="true"><path d="M22 50V22M22 38C4 36 3 18 9 15c2 9 13 9 13 23Zm0 0c18-2 19-20 13-23-2 9-13 9-13 23ZM22 26C2 16 14 2 22 1c8 1 20 15 0 25Z"/><path d="M22 2v22M13 8l9 16 9-16"/><path d="M5 46c6-3 7 3 10-1M39 46c-6-3-7 3-10-1" stroke-width="1"/></svg>
+      <span class="house-brand-text"><span class="house-brand-name">Mottet</span><span class="house-brand-sub">a house of little experiments</span></span>
+    </a>
+    <button class="house-plan-trigger" type="button" data-house-map><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V11q9-11 18 0v10ZM3 15h18M12 15v6M9 3.5c2-1 4-1 6 0"/></svg><span>Floor plan</span></button>
   </header>
+  <div class="house-rule" aria-hidden="true"><svg viewBox="0 0 400 20" preserveAspectRatio="none"><path d="M0 10H160M240 10H400"/></svg><svg class="house-rule-motif" viewBox="0 0 80 20"><path d="M2 10C14 2 24 18 40 10C56 2 66 18 78 10"/><path d="M40 10C33 6 34 0 40 0C46 0 47 6 40 10ZM40 10C33 14 34 20 40 20C46 20 47 14 40 10Z"/><path d="M14 10C10 7 11 3 14 3M66 10C70 7 69 3 66 3" stroke-width=".9"/></svg></div>
   <main>
     <h1 class="house-visually-hidden">Mottet’s house</h1>
     <section class="house-visit" aria-label="Explore the house">
-      <div class="house-scene-bar"><span class="house-location"><span class="house-location-dot"></span><span id="house-location-name">Hall</span></span></div>
+      <div class="house-scene-bar">
+        <span class="house-location"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 18V9M10 15C4 14 3 7 6 6c1 4 4 4 4 9Zm0 0c6-1 7-8 4-9-1 4-4 4-4 9ZM10 10C3 6 7 1 10 1c3 0 7 5 0 9Z"/></svg><span class="house-location-label">You are in the</span> <span id="house-location-name">Hall</span></span>
+        <span class="house-scene-hint">Doors open the rooms. The stair leads up.</span>
+      </div>
       <div class="house-scene" id="house-scene" tabindex="-1">
-        <div id="house-illustration" aria-hidden="true"></div>
+        <div class="house-stage"><div id="house-illustration" aria-hidden="true"></div></div>
         <nav id="house-doors" class="house-doors" aria-label="Doors in the entrance hall">
-          <a class="house-door house-door-left" href="/drawing.html" data-room="studio"><span class="house-door-plaque"><strong>Drawing studio</strong></span></a>
-          <a class="house-door house-door-back" href="/laby.html" data-room="garden"><span class="house-door-plaque"><strong>Maze garden</strong></span></a>
-          <a class="house-door house-door-right" href="/urBoard.html" data-room="salon"><span class="house-door-plaque"><strong>Games room</strong></span></a>
-          <a class="house-stairs" href="#first-floor" data-house-floor="first" aria-label="Take the stairs"><span class="house-stairs-icon" aria-hidden="true">↗</span><span>Upstairs</span></a>
+          <a class="house-door" href="/drawing.html" data-room="studio"><span class="house-door-name">Drawing studio</span></a>
+          <a class="house-door" href="/laby.html" data-room="garden"><span class="house-door-name">Maze garden</span></a>
+          <a class="house-door" href="/urBoard.html" data-room="salon"><span class="house-door-name">Games room</span></a>
+          <a class="house-door house-stairs" href="#first-floor" data-house-floor="first" aria-label="Take the stairs"><span class="house-door-name"><span class="house-stairs-icon" aria-hidden="true">↗</span>Upstairs</span></a>
         </nav>
         <nav class="house-doors" id="house-upstairs-doors" aria-label="Doors on the first-floor landing" hidden>
-          <a class="house-door house-door-left" href="/musical-mining/" data-room="music"><span class="house-door-plaque"><strong>Musical Mining</strong></span></a>
-          <a class="house-door house-door-right" href="/chemical-rakoon/" data-room="laboratory"><span class="house-door-plaque"><strong>Chemical Rakoon</strong></span></a>
-          <a class="house-stairs house-stairs-down" href="#ground-floor" data-house-floor="ground" aria-label="Go downstairs"><span class="house-stairs-icon" aria-hidden="true">↙</span><span>Downstairs</span></a>
+          <a class="house-door" href="/musical-mining/" data-room="music"><span class="house-door-name">Musical Mining</span></a>
+          <a class="house-door" href="/chemical-rakoon/" data-room="laboratory"><span class="house-door-name">Chemical Rakoon</span></a>
+          <a class="house-door house-stairs" href="#ground-floor" data-house-floor="ground" aria-label="Go downstairs"><span class="house-door-name"><span class="house-stairs-icon" aria-hidden="true">↙</span>Downstairs</span></a>
         </nav>
       </div>
-      <div class="house-scene-footer"><nav class="house-floor-switch" aria-label="Choose a floor"><a href="#ground-floor" data-house-floor="ground" aria-current="location">Ground</a><span aria-hidden="true">/</span><a href="#first-floor" data-house-floor="first">Upstairs <span aria-hidden="true">↑</span></a></nav></div>
+      <div class="house-scene-footer"><nav class="house-floor-switch" aria-label="Choose a floor"><a href="#ground-floor" data-house-floor="ground" aria-current="location">Ground floor</a><span aria-hidden="true">·</span><a href="#first-floor" data-house-floor="first">Upstairs</a></nav></div>
     </section>
   </main>
   <noscript><p class="house-noscript">Upstairs: <a href="/musical-mining/">Musical Mining</a> · <a href="/chemical-rakoon/">Chemical Rakoon</a></p></noscript>

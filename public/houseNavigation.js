@@ -3,18 +3,26 @@
 // Shared house geography. Original project URLs remain directly accessible.
 (() => {
   const rooms = [
-    { id: 'studio', name: 'Drawing studio', href: '/drawing.html', floor: 'ground' },
-    { id: 'salon', name: 'Games room', href: '/urBoard.html', floor: 'ground' },
-    { id: 'garden', name: 'Maze garden', href: '/laby.html', floor: 'ground' },
-    { id: 'music', name: 'Music room', href: '/musical-mining/', floor: 'first' },
-    { id: 'laboratory', name: 'Laboratory', href: '/chemical-rakoon/', floor: 'first' }
+    { id: 'studio', name: 'Drawing studio', note: 'a shared sheet of paper', href: '/drawing.html', floor: 'ground' },
+    { id: 'salon', name: 'Games room', note: 'the Royal Game of Ur', href: '/urBoard.html', floor: 'ground' },
+    { id: 'garden', name: 'Maze garden', note: 'a rose maze to walk', href: '/laby.html', floor: 'ground' },
+    { id: 'music', name: 'Music room', note: 'Musical Mining', href: '/musical-mining/', floor: 'first' },
+    { id: 'laboratory', name: 'Laboratory', note: 'Chemical Rakoon', href: '/chemical-rakoon/', floor: 'first' }
   ];
   const path = window.location.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
   const current = rooms.find(room => room.href.replace(/\/$/, '') === path);
   const isHome = document.body.classList.contains('house-home');
   if (!isHome && !current) return;
-  const mapIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h18v18H3ZM3 13h8V3m0 10h10m-10 0v8"/></svg>';
-  const hall = '/#' + (current?.floor === 'first' ? 'first-floor' : 'ground-floor');
+  const mapIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V11q9-11 18 0v10ZM3 15h18M12 15v6M9 3.5c2-1 4-1 6 0"/></svg>';
+  let hall = '/#' + (current?.floor === 'first' ? 'first-floor' : 'ground-floor');
+  if (current) {
+    try {
+      const arrival = JSON.parse(sessionStorage.getItem('mottet-apartment-return'));
+      sessionStorage.removeItem('mottet-apartment-return');
+      const apartmentHall = `/apartment.html#${current.floor}-floor`;
+      if (arrival?.room === current.href && arrival.hall === apartmentHall) hall = apartmentHall;
+    } catch { /* The standard house return works when storage is unavailable. */ }
+  }
 
   if (current) {
     document.body.classList.add('house-room', `house-room-${current.id}`);
@@ -29,8 +37,8 @@
   const dialog = document.createElement('dialog');
   dialog.className = 'house-map';
   dialog.setAttribute('aria-labelledby', 'house-map-title');
-  const roomLink = room => `<a class="house-map-room house-map-${room.id}${current?.id === room.id ? ' house-map-current' : ''}" href="${room.href}"${current?.id === room.id ? ' aria-current="page"' : ''}><strong>${room.name}</strong>${current?.id === room.id ? '<span class="house-map-current-dot" aria-hidden="true">●</span><small class="house-visually-hidden">You are here</small>' : ''}</a>`;
-  dialog.innerHTML = `<div class="house-map-heading"><h2 id="house-map-title">Floor plan</h2><button class="house-map-close" type="button" aria-label="Close floor plan">×</button></div><div class="house-map-floors"><section aria-label="Ground floor"><h3>Ground</h3><div class="house-map-ground house-map-grid">${roomLink(rooms[2])}${roomLink(rooms[0])}<a class="house-map-hall" href="/#ground-floor"><span aria-hidden="true">↓</span><strong>Hall</strong></a>${roomLink(rooms[1])}</div></section><section aria-label="First floor"><h3>Upstairs</h3><div class="house-map-upper house-map-grid">${roomLink(rooms[3])}<a class="house-map-hall" href="/#first-floor"><span aria-hidden="true">↗</span><strong>Landing</strong></a>${roomLink(rooms[4])}</div></section></div>`;
+  const roomLink = room => `<a class="house-map-room house-map-${room.id}${current?.id === room.id ? ' house-map-current' : ''}" href="${room.href}"${current?.id === room.id ? ' aria-current="page"' : ''}><strong>${room.name}</strong><small>${room.note}</small>${current?.id === room.id ? '<span class="house-map-current-dot" aria-hidden="true">●</span><small class="house-visually-hidden">You are here</small>' : ''}</a>`;
+  dialog.innerHTML = `<div class="house-map-heading"><div><p class="house-map-kicker">Plan of the house, two floors</p><h2 id="house-map-title">Floor plan</h2></div><button class="house-map-close" type="button" aria-label="Close floor plan">×</button></div><div class="house-map-floors"><section aria-label="Ground floor"><h3><span>Ground floor</span><small>three rooms around the hall</small></h3><div class="house-map-ground house-map-grid">${roomLink(rooms[2])}${roomLink(rooms[0])}<a class="house-map-hall" href="/#ground-floor"><span aria-hidden="true">↓</span><strong>Hall</strong></a>${roomLink(rooms[1])}</div></section><section aria-label="First floor"><h3><span>Upstairs</span><small>two rooms off the landing</small></h3><div class="house-map-upper house-map-grid">${roomLink(rooms[3])}<a class="house-map-hall" href="/#first-floor"><span aria-hidden="true">↗</span><strong>Landing</strong></a>${roomLink(rooms[4])}</div></section></div><svg class="house-map-flourish" viewBox="0 0 120 20" aria-hidden="true"><path d="M2 10C22 2 38 18 60 10C82 2 98 18 118 10"/><path d="M22 10C18 6 19 2 22 2M98 10C102 6 101 2 98 2" stroke-width=".9"/><path d="M60 10C53 6 54 0 60 0C66 0 67 6 60 10ZM60 10C53 14 54 20 60 20C66 20 67 14 60 10Z"/></svg>`;
   document.body.append(dialog);
   dialog.addEventListener('keydown', event => {
     if (event.key !== 'Tab') return;

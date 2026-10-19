@@ -1,9 +1,47 @@
 # House navigation
 
+The separate `/apartment.html` page renders a two-floor Three.js apartment in a
+printed Art Nouveau palette at twilight. Curved walnut portals, botanical
+wallpaper, floral glass, mosaic floors, and a spiral staircase are built as 3D
+geometry. The seamless wallpaper combines a half-drop iris repeat with
+interlocking ogee vines, veined leaves, seed heads, and fine printed grain.
+Shared procedural walnut grain, brass dado inlays, raised leaf friezes, plaster
+ceiling rosettes, petal lamps, and glass tracery add detail on both floors.
+Door frames sit in arched openings in the walls, with fitted jambs and
+floor-level thresholds. The side doorway bays join the curved walls at both
+ends. Static ornament is batched by material; frames render only for camera
+movement, navigation, and resizing. The locally hosted Three.js browser files
+are pinned to 0.186.1 and include their MIT license.
+
+All visible apartment controls are symbols. Accessible names identify rooms and
+controls to screen readers. Drag or touch to look around; click or tap a door to
+approach it, open it, and visit its original project. The two floor symbols and
+stairs update URL hashes; Back restores the floor. Room return links lead back
+to the apartment only when the visit originated there, using a consumed session
+marker. Reduced motion skips journeys, and a text-free icon fallback preserves
+navigation if WebGL or the module fails.
+
+Run `HOUSE_TEST_TOOLS=/tmp/ur-visual-check/node_modules npm run test:apartment`.
+The browser check covers all five entry/return journeys, floor history, camera
+and touch input, modal focus, reduced motion, five viewport shapes, a failed
+renderer, absence of visible text, and idle/bounded rendering. It uses Chromium
+software WebGL; physical phone performance should be judged on the device.
+
 The five projects are rooms in a two-floor Art Nouveau house. `houseScene.js`
 draws the entrance hall and landing with reusable vectors, using the existing
-walnut texture. The doors keep the original project URLs. Floor changes use URL
-hashes so links, reloads, and browser Back all restore the right floor.
+walnut texture. A bent walnut arch with brass tendrils spans the hall, every
+door has a carved whiplash surround, the floor carries a mosaic rosette, and dusk shows through the skylight and the
+landing window while the pendant and sconces pool warm light. The same world
+geometry is drawn through two fixed cameras: a 1200:680 landscape view for wide
+screens and a 760:940 portrait view for upright phones and tablets, chosen by
+the orientation media query. The visit card is sized from the viewport height
+so the whole hall is visible without scrolling. Room links are placed over the
+drawn doors and the staircase from the artwork's own bounds; a brass label
+appears on hover and stays visible on touch screens. Titles use Federo, a
+revival of a 1909 Jugendstil grotesque, and running text uses Cormorant
+Garamond, both self-hosted under the SIL OFL in `public/assets/fonts`. The
+doors keep the original project URLs. Floor changes use URL hashes so links,
+reloads, and browser Back all restore the right floor.
 `houseNavigation.js` supplies each room's return route and shared floor-plan
 dialog. Ur keeps an immediate return link and loads the full house controls
 after its first playable frame, so their downloads do not compete with the game.
@@ -22,6 +60,29 @@ HOUSE_TEST_TOOLS=/tmp/ur-tools/node_modules npm run test:house
 Set `HOUSE_BASE_URL` to check another server. The check covers real journeys
 through all five doors, floor history, return routes, current-room indication,
 keyboard focus, canvas input isolation, mobile layout, and reduced motion.
+It also verifies uniform SVG scaling, stable object placement, a shared vanishing
+point, and mobile touch targets across portrait, landscape, and wide viewports.
+
+The maze garden adapts its grid to the available screen while keeping square
+cells, fixed straight wall edges and a compact botanical border. Complete frames are composed off screen and
+displayed once; only the areas being carved are repainted. The original random
+walkers split into branches and stop at dead ends, leaving untouched pockets.
+Plans that stop too early are retried so branches cover most of the grid.
+Passages appear at a steady rate, completing in about 2.4 seconds.
+Each opened passage grows a thick, curving rose stem with attached leaves and
+hooked thorns; an oversized dusty pink rose blooms at each terminal cell.
+Rose petals have shaded overlapping cups, pale folded rims and a curled centre.
+Each rose has a fixed variation in size, petal shape, proportion and warmth.
+Cached flower sprites open from buds over 520–820 ms; reduced motion displays
+the finished blooms immediately. Flowers retain their drawing order as they open.
+Stems and flowers use separate layers, with blooms above all branches.
+Grid walls stay thin so the stems are clear.
+Run `HOUSE_TEST_TOOLS=/tmp/ur-tools/node_modules npm run test:maze` to check stable
+wall edges in the opening frames, path pixels during generation, branching,
+untouched pockets, paced growth, connectivity, viewport coverage, grid edges
+against maze data, incremental drawing against a clean redraw, rose stems and
+flowers at every terminal branch, gradual bloom animation and size variation,
+regeneration, and reduced motion.
 
 # Royal Game of Ur artwork and performance
 
