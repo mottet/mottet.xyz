@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#263c36">
+  <meta name="description" content="An Art Nouveau apartment at twilight. A little world of curved walnut, botanical ornament, and glowing stained glass.">
+  <title>Mottet · The twilight apartment</title>
+  <link rel="stylesheet" href="/apartment.css">
+  <script src="/apartment.js" type="module"></script>
+</head>
+<body data-floor="ground" data-state="loading">
+  <svg class="apartment-symbols" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <symbol id="icon-home" viewBox="0 0 32 32"><path d="M16 28V11m0 9C5 19 5 10 8 9c1 6 8 6 8 11Zm0 0c11-1 11-10 8-11-1 6-8 6-8 11ZM16 14C5 8 12 2 16 2c4 0 11 6 0 12Z"/></symbol>
+      <symbol id="icon-studio" viewBox="0 0 32 32"><path d="M8 25 22 5l5 4-14 20-5-4Zm0 0-2 5 7-1M19 9l5 4M8 25l5 4M6 7c3-4 8-4 10-1M3 15c0-3 2-5 5-5"/></symbol>
+      <symbol id="icon-garden" viewBox="0 0 32 32"><path d="M16 29V12m0 9C3 21 3 8 7 7c1 8 9 7 9 14Zm0 3c12-1 13-13 10-15-2 8-10 7-10 15ZM16 14C6 10 11 3 16 2c5 1 10 8 0 12Z"/></symbol>
+      <symbol id="icon-salon" viewBox="0 0 32 32"><rect x="6" y="6" width="20" height="20" rx="5" transform="rotate(12 16 16)"/><circle cx="11" cy="11" r="1"/><circle cx="21" cy="12" r="1"/><circle cx="16" cy="16" r="1"/><circle cx="11" cy="20" r="1"/><circle cx="21" cy="21" r="1"/></symbol>
+      <symbol id="icon-music" viewBox="0 0 32 32"><path d="M12 23V8l14-4v17M12 13l14-4"/><ellipse cx="8" cy="24" rx="4" ry="3" transform="rotate(-20 8 24)"/><ellipse cx="22" cy="22" rx="4" ry="3" transform="rotate(-20 22 22)"/></symbol>
+      <symbol id="icon-laboratory" viewBox="0 0 32 32"><path d="M11 3h10m-8 0v9L5 25q-2 4 3 4h16q5 0 3-4l-8-13V3M9 19h14"/><circle cx="13" cy="23" r="1"/><circle cx="19" cy="26" r="1"/><circle cx="17" cy="16" r="1"/></symbol>
+      <symbol id="icon-stairs" viewBox="0 0 32 32"><path d="M4 27h7v-7h7v-7h7V6h4M5 15 19 3m-7 0h7v7"/></symbol>
+      <symbol id="icon-reset" viewBox="0 0 32 32"><path d="M7 11a11 11 0 1 1-1 9M3 5v8h8"/><path d="m16 10 3 6-3 6-3-6 3-6Z"/></symbol>
+      <symbol id="icon-map" viewBox="0 0 32 32"><path d="M4 5h24v23H4ZM4 16h8V5m0 11h16m-9 0v12M12 23H4"/></symbol>
+      <symbol id="icon-close" viewBox="0 0 32 32"><path d="m9 9 14 14M23 9 9 23"/></symbol>
+      <symbol id="icon-floor-ground" viewBox="0 0 32 32"><path d="M6 25h20M8 25V10q8-12 16 0v15"/><circle cx="16" cy="19" r="2"/></symbol>
+      <symbol id="icon-floor-first" viewBox="0 0 32 32"><path d="M6 25h20M8 25V10q8-12 16 0v15M8 16h16"/><circle cx="16" cy="11" r="2"/></symbol>
+    </defs>
+  </svg>
+  <main id="apartment" aria-label="Explore the Art Nouveau apartment">
+    <div id="apartment-world" role="img" aria-label="A curved Art Nouveau entrance hall at twilight"></div>
+    <div class="apartment-vignette" aria-hidden="true"></div>
+    <svg class="apartment-frame" viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true"><path d="M16 100V42Q16 16 42 16H100m800 0h58q26 0 26 26v58M16 600v58q0 26 26 26h58m800 0h58q26 0 26-26v-58"/><path d="M23 85V45q0-22 22-22h40m830 0h40q22 0 22 22v40M23 615v40q0 22 22 22h40m830 0h40q22 0 22-22v-40"/></svg>
+    <nav class="apartment-doors" aria-label="Apartment rooms">
+      <a class="apartment-door" href="/drawing.html" data-room="studio" aria-label="Enter the drawing studio"><svg aria-hidden="true"><use href="#icon-studio"/></svg></a>
+      <a class="apartment-door" href="/laby.html" data-room="garden" aria-label="Enter the maze garden"><svg aria-hidden="true"><use href="#icon-garden"/></svg></a>
+      <a class="apartment-door" href="/urBoard.html" data-room="salon" aria-label="Enter the games room"><svg aria-hidden="true"><use href="#icon-salon"/></svg></a>
+      <a class="apartment-door" href="/musical-mining/" data-room="music" aria-label="Enter Musical Mining" hidden><svg aria-hidden="true"><use href="#icon-music"/></svg></a>
+      <a class="apartment-door" href="/chemical-rakoon/" data-room="laboratory" aria-label="Enter Chemical Rakoon" hidden><svg aria-hidden="true"><use href="#icon-laboratory"/></svg></a>
+      <a class="apartment-door apartment-stair" href="#first-floor" data-action="stairs" aria-label="Go upstairs"><svg aria-hidden="true"><use href="#icon-stairs"/></svg></a>
+    </nav>
+    <nav class="apartment-tools" aria-label="Apartment controls">
+      <a class="apartment-control" href="/" aria-label="Return to the home page"><svg aria-hidden="true"><use href="#icon-home"/></svg></a>
+      <button class="apartment-control" id="apartment-reset" aria-label="Reset the view" type="button" hidden><svg aria-hidden="true"><use href="#icon-reset"/></svg></button>
+      <button class="apartment-control" id="apartment-map" aria-label="Open the floor plan" type="button"><svg aria-hidden="true"><use href="#icon-map"/></svg></button>
+    </nav>
+    <nav class="apartment-floors" aria-label="Choose a floor">
+      <a class="apartment-control" href="#ground-floor" data-floor-link="ground" aria-label="Ground floor" aria-current="location"><svg aria-hidden="true"><use href="#icon-floor-ground"/></svg></a>
+      <a class="apartment-control" href="#first-floor" data-floor-link="first" aria-label="First floor"><svg aria-hidden="true"><use href="#icon-floor-first"/></svg></a>
+    </nav>
+  </main>
+  <dialog id="apartment-plan" aria-label="Apartment floor plan">
+    <button class="apartment-control apartment-plan-close" type="button" aria-label="Close the floor plan"><svg aria-hidden="true"><use href="#icon-close"/></svg></button>
+    <div class="apartment-plan-level" aria-label="Ground floor">
+      <a href="#ground-floor" class="apartment-plan-hall" aria-label="Ground-floor hall"><svg aria-hidden="true"><use href="#icon-floor-ground"/></svg></a>
+      <a href="/drawing.html" aria-label="Drawing studio"><svg aria-hidden="true"><use href="#icon-studio"/></svg></a>
+      <a href="/laby.html" aria-label="Maze garden"><svg aria-hidden="true"><use href="#icon-garden"/></svg></a>
+      <a href="/urBoard.html" aria-label="Games room"><svg aria-hidden="true"><use href="#icon-salon"/></svg></a>
+    </div>
+    <div class="apartment-plan-level" aria-label="First floor">
+      <a href="#first-floor" class="apartment-plan-hall" aria-label="First-floor landing"><svg aria-hidden="true"><use href="#icon-floor-first"/></svg></a>
+      <a href="/musical-mining/" aria-label="Musical Mining"><svg aria-hidden="true"><use href="#icon-music"/></svg></a>
+      <a href="/chemical-rakoon/" aria-label="Chemical Rakoon"><svg aria-hidden="true"><use href="#icon-laboratory"/></svg></a>
+    </div>
+  </dialog>
+  <noscript>
+    <style>button, .apartment-stair, .apartment-floors { display: none !important; }</style>
+    <nav class="apartment-noscript" aria-label="Upstairs rooms">
+      <a href="/musical-mining/" class="apartment-control" aria-label="Enter Musical Mining"><svg aria-hidden="true"><use href="#icon-music"/></svg></a>
+      <a href="/chemical-rakoon/" class="apartment-control" aria-label="Enter Chemical Rakoon"><svg aria-hidden="true"><use href="#icon-laboratory"/></svg></a>
+    </nav>
+  </noscript>
+</body>
+</html>

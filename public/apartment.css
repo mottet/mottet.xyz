@@ -1,0 +1,50 @@
+:root { color-scheme: dark; --ink: #243b35; --gold: #cfb17a; --paper: #ece0bb; }
+* { box-sizing: border-box; }
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: var(--ink); }
+body { overscroll-behavior: none; }
+button, a { -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+.apartment-symbols { position: absolute; width: 0; height: 0; overflow: hidden; }
+#apartment { position: relative; width: 100%; height: 100svh; height: 100dvh; isolation: isolate; overflow: hidden; }
+#apartment-world { position: absolute; inset: 0; background: radial-gradient(ellipse at 48% 35%, #b69a64 0, #5b7154 32%, #263c36 80%); }
+#apartment-world canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+.apartment-vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 50% 44%, transparent 30%, #142d2830 68%, #102521a6 100%); }
+.apartment-vignette::after { content: ''; position: absolute; inset: 0; opacity: .075; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.84' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23dfcda9' filter='url(%23grain)' d='M0 0h160v160H0z'/%3E%3C/svg%3E"); }
+.apartment-frame { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; fill: none; stroke: var(--gold); stroke-width: .65; opacity: .58; }
+.apartment-tools { position: absolute; left: max(34px, env(safe-area-inset-left)); top: max(32px, env(safe-area-inset-top)); display: flex; gap: 10px; }
+.apartment-control, .apartment-door { display: grid; place-items: center; width: 48px; height: 48px; padding: 10px; border: 1px solid #cfb17a65; border-radius: 50%; color: var(--gold); background: #1f3932d9; cursor: pointer; touch-action: manipulation; text-decoration: none; transition: background .2s, color .2s, box-shadow .2s; }
+.apartment-control svg, .apartment-door svg, .apartment-plan-level svg { width: 100%; height: 100%; fill: none; stroke: currentColor; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.apartment-control:hover, .apartment-door:hover, .apartment-door.is-hovered { background: #cfb17a; color: #233c32; box-shadow: 0 0 28px #e9ca7b40; }
+a:focus-visible, button:focus-visible { outline: 2px solid #fae4ac; outline-offset: 5px; }
+.apartment-floors { position: absolute; bottom: max(30px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); display: flex; gap: 14px; }
+.apartment-floors [aria-current] { color: #22382e; background: var(--gold); }
+.apartment-noscript { position: fixed; right: 32px; bottom: 32px; display: flex; gap: 12px; }
+.apartment-door { position: absolute; left: var(--x, 50%); top: var(--y, 50%); width: 54px; height: 54px; padding: 13px; transform: translate(-50%, -50%); background: #263b30db; border-color: #e5c78c8c; box-shadow: 0 0 0 4px #c9ab6520, 0 4px 14px #122a2426; opacity: .94; }
+.apartment-stair { width: 50px; height: 50px; }
+body[data-state="entering"] .apartment-doors, body[data-state="entering"] .apartment-tools, body[data-state="entering"] .apartment-floors { opacity: 0; pointer-events: none; transition: opacity .22s; }
+body[data-state="loading"] .apartment-door, body[data-state="fallback"] .apartment-door { width: clamp(64px, 12vw, 150px); height: clamp(100px, 22vw, 230px); border-radius: 48% 48% 3px 3px; background: repeating-linear-gradient(90deg, #263c3244 0 7px, transparent 7px 12px), linear-gradient(#9c9f6c, #415f45); border: 6px double #cfb17a; }
+body[data-state="loading"] .apartment-door svg, body[data-state="fallback"] .apartment-door svg { width: 36px; height: 36px; }
+body[data-state="loading"] [data-room="studio"], body[data-state="loading"] [data-room="music"], body[data-state="fallback"] [data-room="studio"], body[data-state="fallback"] [data-room="music"] { --x: 23%; --y: 52%; }
+body[data-state="loading"] [data-room="garden"], body[data-state="fallback"] [data-room="garden"] { --x: 50%; --y: 44%; }
+body[data-state="loading"] [data-room="salon"], body[data-state="loading"] [data-room="laboratory"], body[data-state="fallback"] [data-room="salon"], body[data-state="fallback"] [data-room="laboratory"] { --x: 77%; --y: 52%; }
+body[data-state="loading"] .apartment-stair, body[data-state="fallback"] .apartment-stair { --x: 68%; --y: 76%; width: 54px; height: 54px; padding: 12px; border-radius: 50%; border-width: 1px; }
+#apartment-plan { position: fixed; width: min(600px, calc(100vw - 48px)); padding: 76px 32px 32px; border: 1px solid var(--gold); border-radius: 120px 120px 12px 12px; color: var(--gold); background: #243c35; box-shadow: inset 0 0 0 6px #243c35, inset 0 0 0 7px #cfb17a55, 0 24px 100px #071c18bb; }
+#apartment-plan::backdrop { background: #102a24b3; backdrop-filter: blur(7px); }
+.apartment-plan-close { position: absolute; top: 18px; left: calc(50% - 24px); }
+.apartment-plan-level { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 26px 16px 16px; margin: 12px 0; border: 1px solid #cfb17a6b; border-radius: 50px 50px 6px 6px; }
+.apartment-plan-level + .apartment-plan-level { grid-template-columns: repeat(2, 1fr); margin-top: 38px; }
+.apartment-plan-level a { display: grid; place-items: center; color: inherit; border: 1px solid #cfb17a7b; border-radius: 40px 40px 4px 4px; height: 94px; background: #49634a55; }
+.apartment-plan-level a:hover { background: #cfb17a; color: #263c35; }
+.apartment-plan-level svg { width: 32px; height: 32px; }
+.apartment-plan-level .apartment-plan-hall { position: absolute; left: calc(50% - 24px); top: -24px; width: 48px; height: 48px; border-radius: 50%; background: #243c35; }
+@media (max-width: 600px) {
+  .apartment-tools { left: max(22px, env(safe-area-inset-left)); top: max(24px, env(safe-area-inset-top)); gap: 8px; }
+  .apartment-control { width: 44px; height: 44px; }
+  .apartment-door { width: 48px; height: 48px; padding: 11px; }
+  .apartment-floors { bottom: max(24px, env(safe-area-inset-bottom)); }
+  #apartment-plan { padding: 66px 20px 24px; }
+  .apartment-plan-level { padding: 28px 12px 12px; gap: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; }
+}

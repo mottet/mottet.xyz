@@ -9,6 +9,8 @@
     "test:ur:garden": "node scripts/check-ur-garden.cjs",
     "test:ur:performance": "node scripts/check-ur-performance.cjs",
     "test:house": "node scripts/check-house-navigation.cjs",
+    "test:maze": "node scripts/check-maze-garden.cjs",
+    "test:apartment": "node scripts/check-apartment.cjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },
