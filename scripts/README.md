@@ -87,6 +87,84 @@ against maze data, incremental drawing against a clean redraw, rose stems and
 flowers at every terminal branch, gradual bloom animation and size variation,
 regeneration, and reduced motion.
 
+# Glyphs
+
+`/glyphs.html` is a duel of drawn spells against a monster. Each round lasts
+ten seconds; the player draws one glyph on a sheet of paper (a canvas with
+Pointer Events) while the monster "scratches its quill" off screen, and the
+two spells meet in the arena at the same moment. The page shows one scene at
+a time: casting sends the sheet away and brings up the battlefield, and the
+next round drops a fresh sheet in (reduced motion swaps without animating).
+Only the reaction is shown:
+tokens for what each side cast slide to the centre and a named reaction blooms
+(inferno, steam, lava, fanned, reflected, mud, rain, quake, pass, breaks back,
+leaps the ring...), marks land on the two bodies, and an `aria-live` line
+narrates it. The shapes are never written down in the game. While drawing, the
+sheet glows in proportion to the recogniser's best score without naming the
+spell, and sets to brass once a glyph is read; a drawing that is no glyph
+fizzles, a blank sheet is a rest. Glyphs the player has made work are written
+into a grimoire on the page in their own hand (`localStorage`).
+
+There are no life points. A body holds marks in four elements (embers, drops,
+cracks, leaves); opposite marks cancel at the end of every round as steam or
+dust, and three marks of one element kill: burnt to ash, drowned, turned to
+stone, scattered. Rest removes one mark of the rester's heaviest element before
+the round's blow lands. The six glyphs are Flame (triangle), Wave (two crests),
+Stone (square), Wind (spiral), Ward (circle) and Mirror (one upright stroke).
+Four compound spells join two elements: Bolt (lightning stroke, fire and
+air), Frost (hexagon, water and air), Vine (an S, earth and water) and Magma
+(triangle apex down, fire and earth). A compound reacts as each of its parts
+would against the other spell and the marks add up, so the matrix for them is
+derived, not hand-written. Casting resolves the round at once: the monster has
+already chosen. Each caster's portrait shows badges for what they took (marks,
+fades, steam or dust, a death) and the narration ends with an outcome line per
+caster. The duel waits for the player to press Begin, against the Salamander or
+against a friend on another phone: `glyphs-server.js` (attached in
+`server.js`) sets a table under a four-letter code, the other player joins
+by code or by the `#duel=CODE` link, and the server keeps the clock, seals
+both casts, runs the rules and sends each side its own perspective of the
+round; the socket.io client is fetched only when asked for. `PORT` overrides
+the server's port (default 8080). Momentum: the same attack cast
+in consecutive rounds lands one more mark each round, up to three, and a mark
+is as strong as the spell of its element, so a reflected or fanned flame comes
+back with its caster's own momentum; rest, a fizzle, a guard or another glyph
+breaks the run. This keeps a caster who only rests from stalling the duel.
+The elements form a cycle, Flame > Stone > Wave > Wind > Flame, with two
+diagonals (Flame and Wave neutralise as steam; Stone and Wind pass each other
+and both land); the ring on the floor turns the heavy elements back and is
+leapt by the light ones, the mirror turns the light ones back and is soaked or
+shattered by the heavy ones; rest beats a guard and loses to an attack.
+
+`glyphs-spells.js` holds all of this as data and pure functions (`reactions`,
+`applyRound`, `chooseSpell`, the monster profiles) and is shared by the game,
+the grimoire page and the Node checks. `glyphs-recognizer.js` is the $P
+point-cloud recogniser with two cues from the raw strokes (closure and corner
+count) that keep a square from reading as a circle; templates are generated
+from geometry, not recorded. `glyphs.js` owns the sheet, the clock, the
+monster's turn and the arena. The monster scores every option by expected
+marks against a belief over the player's next glyph (uniform prior plus
+history), adds its temperament and samples with softmax; the Salamander leans
+to Flame and fumbles 15% of its glyphs.
+
+`/glyphs-grimoire.html` is the designer's grimoire: every glyph drawn from the
+templates, the full reaction matrix, deaths, the monster's mind, the
+recogniser's thresholds and a test pad that ranks candidates for a drawing. It
+is deliberately not linked from the game or the house, and carries a spoiler
+banner.
+
+Run `node scripts/check-glyphs.cjs --unit` for the rules (symmetric matrix,
+cycle, guards, rest, cancellation, deaths), the recogniser against a synthetic
+hand at two levels of sloppiness plus scribbles and flipped shapes, and a
+balance simulation that prints each option's record against a random opponent
+(read it after a rules change: no option should dominate). Run
+`HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:glyphs` with
+the server up for the browser check: a pointer-drawn triangle reads as Flame
+and lands, a blank sheet rests, a scribble fizzles without naming anything,
+momentum doubles a repeated flame, a death by fire ends the duel, the grimoire survives a reload, two browsers duel
+through a server the check starts itself on port 8097, the clock
+resolves a round on its own, the grimoire page is complete and its pad reads a
+circle as Ward, and a phone viewport has no horizontal overflow.
+
 # Royal Game of Ur artwork and performance
 
 The Brussels Art Nouveau interior is drawn in `public/urGarden.js` as three SVG

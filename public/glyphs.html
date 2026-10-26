@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#1f3329">
+	<meta name="description" content="Glyphs: draw a spell in secret within ten seconds and watch it meet your opponent's. The shapes are not written down.">
+	<title>Glyphs · Mottet</title>
+	<link rel="stylesheet" href="/houseNavigation.css">
+	<link rel="stylesheet" href="glyphs.css?v=glyphs-1">
+	<script src="glyphs-spells.js?v=glyphs-1" defer></script>
+	<script src="glyphs-recognizer.js?v=glyphs-1" defer></script>
+	<script src="glyphs.js?v=glyphs-1" defer></script>
+	<script src="/houseNavigation.js" defer></script>
+</head>
+<body>
+	<svg class="glyphs-defs" aria-hidden="true" focusable="false" width="0" height="0">
+		<defs>
+			<linearGradient id="g-brass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e2c98a"/><stop offset=".5" stop-color="#b08f4f"/><stop offset="1" stop-color="#d9bd7e"/></linearGradient>
+			<radialGradient id="g-ember" cx=".5" cy=".5" r=".5"><stop stop-color="#ffd27a"/><stop offset=".6" stop-color="#d8632a"/><stop offset="1" stop-color="#6b2a14"/></radialGradient>
+			<radialGradient id="g-drop" cx=".35" cy=".3" r=".7"><stop stop-color="#cfe8ef"/><stop offset=".6" stop-color="#4f8aa3"/><stop offset="1" stop-color="#1f4254"/></radialGradient>
+			<linearGradient id="g-stone" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#a39a86"/><stop offset="1" stop-color="#5d574a"/></linearGradient>
+			<linearGradient id="g-leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9c98a"/><stop offset="1" stop-color="#5d7350"/></linearGradient>
+			<g id="g-figure">
+				<path d="M0-58C-14-58-22-46-22-32C-22-20-16-12-8-8L-10 0C-30 6-42 26-44 62H44C42 26 30 6 10 0L8-8C16-12 22-20 22-32C22-46 14-58 0-58Z"/>
+				<path d="M-22-34C-14-44 14-44 22-34M-30 24C-22 40-20 52-22 62M30 24C22 40 20 52 22 62" fill="none" stroke-width="2" stroke-linecap="round"/>
+			</g>
+			<g id="g-mark-fire"><path d="M0-9C4-4 7 0 7 4A7 7 0 0 1-7 4C-7 0-4-3-2-6C-1-3 1-2 2-4C2-6 1-8 0-9Z" fill="url(#g-ember)"/></g>
+			<g id="g-mark-water"><path d="M0-9C4-3 7 1 7 4A7 7 0 0 1-7 4C-7 1-4-3 0-9Z" fill="url(#g-drop)"/></g>
+			<g id="g-mark-earth"><path d="M-7-6H7V7H-7Z" fill="url(#g-stone)"/><path d="M-3-6L-1 0L-4 7M2-6L4 0" fill="none" stroke="#2b261f" stroke-width="1.2"/></g>
+			<g id="g-mark-air"><path d="M-7 5C-7-4 0-9 7-8C8-1 3 6-7 5Z" fill="url(#g-leaf)"/><path d="M-6 4L6-7" fill="none" stroke="#3f5236" stroke-width="1"/></g>
+			<g id="g-token-fire"><circle r="22" fill="#2b1810" stroke="url(#g-brass)" stroke-width="2"/><path d="M0-15C7-6 12 0 12 7A12 12 0 0 1-12 7C-12 1-6-4-3-10C-2-5 1-3 3-6C4-9 2-13 0-15Z" fill="url(#g-ember)"/></g>
+			<g id="g-token-water"><circle r="22" fill="#10222b" stroke="url(#g-brass)" stroke-width="2"/><path d="M-14-3C-8-10-2-10 2-4C6 2 11 2 15-4M-14 7C-8 0-2 0 2 6C6 12 11 12 15 6" fill="none" stroke="url(#g-drop)" stroke-width="3" stroke-linecap="round"/></g>
+			<g id="g-token-earth"><circle r="22" fill="#1d1a14" stroke="url(#g-brass)" stroke-width="2"/><path d="M-10-10H10V10H-10Z" fill="url(#g-stone)"/><path d="M-4-10L-2-2L-6 10M5-10L7 0" fill="none" stroke="#2b261f" stroke-width="1.4"/></g>
+			<g id="g-token-air"><circle r="22" fill="#15201a" stroke="url(#g-brass)" stroke-width="2"/><path d="M-13 2C-8-8 6-10 10-2C13 4 6 10-2 7C-8 4-6-4 0-3" fill="none" stroke="url(#g-leaf)" stroke-width="3" stroke-linecap="round"/></g>
+			<g id="g-token-ward"><circle r="22" fill="#1b2420" stroke="url(#g-brass)" stroke-width="2"/><circle r="12" fill="none" stroke="url(#g-brass)" stroke-width="3"/></g>
+			<g id="g-token-mirror"><circle r="22" fill="#1b2420" stroke="url(#g-brass)" stroke-width="2"/><path d="M-5-13H5V13H-5Z" fill="#cfd8d6" stroke="url(#g-brass)" stroke-width="1.5"/><path d="M-2-9L2-11" stroke="#fff" stroke-width="1.5"/></g>
+			<g id="g-token-fizzle"><circle r="22" fill="#1b2420" stroke="#6b705f" stroke-width="2"/><path d="M-8 8C-10-2 2-2 0-10M4 10C2 2 10 0 8-8" fill="none" stroke="#9aa08f" stroke-width="2.5" stroke-linecap="round"/></g>
+			<g id="g-token-rest"><circle r="22" fill="#1b2420" stroke="#6b705f" stroke-width="2" stroke-dasharray="4 4"/></g>
+			<g id="g-token-bolt"><circle r="22" fill="#2b1a10" stroke="url(#g-brass)" stroke-width="2"/><path d="M4-15L-7 1H1L-4 15L8-3H0Z" fill="#ffd27a" stroke="#d8632a" stroke-width="1.2" stroke-linejoin="round"/></g>
+			<g id="g-token-frost"><circle r="22" fill="#10222b" stroke="url(#g-brass)" stroke-width="2"/><path d="M0-13V13M-11-6.5L11 6.5M-11 6.5L11-6.5" stroke="#cfe8ef" stroke-width="2.4" stroke-linecap="round"/><path d="M0-13L-3-9M0-13L3-9M0 13L-3 9M0 13L3 9" stroke="#cfe8ef" stroke-width="1.6" stroke-linecap="round"/></g>
+			<g id="g-token-vine"><circle r="22" fill="#1a2214" stroke="url(#g-brass)" stroke-width="2"/><path d="M-4 14C-12 4 8 2 0-8C-6-14 4-16 4-14" fill="none" stroke="url(#g-leaf)" stroke-width="3" stroke-linecap="round"/><path d="M-6 2C-12 0-14-6-9-8C-4-6-4 0-6 2ZM6 6C12 4 14-2 9-4C4-2 4 4 6 6Z" fill="url(#g-leaf)"/></g>
+			<g id="g-token-magma"><circle r="22" fill="#1d1a14" stroke="url(#g-brass)" stroke-width="2"/><path d="M-12-8H12L0 12Z" fill="url(#g-stone)"/><path d="M-9-5C-4 2 4 2 9-5" fill="none" stroke="url(#g-ember)" stroke-width="3" stroke-linecap="round"/><path d="M-3 2L0 8L3 2" fill="url(#g-ember)"/></g>
+		</defs>
+	</svg>
+	<main class="duel" data-scene="arena" aria-label="Glyphs, a duel of drawn spells">
+		<header class="duel-head">
+			<p class="duel-kicker">A duel of drawn spells</p>
+			<h1>Glyphs</h1>
+			<p class="duel-lede" id="duel-lede">Ten seconds a round. Draw your spell in secret; only what it does will be seen. The shapes are not written down.</p>
+		</header>
+		<div class="scenes">
+			<section class="scene scene-arena" id="scene-arena" aria-label="The battlefield">
+		<section class="arena" aria-label="The arena">
+			<figure class="caster" id="caster-you" data-side="you">
+				<svg class="portrait" viewBox="-60 -70 120 140" aria-hidden="true" focusable="false"><g class="portrait-figure"><use href="#g-figure"/></g><g class="portrait-marks" data-marks></g></svg>
+				<figcaption><strong>You</strong><span class="caster-state" data-state>unmarked</span></figcaption>
+				<ul class="hits" data-hits aria-hidden="true"></ul>
+			</figure>
+			<div class="stage" id="stage" aria-hidden="true">
+				<svg class="stage-art" viewBox="-160 -60 320 120" focusable="false"></svg>
+				<p class="stage-name" id="stage-name"></p>
+			</div>
+			<figure class="caster" id="caster-foe" data-side="foe">
+				<svg class="portrait" viewBox="-60 -70 120 140" aria-hidden="true" focusable="false"><g class="portrait-figure"><use href="#g-figure"/></g><g class="portrait-marks" data-marks></g></svg>
+				<figcaption><strong id="foe-name">The Salamander</strong><span class="caster-state" data-state>unmarked</span><span class="quill" id="quill" aria-hidden="true"></span></figcaption>
+				<ul class="hits" data-hits aria-hidden="true"></ul>
+			</figure>
+		</section>
+				<div class="narration" id="narration" aria-live="polite" aria-atomic="true"></div>
+				<div class="arena-actions" id="arena-actions">
+					<button type="button" class="control control-cast control-begin" id="begin">Fight the Salamander</button>
+					<button type="button" class="control control-begin" id="friend">Duel a friend</button>
+				</div>
+				<div class="online" id="online" hidden>
+					<p class="online-status" id="online-status" aria-live="polite"></p>
+					<div class="online-host" id="online-host" hidden>
+						<p class="online-label">Give the other caster this code, or send them the link.</p>
+						<p class="online-code" id="online-code"></p>
+						<p class="online-share"><a id="online-link" href="#">Link to this duel</a><button type="button" class="control control-small" id="online-copy">Copy link</button></p>
+					</div>
+					<form class="online-join" id="online-join"><label for="online-input">Or enter a code</label><input id="online-input" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" pattern="[A-Za-z]{4}"><button type="submit" class="control control-small">Join</button></form>
+					<button type="button" class="control control-small" id="online-cancel">Back to the table</button>
+				</div>
+			</section>
+			<section class="scene scene-sheet" id="scene-sheet" aria-label="Your sheet">
+				<div class="sheet-head">
+					<p class="round" id="round">Round 1</p>
+					<div class="timer" id="timer" role="timer" aria-label="Time left in the round">
+						<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><circle class="timer-track" cx="24" cy="24" r="20"/><circle class="timer-ring" cx="24" cy="24" r="20"/></svg>
+						<span class="timer-seconds" id="timer-seconds">10</span>
+					</div>
+				</div>
+				<div class="sheet-frame" id="sheet-frame">
+					<canvas id="sheet" width="600" height="600" role="img" tabindex="0" aria-label="Your sheet of paper. Draw one glyph with a finger, pen or mouse."></canvas>
+					<p class="sheet-state" id="sheet-state" aria-hidden="true"></p>
+				</div>
+				<div class="controls">
+					<button type="button" class="control control-cast" id="cast">Cast</button>
+					<button type="button" class="control" id="clear">Clear</button>
+				</div>
+				<p class="hint" id="hint">The ink will tell you when something stirs. Cast resolves at once; a blank sheet is a rest. The same spell cast round after round grows stronger.</p>
+			</section>
+		</div>
+		<section class="grimoire" aria-labelledby="grimoire-title">
+			<h2 id="grimoire-title">Your grimoire</h2>
+			<p class="grimoire-note" id="grimoire-note">Nothing yet. A glyph that works is written here in your own hand.</p>
+			<ul class="grimoire-list" id="grimoire-list"></ul>
+		</section>
+		<div class="duel-end" id="duel-end" role="dialog" aria-labelledby="duel-end-title" aria-modal="true" hidden>
+			<div class="duel-end-card">
+				<h2 id="duel-end-title"></h2>
+				<p id="duel-end-line"></p>
+				<button type="button" class="control control-cast" id="again">Duel again</button>
+				<p class="duel-end-note" id="duel-end-note" hidden></p>
+			</div>
+		</div>
+	</main>
+	<a class="glyphs-house-return" id="house-return-fallback" href="/#first-floor">← Landing</a>
+</body>
+</html>

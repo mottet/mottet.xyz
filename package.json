@@ -11,6 +11,7 @@
     "test:house": "node scripts/check-house-navigation.cjs",
     "test:maze": "node scripts/check-maze-garden.cjs",
     "test:apartment": "node scripts/check-apartment.cjs",
+    "test:glyphs": "node scripts/check-glyphs.cjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },

@@ -24,13 +24,15 @@ let server;
 const http = require('http');
 
 server = http.createServer(app);
-server.listen(8080, '127.0.0.1', () => {
+const port = Number(process.env.PORT) || 8080;
+server.listen(port, '127.0.0.1', () => {
 	console.log("Server is running");
 });
 
 const socket = require('socket.io');
 const io = socket(server);
 io.sockets.on('connection', newConnection);
+require('./glyphs-server.js')(io);
 
 const pieceArray = [
 	{ id: 0, x: 100, y: 670, w: 70, h: 70, color: 'blue' },
