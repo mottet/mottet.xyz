@@ -13,6 +13,7 @@ body.house-home { margin: 0; background: var(--house-paper); color: var(--house-
 .house-brand-text { display: flex; flex-direction: column; line-height: 1; }
 .house-brand-name { font-family: Federo, Georgia, serif; font-size: 34px; letter-spacing: 1.5px; text-transform: uppercase; }
 .house-brand-sub { margin-top: 5px; font-style: italic; font-size: 16px; color: var(--house-muted); letter-spacing: .2px; }
+.house-header-nav { display: flex; gap: 10px; }
 .house-plan-trigger { display: flex; align-items: center; gap: 9px; padding: 9px 16px; border: 1px solid #b5ad92; border-radius: 16px 16px 4px 4px; background: #f5f1e4; color: var(--house-ink); cursor: pointer; font-family: Federo, Georgia, serif; font-size: 14px; letter-spacing: .8px; transition: background .2s, border-color .2s; }
 .house-plan-trigger:hover { background: #fbf8ee; border-color: var(--house-brass); }
 .house-plan-trigger svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.1; fill: none; stroke-linecap: round; stroke-linejoin: round; }

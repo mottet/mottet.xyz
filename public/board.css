@@ -1,0 +1,73 @@
+:root { color-scheme: dark; --board-ink: #1f3329; --board-cream: #efe2a8; --board-brass: #c9ab6a; --board-rose: #b98b86; }
+* { box-sizing: border-box; }
+html, body.board-home { margin: 0; height: 100%; overflow: hidden; }
+body.board-home {
+  color: var(--board-cream);
+  font-family: 'Cormorant Garamond', Georgia, 'Times New Roman', serif; font-size: 17px; -webkit-font-smoothing: antialiased;
+  /* Dark papered walls beyond the board: whiplash tendrils in a lighter green. */
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='104' height='180' viewBox='0 0 104 180'%3E%3Cpath d='M52 0C20 30 84 60 52 90S20 150 52 180M52 90C14 78 10 40 22 24M52 90C90 78 94 40 82 24' fill='none' stroke='%23466253' stroke-width='1' opacity='.35'/%3E%3Cpath d='M36 46C18 48 12 32 20 22C36 28 38 38 36 46ZM68 62C88 58 92 70 86 80C72 78 66 70 68 62ZM36 134C18 132 16 114 24 108C36 114 40 126 36 134ZM70 152C90 148 94 162 86 170C72 166 68 160 70 152Z' fill='%233f5a4a' stroke='%23587460' stroke-width='.8' opacity='.4'/%3E%3Cpath d='M52 92C38 78 42 64 52 56C62 64 66 78 52 92Z' fill='%23634f52' stroke='%23846a6a' stroke-width='.8' opacity='.45'/%3E%3C/svg%3E") 0 0 / 104px 180px,
+    radial-gradient(ellipse at 50% 35%, #354d3e, #172a22);
+}
+.board-home a { color: inherit; text-decoration: none; }
+.board-home button { font: inherit; }
+.board-home a:focus-visible, .board-home button:focus-visible { outline: 2px solid var(--board-brass); outline-offset: 4px; }
+.board-symbols { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+/* The board fills the window; the header and caption float over it. */
+.board { position: fixed; inset: 0; cursor: grab; }
+.board.is-dragging { cursor: grabbing; }
+/* Flights use a single cached image; resting views keep the live vector art. */
+.board.has-cache:is(.is-moving, .is-dragging) .world > svg { visibility: hidden; }
+.board.has-cache:is(.is-moving, .is-dragging) .world-cache { visibility: visible; }
+.world-cache { position: absolute; inset: 0; width: 4000px; height: 4000px; visibility: hidden; pointer-events: none; }
+.board.is-moving::after, .board.is-dragging::after { content: ""; position: absolute; inset: 0; z-index: 1; touch-action: none; }
+.board .world { isolation: isolate; position: absolute; left: 0; top: 0; width: 4000px; height: 4000px; transform-origin: 0 0; will-change: transform; }
+.board .world > svg { display: block; width: 4000px; height: 4000px; touch-action: none; user-select: none; -webkit-user-select: none; }
+.board-header { position: fixed; top: 0; left: 0; right: 0; z-index: 2; padding: 18px 4% 22px; display: flex; align-items: center; justify-content: space-between; gap: 16px; pointer-events: none; background: linear-gradient(#12251ddb, #12251d55 65%, #12251d00); }
+.board-header > * { pointer-events: auto; }
+.board-brand { display: flex; align-items: center; gap: 14px; }
+.board-brand-mark { width: 34px; height: 40px; fill: none; stroke: var(--board-cream); stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; }
+.board-brand-name { font-family: Federo, Georgia, serif; font-size: 32px; letter-spacing: 1.5px; text-transform: uppercase; }
+.board-header-nav { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+.board-button { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 1px solid #c9ab6a88; border-radius: 16px 16px 4px 4px; background: #1a2d24cc; color: var(--board-cream); cursor: pointer; font-family: Federo, Georgia, serif; font-size: 13px; letter-spacing: .8px; transition: background .2s, border-color .2s; }
+.board-button:hover { background: #2e4c3d; border-color: var(--board-brass); }
+.board-button[aria-pressed="true"] { background: var(--board-brass); color: #2f2412; }
+.board-button svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.1; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+/* Board lettering lives in the SVG; sizes are in board units. */
+.world-hall-name { font: 42px Federo, Georgia, serif; letter-spacing: 3px; text-transform: uppercase; fill: var(--board-cream); }
+.world-cartouche-title { font: 58px Federo, Georgia, serif; letter-spacing: 7px; text-transform: uppercase; fill: var(--board-cream); }
+.world-cartouche-sub { font: 21px Federo, Georgia, serif; letter-spacing: 2.5px; fill: #d6c89a; }
+.world-sign text { font: 16px Federo, Georgia, serif; letter-spacing: .6px; fill: var(--board-cream); }
+.world-sign { cursor: pointer; }
+.world-sign:hover .world-sign-ring, .world-sign:focus-visible .world-sign-ring { fill: #f3e4b2; }
+.world-sign-emblem { transition: transform .25s; transform-box: fill-box; transform-origin: center; }
+.world-sign:hover .world-sign-emblem { transform: scale(1.08); }
+.world-sign:focus-visible { outline: none; }
+.world-way { cursor: pointer; }
+.world-way:hover .world-way-band, .world-way:focus-visible .world-way-band { fill: #8a6042; }
+.world-way:focus-visible { outline: none; }
+.world-station-name { font: 38px Federo, Georgia, serif; letter-spacing: 1px; fill: var(--board-cream); paint-order: stroke; stroke: #1f3329; stroke-width: 6px; stroke-linejoin: round; }
+.world-enter { cursor: pointer; }
+.world-enter text { font: 24px Federo, Georgia, serif; letter-spacing: 2px; text-transform: uppercase; fill: #2f2412; }
+.world-enter:hover rect:first-child, .world-enter:focus-visible rect:first-child { fill: #f3e4b2; }
+.world-enter:focus-visible, .world-back:focus-visible { outline: none; }
+.world-enter:focus-visible rect:first-child { stroke: #fff; stroke-width: 3; }
+.world-back { cursor: pointer; }
+.world-back text { font: 17px Federo, Georgia, serif; letter-spacing: 1px; fill: var(--board-cream); }
+.world-back:hover rect, .world-back:focus-visible rect { fill: #2e4c3d; stroke: #f3e4b2; }
+.world-station.is-here .world-station-ring { stroke: #f3e4b2; stroke-width: 5; }
+/* The small moving layer is independent of the cached board artwork. */
+.world-pawn { position: absolute; left: -32px; top: -32px; width: 64px; height: 64px; pointer-events: none; will-change: transform; }
+.world-pawn svg { display: block; width: 64px; height: 64px; overflow: visible; }
+
+@media (max-width: 720px) {
+  .board-header { padding: 14px 3% 18px; gap: 10px; }
+  .board-brand-mark { width: 26px; height: 31px; }
+  .board-brand-name { font-size: 22px; }
+  .board-button { width: 40px; height: 40px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .board-button, .world-sign-emblem { transition: none; }
+}

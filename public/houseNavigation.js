@@ -17,12 +17,15 @@
   if (!isHome && !current) return;
   const mapIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21V11q9-11 18 0v10ZM3 15h18M12 15v6M9 3.5c2-1 4-1 6 0"/></svg>';
   let hall = '/#' + (current?.floor === 'first' ? 'first-floor' : 'ground-floor');
+  let hallName = current?.floor === 'first' ? 'Landing' : 'Hall';
   if (current) {
+    // A visit that began on the board game or in the apartment returns there.
     try {
       const arrival = JSON.parse(sessionStorage.getItem('mottet-apartment-return'));
       sessionStorage.removeItem('mottet-apartment-return');
       const apartmentHall = `/apartment.html#${current.floor}-floor`;
       if (arrival?.room === current.href && arrival.hall === apartmentHall) hall = apartmentHall;
+      if (arrival?.room === current.href && typeof arrival.hall === 'string' && arrival.hall.startsWith('/board.html')) { hall = arrival.hall; hallName = 'Board'; }
     } catch { /* The standard house return works when storage is unavailable. */ }
   }
 
@@ -31,7 +34,7 @@
     const nav = document.createElement('nav');
     nav.className = 'house-room-nav';
     nav.setAttribute('aria-label', 'Move through the house');
-    nav.innerHTML = `<a class="house-return" href="${hall}"><span aria-hidden="true">←</span> ${current.floor === 'first' ? 'Landing' : 'Hall'}</a><span class="house-room-nav-divider" aria-hidden="true"></span><button type="button" data-house-map class="house-room-map" aria-label="Open floor plan. You are in the ${current.name.toLowerCase()}.">${mapIcon}<span>${current.name}</span><span aria-hidden="true">⌃</span></button>`;
+    nav.innerHTML = `<a class="house-return" href="${hall}"><span aria-hidden="true">←</span> ${hallName}</a><span class="house-room-nav-divider" aria-hidden="true"></span><button type="button" data-house-map class="house-room-map" aria-label="Open floor plan. You are in the ${current.name.toLowerCase()}.">${mapIcon}<span>${current.name}</span><span aria-hidden="true">⌃</span></button>`;
     document.body.append(nav);
     document.getElementById('house-return-fallback')?.remove();
   }

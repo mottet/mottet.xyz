@@ -6,11 +6,13 @@
   "main": "server.js",
   "scripts": {
     "build:ur-art": "node scripts/build-ur-artwork.cjs",
+    "build:board-art": "node scripts/build-board-artwork.cjs",
     "test:ur:garden": "node scripts/check-ur-garden.cjs",
     "test:ur:performance": "node scripts/check-ur-performance.cjs",
     "test:house": "node scripts/check-house-navigation.cjs",
     "test:maze": "node scripts/check-maze-garden.cjs",
     "test:apartment": "node scripts/check-apartment.cjs",
+    "test:board": "node scripts/check-board.cjs",
     "test:glyphs": "node scripts/check-glyphs.cjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"

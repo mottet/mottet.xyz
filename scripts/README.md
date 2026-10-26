@@ -1,5 +1,46 @@
 # House navigation
 
+`/board.html` is a second home page that lays the house out flat, as a board
+game far larger than the screen. `board.js` draws a 4000-unit world in one SVG
+and uses its viewBox as a camera, which starts zoomed on the hall medallion at
+the centre. Six wooden ways radiate from the hall to stations beyond the
+screen in the whiplash manner: tapered walnut stems with brass edges and a
+bronze vein, a thinner vine twining across each, offshoots that hook back and
+end in irises and rose buds, lanceolate leaves, tendril curls, and lamps on
+curved stalks. The stems to the upper rooms carry fanned brass treads, stairs
+seen from above, and every station blooms as a flower head. Each room has its
+own craft, drawn at three scales: an emblem in a brass ring on its signpost at
+the hall, themed surroundings for its station (a parterre with box hedge,
+gravel walks and rose beds; a fringed tapestry carpet set with Ur rosettes and
+counters; a round drawing table with a carved rim, pencils, palette and
+compass; a night dial ringed by staves and a curving keyboard; a hexagonal
+bench of glazed tiles with copper pipework and glass), and a painted interior
+inside the station disc. The interiors are textured bitmaps: `board-
+artwork.js` paints each 408-unit scene on a canvas with a seeded random
+source, gouache dabs, paper fibres, wood grain, woodcut hatching and film
+grain, and `build-board-artwork.cjs` renders them in headless Chromium at 1024
+px, encodes WebP there, writes content-hashed files to `public/assets/board`,
+updates `board-artwork-manifest.json` and points `board.js` at them. Run
+`HOUSE_TEST_TOOLS=... npm run build:board-art` after changing the scenes
+(`--preview` writes unhashed files without touching `board.js`). The field is
+a printed Arts and Crafts ground in the Morris manner, waving stems with
+leaves and four-petal flowers over paper and linen, inside a frieze border
+with brass inlay rings. Whiplash sprays grow from wrought curls at the hall
+ring into the six gaps between the stems, with lanceolate leaves, irises and
+rose buds; a pale vine twines along every stem with leaves and buds, and brass
+lamps on curved stalks glow at its sides. Each station stands in a leaf
+wreath, dragonflies, butterflies and fallen petals drift over the field, and a
+lettered cartouche names the house. Nothing moves at rest; only the pawn and
+the camera animate. The world is painted once at 4000 units and the camera is
+a CSS transform on its wrapper, so journeys composite cached tiles rather than
+repainting the SVG. Signposts at the hall, the ways themselves, and the
+stations are hash links; choosing one walks a brass pawn along the way while
+the camera follows, and the station's plate opens the project. The URL hash
+names the current station so reloads and Back restore it, dragging pans the
+board, and a Whole board button pulls the camera out to see everything. A room
+visited from the board returns to the board. Run `HOUSE_TEST_TOOLS=... npm run
+test:board`.
+
 The separate `/apartment.html` page renders a two-floor Three.js apartment in a
 printed Art Nouveau palette at twilight. Curved walnut portals, botanical
 wallpaper, floral glass, mosaic floors, and a spiral staircase are built as 3D
@@ -70,9 +111,12 @@ The sixth room, Glyphs (`/glyphs.html`), opens off the landing. Its door stands
 on the first-floor back wall where the garden door stands downstairs, an
 ogee-headed door with a round pane etched in brass with a quill and a curl of
 smoke; the landing window moved to the right half of the back wall above the
-stair rail, and the console table went. Nothing in the house shows a spell
-shape: players are meant to discover those on the sheet. The floor plan shows
-the room as a full-width row above the two landing rooms.
+stair rail, and the console table went. On the board it is the sixth station,
+straight below the hall, with a parchment interior of a lit candle, a sand
+timer, grey scrawls, a crossed-out blot, an ink pot and a quill; the lettered
+cartouche moved to the lower right corner to make room. Nothing in the house
+shows a spell shape: players are meant to discover those on the sheet. The
+floor plan shows the room as a full-width row above the two landing rooms.
 
 The maze garden adapts its grid to the available screen while keeping square
 cells, fixed straight wall edges and a compact botanical border. Complete frames are composed off screen and
