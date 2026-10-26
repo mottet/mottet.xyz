@@ -27,7 +27,7 @@ and touch input, modal focus, reduced motion, five viewport shapes, a failed
 renderer, absence of visible text, and idle/bounded rendering. It uses Chromium
 software WebGL; physical phone performance should be judged on the device.
 
-The five projects are rooms in a two-floor Art Nouveau house. `houseScene.js`
+The six projects are rooms in a two-floor Art Nouveau house. `houseScene.js`
 draws the entrance hall and landing with reusable vectors, using the existing
 walnut texture. A bent walnut arch with brass tendrils spans the hall, every
 door has a carved whiplash surround, the floor carries a mosaic rosette, and dusk shows through the skylight and the
@@ -58,13 +58,21 @@ HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:house
 ```
 
 Set `HOUSE_BASE_URL` to check another server. The check covers real journeys
-through all five doors, floor history, return routes, current-room indication,
+through all six doors, floor history, return routes, current-room indication,
 keyboard focus, canvas input isolation, mobile layout, and reduced motion.
 It also verifies uniform SVG scaling, stable object placement, a shared vanishing
 point, and mobile touch targets across portrait, landscape, and wide viewports.
 
 The tooling path above is where Playwright 1.51.1 currently lives on this
 machine (the earlier `/tmp/ur-tools` and `/tmp/ur-visual-check` are gone).
+
+The sixth room, Glyphs (`/glyphs.html`), opens off the landing. Its door stands
+on the first-floor back wall where the garden door stands downstairs, an
+ogee-headed door with a round pane etched in brass with a quill and a curl of
+smoke; the landing window moved to the right half of the back wall above the
+stair rail, and the console table went. Nothing in the house shows a spell
+shape: players are meant to discover those on the sheet. The floor plan shows
+the room as a full-width row above the two landing rooms.
 
 The maze garden adapts its grid to the available screen while keeping square
 cells, fixed straight wall edges and a compact botanical border. Complete frames are composed off screen and

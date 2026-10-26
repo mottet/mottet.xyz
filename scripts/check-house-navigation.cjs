@@ -45,7 +45,8 @@ const base = (process.env.HOUSE_BASE_URL || 'http://127.0.0.1:8080').replace(/\/
       { floor: 'ground', door: /Games room/, url: '/urBoard.html', room: 'Games room' },
       { floor: 'ground', door: /Maze garden/, url: '/laby.html', room: 'Maze garden' },
       { floor: 'first', door: /Musical Mining/, url: '/musical-mining/', room: 'Music room' },
-      { floor: 'first', door: /Chemical Rakoon/, url: '/chemical-rakoon/', room: 'Laboratory' }
+      { floor: 'first', door: /Chemical Rakoon/, url: '/chemical-rakoon/', room: 'Laboratory' },
+      { floor: 'first', door: /Glyphs/, url: '/glyphs.html', room: 'Glyphs' }
     ];
     for (const journey of journeys) {
       await page.goto(base + '/#' + journey.floor + '-floor');
@@ -156,7 +157,7 @@ const base = (process.env.HOUSE_BASE_URL || 'http://127.0.0.1:8080').replace(/\/
       assert.ok(dimensions.bottom < dimensions.navTop, 'The house controls must not cover the canvas');
     }
     assert.deepEqual(errors, []);
-    console.log('PASS fixed scene proportions and shared perspective across five viewport shapes, five door-to-page journeys, floor history, return routes, keyboard focus, mobile targets, isolated canvas input, reduced motion, and no JavaScript errors');
+    console.log('PASS fixed scene proportions and shared perspective across five viewport shapes, six door-to-page journeys, floor history, return routes, keyboard focus, mobile targets, isolated canvas input, reduced motion, and no JavaScript errors');
   } finally {
     await browser.close();
   }

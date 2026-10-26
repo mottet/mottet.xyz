@@ -56,11 +56,12 @@
 .house-map h3 small { font: italic 14px/1.4 'Cormorant Garamond', Georgia, serif; letter-spacing: 0; text-transform: none; color: #5c6457; }
 .house-map-grid { display: grid; gap: 7px; padding: 7px; border: 2px solid #2a3a32; border-radius: 30px 30px 6px 6px; background: repeating-linear-gradient(45deg, #2a3a32 0 1px, transparent 1px 5px); }
 .house-map-ground { grid-template-columns: 1fr .7fr 1fr; grid-template-rows: auto auto; }
-.house-map-garden { grid-column: 1 / 4; min-height: 72px; border-radius: 24px 24px 4px 4px; background: #e5e7cf !important; }
-.house-map-upper { grid-template-columns: 1fr .7fr 1fr; }
+.house-map-garden, .house-map-glyphs { grid-column: 1 / 4; min-height: 72px; border-radius: 24px 24px 4px 4px; }
+.house-map-garden { background: #e5e7cf !important; }
+.house-map-upper { grid-template-columns: 1fr .7fr 1fr; grid-template-rows: auto auto; }
 .house-map-room { position: relative; min-height: 104px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 13px 10px; border: 1.5px solid #2a3a32; border-radius: 6px; background: #f6f1e4; text-align: center; transition: background .15s; }
-.house-map-ground .house-map-room:nth-child(2), .house-map-upper .house-map-room:first-child { border-radius: 40px 6px 6px 6px; }
-.house-map-ground .house-map-room:last-child, .house-map-upper .house-map-room:last-child { border-radius: 6px 40px 6px 6px; }
+.house-map-grid .house-map-room:nth-child(2) { border-radius: 40px 6px 6px 6px; }
+.house-map-grid .house-map-room:last-child { border-radius: 6px 40px 6px 6px; }
 .house-map-room strong { font: 15px/1.2 Federo, Georgia, serif; letter-spacing: .6px; font-weight: 400; }
 .house-map-room small:not(.house-visually-hidden) { font-style: italic; font-size: 13px; color: #5c6457; }
 .house-map-hall { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border: 1.5px solid #2a3a32; border-radius: 50% 50% 8px 8px; background: #faf6ea; text-align: center; padding: 12px 5px; }

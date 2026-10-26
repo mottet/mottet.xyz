@@ -7,8 +7,10 @@
     { id: 'salon', name: 'Games room', note: 'the Royal Game of Ur', href: '/urBoard.html', floor: 'ground' },
     { id: 'garden', name: 'Maze garden', note: 'a rose maze to walk', href: '/laby.html', floor: 'ground' },
     { id: 'music', name: 'Music room', note: 'Musical Mining', href: '/musical-mining/', floor: 'first' },
-    { id: 'laboratory', name: 'Laboratory', note: 'Chemical Rakoon', href: '/chemical-rakoon/', floor: 'first' }
+    { id: 'laboratory', name: 'Laboratory', note: 'Chemical Rakoon', href: '/chemical-rakoon/', floor: 'first' },
+    { id: 'glyphs', name: 'Glyphs', note: 'a duel of drawn spells', href: '/glyphs.html', floor: 'first' }
   ];
+  const byId = id => rooms.find(room => room.id === id);
   const path = window.location.pathname.replace(/index\.html$/, '').replace(/\/$/, '');
   const current = rooms.find(room => room.href.replace(/\/$/, '') === path);
   const isHome = document.body.classList.contains('house-home');
@@ -38,7 +40,7 @@
   dialog.className = 'house-map';
   dialog.setAttribute('aria-labelledby', 'house-map-title');
   const roomLink = room => `<a class="house-map-room house-map-${room.id}${current?.id === room.id ? ' house-map-current' : ''}" href="${room.href}"${current?.id === room.id ? ' aria-current="page"' : ''}><strong>${room.name}</strong><small>${room.note}</small>${current?.id === room.id ? '<span class="house-map-current-dot" aria-hidden="true">●</span><small class="house-visually-hidden">You are here</small>' : ''}</a>`;
-  dialog.innerHTML = `<div class="house-map-heading"><div><p class="house-map-kicker">Plan of the house, two floors</p><h2 id="house-map-title">Floor plan</h2></div><button class="house-map-close" type="button" aria-label="Close floor plan">×</button></div><div class="house-map-floors"><section aria-label="Ground floor"><h3><span>Ground floor</span><small>three rooms around the hall</small></h3><div class="house-map-ground house-map-grid">${roomLink(rooms[2])}${roomLink(rooms[0])}<a class="house-map-hall" href="/#ground-floor"><span aria-hidden="true">↓</span><strong>Hall</strong></a>${roomLink(rooms[1])}</div></section><section aria-label="First floor"><h3><span>Upstairs</span><small>two rooms off the landing</small></h3><div class="house-map-upper house-map-grid">${roomLink(rooms[3])}<a class="house-map-hall" href="/#first-floor"><span aria-hidden="true">↗</span><strong>Landing</strong></a>${roomLink(rooms[4])}</div></section></div><svg class="house-map-flourish" viewBox="0 0 120 20" aria-hidden="true"><path d="M2 10C22 2 38 18 60 10C82 2 98 18 118 10"/><path d="M22 10C18 6 19 2 22 2M98 10C102 6 101 2 98 2" stroke-width=".9"/><path d="M60 10C53 6 54 0 60 0C66 0 67 6 60 10ZM60 10C53 14 54 20 60 20C66 20 67 14 60 10Z"/></svg>`;
+  dialog.innerHTML = `<div class="house-map-heading"><div><p class="house-map-kicker">Plan of the house, two floors</p><h2 id="house-map-title">Floor plan</h2></div><button class="house-map-close" type="button" aria-label="Close floor plan">×</button></div><div class="house-map-floors"><section aria-label="Ground floor"><h3><span>Ground floor</span><small>three rooms around the hall</small></h3><div class="house-map-ground house-map-grid">${roomLink(byId('garden'))}${roomLink(byId('studio'))}<a class="house-map-hall" href="/#ground-floor"><span aria-hidden="true">↓</span><strong>Hall</strong></a>${roomLink(byId('salon'))}</div></section><section aria-label="First floor"><h3><span>Upstairs</span><small>three rooms off the landing</small></h3><div class="house-map-upper house-map-grid">${roomLink(byId('glyphs'))}${roomLink(byId('music'))}<a class="house-map-hall" href="/#first-floor"><span aria-hidden="true">↗</span><strong>Landing</strong></a>${roomLink(byId('laboratory'))}</div></section></div><svg class="house-map-flourish" viewBox="0 0 120 20" aria-hidden="true"><path d="M2 10C22 2 38 18 60 10C82 2 98 18 118 10"/><path d="M22 10C18 6 19 2 22 2M98 10C102 6 101 2 98 2" stroke-width=".9"/><path d="M60 10C53 6 54 0 60 0C66 0 67 6 60 10ZM60 10C53 14 54 20 60 20C66 20 67 14 60 10Z"/></svg>`;
   document.body.append(dialog);
   dialog.addEventListener('keydown', event => {
     if (event.key !== 'Tab') return;

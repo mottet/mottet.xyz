@@ -196,6 +196,24 @@
         <path d="M119 136Q124 148 136 152"/>`,
         joinery: `<path d="M45 407V264C45 227 72 234 72 264V407ZM116 241H174V407H116Z"/>
         <path d="M34 208C73 207 72 177 104 189C133 201 164 185 186 204" stroke-width="1.5"/>`
+      },
+      glyphs: {
+        // An ogee-headed door with a round pane; a quill and a curl of smoke
+        // etched in brass. No spell shape is shown anywhere in the house.
+        glassTones: ['#d9cfc0', '#bfb3b0', '#9a8f9e'], foliageTone: '#b3a79a',
+        organic: `<path d="M58 206C44 196 44 176 54 168C68 176 68 196 58 206ZM162 206C176 196 176 176 166 168C152 176 152 196 162 206Z"/>
+        <path d="M110 232C98 226 96 212 104 206C116 210 118 224 110 232Z" fill="#c3b1a4"/>`,
+        carving: `<path d="M60 404C72 386 56 372 68 358C82 342 70 326 86 308M68 358C56 358 53 346 58 340C70 342 72 352 68 358ZM160 404C148 386 164 372 152 358C138 342 150 326 134 308M152 358C164 358 167 346 162 340C150 342 148 352 152 358Z"/>`,
+        frame: 'M0 450V110C0 60 40 30 110 10C180 30 220 60 220 110V450Z',
+        leaf: 'M11 450V116C11 72 46 44 110 26C174 44 209 72 209 116V450Z',
+        pane: 'M40 160A70 70 0 1 1 180 160A70 70 0 1 1 40 160Z',
+        panel: 'M36 274Q110 258 184 274V420H36Z',
+        tracery: `<path d="M110 90V230M40 160H180" opacity=".5"/>`,
+        clue: `<circle cx="78" cy="122" r="2"/><circle cx="146" cy="118" r="2.5"/><circle cx="150" cy="200" r="2"/>`,
+        joinery: `<path d="M84 190C96 170 112 152 136 138C118 156 104 174 92 196Z" fill="url(#h-brass)"/>
+        <path d="M84 190L78 200" stroke-width="2"/>
+        <path d="M118 186C112 176 126 170 120 160C114 150 128 144 122 134" fill="none" stroke-width="1.6" opacity=".8"/>`,
+        handle: `<circle cx="178" cy="290" r="9"/><path d="M178 281V270" stroke-width="2.5"/>`
       }
     };
 
@@ -638,15 +656,6 @@
       return `<g data-house-object="sconce" transform="translate(${px} ${py}) scale(${scale})"><use href="#h-sconce"/></g>`;
     }
 
-    function landingFurniture() {
-      const x = -.95, z = 10.45, width = 1.43, depth = .48, height = .58;
-      const top = [[x - width / 2, height, z - depth / 2], [x + width / 2, height, z - depth / 2], [x + width / 2, height, z + depth / 2], [x - width / 2, height, z + depth / 2]];
-      const legs = top.map(([px, , pz]) => polygon([[px - .025, 0, pz], [px + .025, 0, pz], [px + .025, height, pz], [px - .025, height, pz]], 'fill="url(#h-wood)" stroke="#9d8a5d" stroke-width="1"')).join('');
-      const tabletop = polygon(top, 'fill="url(#h-wood)" stroke="#bba06a" stroke-width="2"');
-      const fascia = polygon([top[0], top[1], [top[1][0], height - .055, top[1][2]], [top[0][0], height - .055, top[0][2]]], 'fill="#5d4832"');
-      return `<g data-house-object="console">${legs}${tabletop}${fascia}${plant(x, z, .48, height)}</g>`;
-    }
-
     function scene(upstairs) {
       const leftRoom = upstairs ? 'music' : 'studio';
       const rightRoom = upstairs ? 'laboratory' : 'salon';
@@ -655,7 +664,7 @@
       const backScale = camera.focal / room.back * 3.35 / 450;
       const backDoor = project([-.95, 3.35, room.back]);
       const windowScale = camera.focal / room.back * 2.25 / 185;
-      const windowOrigin = project([-.95 - 79 * windowScale / (camera.focal / room.back), 3.15, room.back]);
+      const windowOrigin = project([.95 - 79 * windowScale / (camera.focal / room.back), 3.15, room.back]);
       const window = `<g data-house-object="window" transform="translate(${coords(windowOrigin)}) scale(${windowScale})"><path d="M0 185V58C0-20 158-20 158 58V185Z" fill="url(#h-dusk)" stroke="url(#h-wood)" stroke-width="12"/><path d="M0 185V58C0-20 158-20 158 58V185Z" fill="url(#h-glass-speckle)" stroke="url(#h-brass)" stroke-width="2"/><path d="M79 185V2M0 68C34 69 49 130 79 139C109 130 124 69 158 68M79 14C65 41 35 51 35 90C35 122 79 148 79 185C79 148 123 122 123 90C123 51 93 41 79 14" fill="none" stroke="#526848" stroke-width="3"/><path d="M-11 185H169" stroke="url(#h-wood)" stroke-width="13"/></g>`;
       const lamp = project([0, 3.48, 8.3]), lampScale = camera.focal / 8.3 * .55 / 70;
       const pool = project([0, 0, 7.0]), poolScale = camera.focal / 7.0;
@@ -673,7 +682,7 @@
       ${polygon(floorOutline, 'fill="url(#h-floor)"')}${upstairs ? parquet() : mosaic()}
       ${floorTrim}${ceilingMouldings(upstairs)}${upstairs ? plasterCeiling() : skylight()}
       <ellipse cx="${backGlow[0].toFixed(1)}" cy="${backGlow[1].toFixed(1)}" rx="${(camera.focal / room.back * 3.4).toFixed(1)}" ry="${(camera.focal / room.back * 2.6).toFixed(1)}" fill="url(#h-warm)" opacity=".8"/>
-      ${upstairs ? window + landingFurniture() : `<g class="house-door-art" data-door-art="garden" transform="translate(${backDoor[0] - 110 * backScale} ${backDoor[1]}) scale(${backScale})">${doorFor('garden')}</g>`}
+      ${upstairs ? window : ''}<g class="house-door-art" data-door-art="${upstairs ? 'glyphs' : 'garden'}" transform="translate(${backDoor[0] - 110 * backScale} ${backDoor[1]}) scale(${backScale})">${doorFor(upstairs ? 'glyphs' : 'garden')}</g>
       ${plant(-2.3, 10.35, 1.5)}${structuralArch()}
       ${sideDoor(leftRoom)}${sideDoor(rightRoom, true)}
       ${staircase(upstairs)}${plant(2.48, 4.8, 1.4)}
