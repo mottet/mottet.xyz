@@ -21,7 +21,7 @@ to the apartment only when the visit originated there, using a consumed session
 marker. Reduced motion skips journeys, and a text-free icon fallback preserves
 navigation if WebGL or the module fails.
 
-Run `HOUSE_TEST_TOOLS=/tmp/ur-visual-check/node_modules npm run test:apartment`.
+Run `HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:apartment`.
 The browser check covers all five entry/return journeys, floor history, camera
 and touch input, modal focus, reduced motion, five viewport shapes, a failed
 renderer, absence of visible text, and idle/bounded rendering. It uses Chromium
@@ -54,7 +54,7 @@ Run the house browser check against the local server using the same external
 Playwright installation described below:
 
 ```sh
-HOUSE_TEST_TOOLS=/tmp/ur-tools/node_modules npm run test:house
+HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:house
 ```
 
 Set `HOUSE_BASE_URL` to check another server. The check covers real journeys
@@ -62,6 +62,9 @@ through all five doors, floor history, return routes, current-room indication,
 keyboard focus, canvas input isolation, mobile layout, and reduced motion.
 It also verifies uniform SVG scaling, stable object placement, a shared vanishing
 point, and mobile touch targets across portrait, landscape, and wide viewports.
+
+The tooling path above is where Playwright 1.51.1 currently lives on this
+machine (the earlier `/tmp/ur-tools` and `/tmp/ur-visual-check` are gone).
 
 The maze garden adapts its grid to the available screen while keeping square
 cells, fixed straight wall edges and a compact botanical border. Complete frames are composed off screen and
@@ -77,7 +80,7 @@ Cached flower sprites open from buds over 520–820 ms; reduced motion displays
 the finished blooms immediately. Flowers retain their drawing order as they open.
 Stems and flowers use separate layers, with blooms above all branches.
 Grid walls stay thin so the stems are clear.
-Run `HOUSE_TEST_TOOLS=/tmp/ur-tools/node_modules npm run test:maze` to check stable
+Run `HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:maze` to check stable
 wall edges in the opening frames, path pixels during generation, branching,
 untouched pockets, paced growth, connectivity, viewport coverage, grid edges
 against maze data, incremental drawing against a clean redraw, rose stems and
