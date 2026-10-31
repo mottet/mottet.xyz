@@ -84,8 +84,8 @@
   function rules(S) {
     return [
       '<strong>Two spells meet on the wheel.</strong> Arrow: the winner\'s spell goes on to the loser; the loser\'s is gone. Dashed: both spells are undone. Dotted, the same element, or no line: both go on.',
-      '<strong>A spell that reaches a caster with no ring kills.</strong>',
-      `<strong>A ring is 1 to ${S.MAX_RING} thick</strong>, as clean as the glyph that raised it. It stops any element its own element beats or quenches, and is not worn by it. An element that beats or passes the ring's goes straight through: death.`,
+      S.HITS > 1 ? `<strong>A spell that reaches a caster with no ring wounds them</strong>, however weakly it was drawn, and the ${S.HITS === 2 ? 'second' : `${S.HITS}th`} wound kills. Power decides what happens at the ring, never how deep the wound is.` : '<strong>A spell that reaches a caster with no ring kills.</strong>',
+      `<strong>A ring is 1 to ${S.MAX_RING} thick</strong>, as clean as the glyph that raised it. It stops any element its own element beats or quenches, and is not worn by it. An element that beats or passes the ring's goes straight through: a wound.`,
       'Any other element wears the ring by the spell\'s power. A power as high as the ring breaks it, and the spell goes through.',
       'A bare circle thickens the ring that stands. The same element again thickens it; another element replaces it. The other caster sees how thick your ring is, never what it is made of, until a spell meets it.',
       `<strong>A spell of two elements</strong> meets another spell with whichever of its elements fares better, and pays for it twice: a ring that turns either of its elements aside turns the whole spell aside, and it goes straight through only where both would; and it is cast ${S.COMPOUND_COST === 1 ? 'one power' : `${S.COMPOUND_COST} power`} below the hand that drew it${S.COMPOUND_COST >= 1 ? ', so it is never perfect' : ''}.`

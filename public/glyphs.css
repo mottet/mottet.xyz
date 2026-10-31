@@ -13,6 +13,7 @@
 	--water: #4f8aa3;
 	--earth: #8d8470;
 	--air: #8ea66d;
+	--metal: #8a97a8;
 }
 
 * { box-sizing: border-box; }
@@ -89,6 +90,10 @@ button:focus-visible, canvas:focus-visible, a:focus-visible { outline: 2px solid
 .caster[data-death="water"] .portrait-figure { filter: hue-rotate(160deg) blur(1.5px); transform: translateY(14px); }
 .caster[data-death="earth"] .portrait-figure { fill: #6d675a; stroke: #3b372f; filter: grayscale(1); opacity: .9; }
 .caster[data-death="air"] .portrait-figure { opacity: .15; transform: translate(10px, -14px) rotate(8deg); }
+.caster[data-death="metal"] .portrait-figure { filter: grayscale(1) contrast(1.2) brightness(.55); transform: translateY(10px) rotate(-14deg); }
+/* A wound is a scar across the figure; the last one is a death. */
+.portrait-marks .wound { fill: none; stroke: var(--rose); stroke-width: 2.4; stroke-linecap: round; opacity: .95; }
+.caster.is-wounded .portrait-figure { stroke: var(--rose); }
 .caster.is-dead[data-death="fire"] .portrait-figure { opacity: .6; }
 .portrait-marks use { transition: opacity .4s, transform .4s; }
 /* What each caster took this round floats up beside them. */
@@ -102,6 +107,8 @@ button:focus-visible, canvas:focus-visible, a:focus-visible { outline: 2px solid
 .hits li[data-kind="water"] { color: #b9e2ee; border-color: #4f8aa3; }
 .hits li[data-kind="earth"] { color: #d9d0b8; border-color: #8d8470; }
 .hits li[data-kind="air"] { color: #cfe0a8; border-color: #8ea66d; }
+.hits li[data-kind="metal"] { color: #dfe6ee; border-color: #8a97a8; }
+.hits li[data-kind="wound"] { color: var(--rose); border-color: var(--rose); }
 .hits li[data-kind="barrier"] { color: var(--brass); border-color: var(--brass-deep); }
 .portrait-barrier circle { transition: opacity .4s; }
 .hits li[data-kind="none"] { color: var(--muted); border-color: #3a4c42; }

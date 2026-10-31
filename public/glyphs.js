@@ -128,7 +128,7 @@
 
   // Rings and portraits. A caster sees the element of their own ring; the
   // other side sees only how thick it is.
-  const RING_COLOURS = { fire: '#e08a4a', water: '#6fb0c8', earth: '#a39a86', air: '#9ec27a', hidden: 'url(#g-brass)', none: 'url(#g-brass)' };
+  const RING_COLOURS = { fire: '#e08a4a', water: '#6fb0c8', earth: '#a39a86', air: '#9ec27a', metal: '#b4c0cc', hidden: 'url(#g-brass)', none: 'url(#g-brass)' };
   const ringName = (ring, own) => {
     if (!ring || !ring.strength) return 'no ring';
     const el = ring.elements[0];
@@ -141,12 +141,16 @@
     const colour = RING_COLOURS[el] || S.ELEMENT_COLOURS[el];
     return Array.from({ length: ring.strength }, (_, i) => `<circle r="${62 + i * 5}" fill="none" stroke="${colour}" stroke-width="1.8" stroke-dasharray="${el === 'none' || el === 'hidden' ? '14 7' : '0'}" opacity="${(.95 - i * .2).toFixed(2)}"/>`).join('');
   };
+  // Wounds are scars across the figure, one per strike that got through.
+  const woundMarks = wounds => Array.from({ length: Math.min(wounds || 0, S.HITS - 1) }, (_, i) => `<path class="wound" d="${i % 2 ? 'M-20 -14L16 20' : 'M18 -16L-14 22'}" transform="translate(${i * 6} ${i * 4})"/>`).join('');
+  const woundsName = wounds => !wounds ? '' : S.HITS === 2 ? 'wounded, ' : `${wounds} wound${wounds > 1 ? 's' : ''}, `;
   const paintBody = (side, body, death) => {
     const figure = casters[side];
     figure.querySelector('[data-barrier]').innerHTML = ringArcs(body.ring, side === 'you');
-    figure.querySelector('[data-marks]').innerHTML = '';
-    figure.querySelector('[data-state]').textContent = death ? S.DEATHS[death].name : ringName(body.ring, side === 'you');
+    figure.querySelector('[data-marks]').innerHTML = death ? '' : woundMarks(body.wounds);
+    figure.querySelector('[data-state]').textContent = death ? S.DEATHS[death].name : woundsName(body.wounds) + ringName(body.ring, side === 'you');
     figure.classList.toggle('is-dead', Boolean(death));
+    figure.classList.toggle('is-wounded', !death && Boolean(body.wounds));
     if (death) figure.dataset.death = death; else delete figure.dataset.death;
   };
 
@@ -254,6 +258,9 @@
       else if (blow.how === 'broken') items.push({ kind: blow.element, text: `${by} breaks the ring`, line: `${by} at ${blow.power} breaks the ring of ${blow.worn}` });
       else if (blow.how === 'worn') items.push({ kind: 'barrier', text: `ring takes ${by} ${blow.power}`, line: `the ring takes ${by} at ${blow.power}, ${blow.left} left` });
       else items.push({ kind: blow.element, text: `${by} strikes, no ring` });
+      // A strike that gets through is a wound, whatever its power; the last
+      // wound is the death badge instead.
+      if (blow.through && blow.wound && blow.wound < S.HITS) items.push({ kind: 'wound', text: S.HITS === 2 ? 'wounded' : `wound ${blow.wound} of ${S.HITS}`, line: S.HITS === 2 ? 'is wounded: one more strike and they fall' : `takes wound ${blow.wound} of ${S.HITS}` });
     }
     if (result.deaths[index]) items.push({ kind: 'death', text: S.DEATHS[result.deaths[index]].name });
     if (!items.length) items.push({ kind: 'none', text: spellId === 'blank' ? 'nothing' : 'untouched' });
@@ -264,13 +271,13 @@
     list.innerHTML = items.map((item, i) => `<li data-kind="${item.kind}" style="${S.ELEMENT_COLOURS[item.kind] ? `--el:${S.ELEMENT_COLOURS[item.kind]};` : ''}animation-delay:${reducedMotion.matches ? 0 : i * HIT_MS}ms">${item.text}</li>`).join('');
     figure.classList.remove('is-hit', 'is-healed');
     void figure.offsetWidth;
-    if (items.some(item => S.ELEMENTS.includes(item.kind) || item.kind === 'death')) figure.classList.add('is-hit');
+    if (items.some(item => S.ELEMENTS.includes(item.kind) || item.kind === 'death' || item.kind === 'wound')) figure.classList.add('is-hit');
     else if (items.some(item => item.kind === 'barrier')) figure.classList.add('is-healed');
   };
   const clearHits = () => Object.values(casters).forEach(figure => { figure.querySelector('[data-hits]').innerHTML = ''; figure.classList.remove('is-hit', 'is-healed'); });
   // Narration, for the eye and the screen reader.
   const narrate = html => { narration.innerHTML = html; };
-  const outcomeLine = (name, items) => `<span data-kind="${items.some(i => S.ELEMENTS.includes(i.kind) || i.kind === 'death') ? 'hit' : items.some(i => i.kind === 'barrier') ? 'heal' : 'none'}"><strong>${name}</strong> ${items.map(i => i.line || i.text).join(', ')}</span>`;
+  const outcomeLine = (name, items) => `<span data-kind="${items.some(i => S.ELEMENTS.includes(i.kind) || i.kind === 'death' || i.kind === 'wound') ? 'hit' : items.some(i => i.kind === 'barrier') ? 'heal' : 'none'}"><strong>${name}</strong> ${items.map(i => i.line || i.text).join(', ')}</span>`;
   const HANDS = { 1: '', 2: ', cleanly', 3: ', perfectly' };
   // A compound is cast below the hand that drew it, and the line says so.
   const costNote = (id, power, cast) => cast < power ? `, cast at ${cast} as a compound` : '';

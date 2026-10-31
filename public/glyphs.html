@@ -23,6 +23,7 @@
 			<radialGradient id="g-drop" cx=".35" cy=".3" r=".7"><stop stop-color="#cfe8ef"/><stop offset=".6" stop-color="#4f8aa3"/><stop offset="1" stop-color="#1f4254"/></radialGradient>
 			<linearGradient id="g-stone" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#a39a86"/><stop offset="1" stop-color="#5d574a"/></linearGradient>
 			<linearGradient id="g-leaf" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b9c98a"/><stop offset="1" stop-color="#5d7350"/></linearGradient>
+			<linearGradient id="g-iron" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e6ebf1"/><stop offset=".5" stop-color="#8a97a8"/><stop offset="1" stop-color="#4b5563"/></linearGradient>
 			<g id="g-figure">
 				<path d="M0-58C-14-58-22-46-22-32C-22-20-16-12-8-8L-10 0C-30 6-42 26-44 62H44C42 26 30 6 10 0L8-8C16-12 22-20 22-32C22-46 14-58 0-58Z"/>
 				<path d="M-22-34C-14-44 14-44 22-34M-30 24C-22 40-20 52-22 62M30 24C22 40 20 52 22 62" fill="none" stroke-width="2" stroke-linecap="round"/>
@@ -35,6 +36,7 @@
 			<g id="g-token-water"><circle r="22" fill="#10222b" stroke="url(#g-brass)" stroke-width="2"/><path d="M-14-3C-8-10-2-10 2-4C6 2 11 2 15-4M-14 7C-8 0-2 0 2 6C6 12 11 12 15 6" fill="none" stroke="url(#g-drop)" stroke-width="3" stroke-linecap="round"/></g>
 			<g id="g-token-earth"><circle r="22" fill="#1d1a14" stroke="url(#g-brass)" stroke-width="2"/><path d="M-10-10H10V10H-10Z" fill="url(#g-stone)"/><path d="M-4-10L-2-2L-6 10M5-10L7 0" fill="none" stroke="#2b261f" stroke-width="1.4"/></g>
 			<g id="g-token-air"><circle r="22" fill="#15201a" stroke="url(#g-brass)" stroke-width="2"/><path d="M-13 2C-8-8 6-10 10-2C13 4 6 10-2 7C-8 4-6-4 0-3" fill="none" stroke="url(#g-leaf)" stroke-width="3" stroke-linecap="round"/></g>
+			<g id="g-token-metal"><circle r="22" fill="#171b20" stroke="url(#g-brass)" stroke-width="2"/><path d="M0-16L4-10V7H-4V-10Z" fill="url(#g-iron)"/><path d="M-9 7H9V10.5H-9Z" fill="url(#g-brass)"/><path d="M-2 10.5H2V16H-2Z" fill="#3a3028"/><path d="M0-13V5" stroke="#ffffff" stroke-opacity=".5" stroke-width=".8"/></g>
 			<g id="g-token-ward"><circle r="22" fill="#1b2420" stroke="url(#g-brass)" stroke-width="2"/><circle r="12" fill="none" stroke="url(#g-brass)" stroke-width="3"/></g>
 			<g id="g-token-mirror"><circle r="22" fill="#1b2420" stroke="url(#g-brass)" stroke-width="2"/><path d="M-5-13H5V13H-5Z" fill="#cfd8d6" stroke="url(#g-brass)" stroke-width="1.5"/><path d="M-2-9L2-11" stroke="#fff" stroke-width="1.5"/></g>
 			<g id="g-token-fizzle"><circle r="22" fill="#1b2420" stroke="#6b705f" stroke-width="2"/><path d="M-8 8C-10-2 2-2 0-10M4 10C2 2 10 0 8-8" fill="none" stroke="#9aa08f" stroke-width="2.5" stroke-linecap="round"/></g>
@@ -111,12 +113,12 @@
 					<button type="button" class="control control-cast" id="cast">Cast</button>
 					<button type="button" class="control" id="clear">Clear</button>
 				</div>
-				<p class="hint" id="hint">The ink will tell you when something stirs. The cleaner the glyph, the stronger the spell. A glyph inside a circle is a ring to stand behind; the other caster sees the ring, not what it is made of.</p>
+				<p class="hint" id="hint">The ink will tell you when something stirs. The cleaner the glyph, the stronger the spell. A glyph inside a circle is a ring to stand behind; the other caster sees the ring, not what it is made of. A strike that gets through wounds; the second wound kills.</p>
 			</section>
 		</div>
 		<details class="elements" id="elements">
 			<summary>The elements</summary>
-			<p class="elements-note">An arrow points at the element it beats. Two arrows that stop each other in the middle: the two quench each other. Two arrows that cross and each reach the other: the two pass through each other.</p>
+			<p class="elements-note">An arrow points at the element it beats: round the rim and across the star, each element beats two and is beaten by two. Two arrows that stop each other in the middle would quench each other; two that cross and each reach the other would pass through each other.</p>
 			<div class="wheel" id="elements-wheel"></div>
 			<ul class="elements-rules" id="elements-rules"></ul>
 		</details>

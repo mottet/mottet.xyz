@@ -163,8 +163,10 @@ into a grimoire on the page in their own hand (`localStorage`), and rewritten
 whenever a closer drawing of the same glyph is cast.
 
 There are no life points and no marks. A caster stands behind one ring at
-most, and a strike that gets through the ring, or finds none, kills by its
-element: burnt to ash, drowned, turned to stone, scattered. A bare circle is a
+most, and a strike that gets through the ring, or finds none, wounds, whatever
+its power; the second wound (`round.hits` in the data) kills by the element of
+the strike that made it: burnt to ash, cut down, turned to stone, scattered,
+drowned. Wounds are scars on the portrait and plain to both sides. A bare circle is a
 Ward, a ring of no element that thickens whatever ring stands; an attack glyph
 drawn inside a circle is a ring of that element (the recogniser splits off
 the one closed, cornerless stroke that encloses the rest and reads the
@@ -181,9 +183,10 @@ full bare Ward falls only to a perfect attack, a ring of water shrugs off
 every flame, and a ring of stone is paper to the weakest flame.
 Precision is power: the recogniser's distance to the glyph makes a spell power
 1, 2 or 3 (within 0.9 and 0.5), the sheet says "clean" or "perfect" as the
-glyph is read, and a perfect attack on an unguarded caster kills in one round.
-The glyphs are Flame (triangle), Wave (two crests), Stone (square), Wind
-(spiral), Ward (circle), Mirror (one upright stroke), and four compounds that
+glyph is read; power decides what happens at a ring, never how deep the wound
+is, so a perfect attack on an unguarded caster wounds like a weak one.
+The glyphs are Flame (triangle), Iron (a cross), Stone (square), Wind
+(spiral), Wave (two crests), Ward (circle), Mirror (one upright stroke), and four compounds that
 join two elements: Bolt (lightning stroke, fire and air), Frost (a
 three-stroke snow crystal, water and air), Vine (an S, earth and water) and
 Magma (triangle apex down, fire and earth). A compound meets everything with
@@ -199,12 +202,18 @@ both would be), and it is cast one power below the hand that drew it
 (`round.compoundCost`, never below 1), as an attack and as a ring, so it is
 never perfect and cannot break a full ring by force; the cast line says "cast
 at 2 as a compound". In the balance sim the compounds win fewer duels than
-any natural element. The elements form a
-cycle, Flame > Stone > Wave > Wind > Flame, with two diagonals (Flame and Wave
-quench each other as steam; Stone and Wind pass through each other); the
-loser of any arrow is struck by the winner's element. The mirror turns the
-light elements back into their caster's own ring and is soaked or shattered
-by the heavy ones. Casting resolves the round at once: the monster has already
+any natural element. The five elements form a
+pentagram, the one arrangement of five in which every element beats two and
+is beaten by two: round the rim Flame > Iron > Stone > Wind > Wave > Flame
+(melts, split, breaks, spray, steam) and across the star Flame > Stone, Iron >
+Wind, Stone > Wave, Wind > Flame, Wave > Iron (lava, cleft, mud, fanned,
+rust); the loser of any arrow is struck by the winner's element, and no pair
+is left undecided. The engine still understands a quench (both spells undone,
+both rings strong) and a pass (both land, both rings weak) for the forge. The
+mirror turns the light elements, flame and wind, back into their caster's own
+ring and is soaked, shattered or cut by the heavy ones. A ring answers a
+compound with its better answer, so on this wheel only Frost pierces a ring
+(a ring of flame, which both water and wind beat). Casting resolves the round at once: the monster has already
 chosen, knowing the player's ring only by its thickness until a strike reveals
 it. Each caster's portrait shows badges for what happened to them (a ring
 raised, a ring that turned a blow aside, took it or gave way, a death) and the
@@ -239,12 +248,12 @@ value (rings kept, kills, its own death) against a belief over the player's
 next glyph (half a count per option, one per past cast, three per cast in the
 last three rounds), adds its temperament and samples with softmax. A monster
 follows its own elements: the Salamander is loyal to fire (`elements`,
-`loyalty` 6, about half a kill), so it casts Flame, Bolt and Magma, stands
+`loyalty` 3, less than a wound), so it casts Flame, Bolt and Magma, stands
 behind a ring of flame when threatened, and strays to another element only
 when nothing of fire can get through, as against a known ring of water. It
 fumbles 15% of its glyphs and draws them weak, clean or perfect with odds
 40/40/20. The unit check prints its cast mix and asserts it keeps to fire at
-least 60% of the time and rings between 15% and 45%.
+least 55% of the time and rings between 15% and 45%.
 
 `/glyphs-grimoire.html` is the designer's grimoire: every glyph drawn from the
 templates, the full reaction matrix, deaths, the monster's mind, the
@@ -266,17 +275,18 @@ two-phone duels run on without a restart; the systemd unit needs
 read-only. Download and Load a file cover a server without the token.
 
 Run `node scripts/check-glyphs.cjs --unit` for the rules (symmetric matrix,
-cycle, guards, rest, cancellation, deaths), the data (validation, derived
-reactions, turning a relation, a fifth element with its spell and ring, the
-wheel), the recogniser against a synthetic
+the pentagram, guards, two wounds to a death, rings, deaths), the data
+(validation, derived reactions, turning a relation, a sixth element with its
+spell and ring, `round.hits`, the wheel), the recogniser against a synthetic
 hand at two levels of sloppiness plus scribbles and flipped shapes, and a
 balance simulation that prints each option's record against a random opponent
 and the Salamander's record against players who only ward or only ring water
 (read it after a rules change: no option should dominate, no ring should stall). Run
 `HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:glyphs` with
-the server up for the browser check: a pointer-drawn triangle reads as Flame
+the server up for the browser check (add `-- --browser` to skip the unit
+pass, which takes some minutes because of the balance simulation): a pointer-drawn triangle reads as Flame
 and lands, a blank sheet rests, a scribble fizzles without naming anything,
-a perfect flame kills in one round, a glyph in a circle raises a ring the
+a flame wounds and a second kills, a glyph in a circle raises a ring the
 player sees and the monster does not, a strike reveals a ring, the grimoire survives a reload, the forge turns a
 relation on the wheel and the matrix follows, adds an element, keeps a drawing
 as a shape and is refused a save without the token, two browsers duel

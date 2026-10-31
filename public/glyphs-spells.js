@@ -26,6 +26,8 @@
     wave: { params: { crests: 2 }, strokes: ({ crests }) => [Array.from({ length: 49 }, (_, i) => { const t = i / 48; return [t, .5 - .22 * Math.sin(t * Math.PI * 2 * crests)]; })] },
     spiral: { params: { turns: 2, sign: 1 }, strokes: ({ turns, sign }) => [Array.from({ length: 73 }, (_, i) => { const t = i / 72, a = sign * t * Math.PI * 2 * turns, r = .05 + .42 * t; return [.5 + r * Math.cos(a), .5 + r * Math.sin(a)]; })] },
     upright: { params: {}, strokes: () => [upright()] },
+    // Two strokes, one laid across the other.
+    cross: { params: {}, strokes: () => [upright(), segment([.05, .5], [.95, .5], 24)] },
     bolt: { params: {}, strokes: () => [polyline([[.66, .04], [.34, .52], [.62, .48], [.34, .96]])] },
     // Three strokes crossing at the centre; `tilt` is the angle of the arms in degrees.
     crystal: { params: { tilt: 60 }, strokes: ({ tilt }) => { const t = tilt * Math.PI / 180; return [upright(), segment([.5 - .45 * Math.sin(t), .5 - .45 * Math.cos(t)], [.5 + .45 * Math.sin(t), .5 + .45 * Math.cos(t)], 24), segment([.5 + .45 * Math.sin(t), .5 - .45 * Math.cos(t)], [.5 - .45 * Math.sin(t), .5 + .45 * Math.cos(t)], 24)]; } },
@@ -54,6 +56,7 @@
     for (const key of ['seconds', 'maxPower', 'maxRing']) if (!(Number.isFinite(round[key]) && round[key] > 0)) say(`round.${key} must be a positive number.`);
     if (!Array.isArray(round.powerLevels) || !round.powerLevels.every(l => l && Number.isFinite(l.within) && Number.isInteger(l.power))) say('round.powerLevels must be a list of { within, power }.');
     if (round.compoundCost !== undefined && !(Number.isInteger(round.compoundCost) && round.compoundCost >= 0)) say('round.compoundCost must be a whole number, 0 or more: the power a two-element spell gives up.');
+    if (round.hits !== undefined && !(Number.isInteger(round.hits) && round.hits >= 1)) say('round.hits must be a whole number, 1 or more: the strikes that must get through to kill.');
     const elements = Array.isArray(data.elements) ? data.elements : [];
     if (!elements.length) say('There must be at least one element.');
     const elementIds = new Set();
@@ -153,8 +156,10 @@
     const POWER_LEVELS = data.round.powerLevels.slice().sort((p, q) => p.within - q.within);
     const powerFor = distance => { const level = POWER_LEVELS.find(l => distance <= l.within); return level ? level.power : 1; };
     // There are no life points and no marks. A caster stands behind one ring at
-    // most, of a strength up to this; a strike that gets through the ring kills.
+    // most, of a strength up to this; a strike that gets through the ring
+    // wounds, whatever its power, and HITS wounds kill.
     const MAX_RING = data.round.maxRing;
+    const HITS = Number.isInteger(data.round.hits) ? data.round.hits : 1;
     // A compound is also cast weaker than the hand drew it, never below 1.
     const COMPOUND_COST = Number.isInteger(data.round.compoundCost) ? data.round.compoundCost : 1;
 
@@ -163,13 +168,17 @@
     // (both rings weak, attacks both land), or nothing.
     const relations = data.relations.map(r => ({ ...r }));
     const beats = Object.fromEntries(ELEMENTS.map(e => [e, relations.filter(r => r.kind === 'beats' && r.from === e).map(r => r.to)]));
-    function relationKind(a, b) {
+    function findRelationKind(a, b) {
       if (a === b) return 'same';
       const r = relations.find(r => (r.from === a && r.to === b) || (r.from === b && r.to === a));
       if (!r) return 'none';
       if (r.kind === 'beats') return r.from === a ? 'beats' : 'beaten';
       return r.kind;
     }
+    // Looked up on every strike the monster imagines, so tabled once.
+    const RELATION_TABLE = {};
+    for (const a of ELEMENTS) for (const b of ELEMENTS) RELATION_TABLE[`${a} ${b}`] = findRelationKind(a, b);
+    const relationKind = (a, b) => RELATION_TABLE[`${a} ${b}`] || findRelationKind(a, b);
     function setRelation(a, b, kind) {
       // For the forge: returns a new relations list with the pair set to
       // `kind` ('beats' from a to b, 'beaten', 'quench', 'pass' or 'none').
@@ -242,7 +251,7 @@
     const named = e => ELEMENT_NAMES[e];
     // How two elements stand to each other, in words. Used wherever the game
     // has to say why a blow did what it did.
-    function because(a, b) {
+    function sayBecause(a, b) {
       switch (relationKind(a, b)) {
         case 'beats': return `${named(a)} beats ${named(b)}`;
         case 'beaten': return `${named(b)} beats ${named(a)}`;
@@ -252,6 +261,9 @@
         default: return `nothing between ${named(a)} and ${named(b)}`;
       }
     }
+    const BECAUSE_TABLE = {};
+    for (const a of ELEMENTS) for (const b of ELEMENTS) BECAUSE_TABLE[`${a} ${b}`] = sayBecause(a, b);
+    const because = (a, b) => BECAUSE_TABLE[`${a} ${b}`] || sayBecause(a, b);
 
     // Two attacks meet on the wheel. Two single elements use the written or
     // derived reaction. A compound brings both its elements and there is
@@ -331,10 +343,21 @@
       if (fromOwn.length) strikes.push({ elements: fromOwn.sort((p, q) => order(p) - order(q)), power: ownPower, source: 'own' });
       return strikes;
     }
+    // A reaction is pure in its ids and powers, and the monster asks for the
+    // same few thousand of them over and over, so they are kept once built
+    // and handed out as copies.
+    const reactionMemo = new Map();
+    const copyStrikes = strikes => strikes.map(st => ({ ...st, elements: st.elements.slice() }));
     function reactions(aId, bId, powerA = 1, powerB = 1) {
       if (!byId[aId] || !byId[bId]) throw new Error(`Unknown spell: ${aId} / ${bId}`);
-      const r = pairReaction(aId, bId);
-      return { name: r.name, line: r.line, strikes: { a: strikesFor(r.marksA, aId, bId, powerA, powerB), b: strikesFor(r.marksB, bId, aId, powerB, powerA) }, powers: [powerA, powerB] };
+      const key = `${aId} ${bId} ${powerA} ${powerB}`;
+      let r = reactionMemo.get(key);
+      if (!r) {
+        const p = pairReaction(aId, bId);
+        r = { name: p.name, line: p.line, strikes: { a: strikesFor(p.marksA, aId, bId, powerA, powerB), b: strikesFor(p.marksB, bId, aId, powerB, powerA) }, powers: [powerA, powerB] };
+        reactionMemo.set(key, r);
+      }
+      return { name: r.name, line: r.line, strikes: { a: copyStrikes(r.strikes.a), b: copyStrikes(r.strikes.b) }, powers: r.powers.slice() };
     }
 
     // Rings. A ring has elements (none for a bare ward) and a strength, 1 to
@@ -343,9 +366,10 @@
     // one of them, neutral otherwise. Strong: the strike is turned aside and
     // the ring is untouched. Weak, or no ring at all: the strike goes straight
     // through. Neutral: the ring wears by the strike's power, and a power as
-    // high as the ring breaks it and goes through. Getting through is death.
+    // high as the ring breaks it and goes through. Getting through is a
+    // wound; the power of the strike no longer matters, and HITS wounds kill.
     const noRing = () => ({ elements: [], strength: 0 });
-    const emptyBody = () => ({ ring: noRing() });
+    const emptyBody = () => ({ ring: noRing(), wounds: 0 });
     const RELATION = { strong: 1, neutral: 0, weak: -1 };
     function relation(attack, ringElement) {
       if (!ringElement) return 'neutral';
@@ -395,10 +419,11 @@
     const castPower = (id, power) => isCompound(id) ? Math.max(1, power - COMPOUND_COST) : power;
 
     // One round: rings are raised first, then each strike meets the ring in
-    // front of its target, in the order they come. Getting through is death.
-    // `powers` are as the hands drew them; a compound is cast at less.
+    // front of its target, in the order they come. Getting through wounds,
+    // and the wound that makes HITS kills. `powers` are as the hands drew
+    // them; a compound is cast at less.
     function applyRound(bodyA, bodyB, aId, bId, powers = [1, 1]) {
-      const bodies = [{ ring: { ...noRing(), ...(bodyA.ring || {}) } }, { ring: { ...noRing(), ...(bodyB.ring || {}) } }], ids = [aId, bId];
+      const bodies = [bodyA, bodyB].map(body => ({ ring: { ...noRing(), ...(body.ring || {}) }, wounds: body.wounds || 0 })), ids = [aId, bId];
       bodies.forEach(body => { body.ring.elements = (body.ring.elements || []).slice(); });
       const cast = ids.map((id, i) => castPower(id, powers[i]));
       const raised = ids.map((id, i) => {
@@ -412,16 +437,21 @@
       const blows = [reaction.strikes.a, reaction.strikes.b].map((strikes, i) => strikes.map(strike => {
         if (deaths[i]) return { ...strike, element: strike.elements[0], relation: 'neutral', how: 'spent', why: '', through: false, worn: 0, left: 0, spent: true };
         const hit = strikeRing(bodies[i].ring, strike);
-        if (hit.through) { deaths[i] = hit.element; bodies[i].ring = noRing(); }
-        else bodies[i].ring.strength = hit.left;
+        let wound = 0;
+        if (hit.through) {
+          bodies[i].ring = noRing();
+          wound = bodies[i].wounds += 1;
+          if (bodies[i].wounds >= HITS) deaths[i] = hit.element;
+        } else bodies[i].ring.strength = hit.left;
         if (bodies[i].ring.strength === 0) bodies[i].ring = noRing();
-        return { ...strike, ...hit };
+        return { ...strike, ...hit, wound };
       }));
       return { bodies, raised, blows, reaction, deaths };
     }
 
-    // What the other caster is allowed to know: the ring's thickness, never its element.
-    const maskBody = body => ({ ring: { elements: body.ring.elements.length ? ['hidden'] : [], strength: body.ring.strength } });
+    // What the other caster is allowed to know: the ring's thickness, never
+    // its element; wounds are plain to see.
+    const maskBody = body => ({ ring: { elements: body.ring.elements.length ? ['hidden'] : [], strength: body.ring.strength }, wounds: body.wounds || 0 });
     const maskCast = id => isRing(id) ? WARD.id : id;
 
     // The monster weighs each option against what it believes the player will
@@ -429,14 +459,19 @@
     // temperament, and sometimes fumbles the glyph.
     const monsters = [
       // Loyal to fire: flame, bolt and magma, and a ring of flame to stand
-      // behind. Straying to another element costs it 6, about half a kill, so
-      // it does so only when nothing of fire can get through.
-      { id: 'salamander', name: 'the Salamander', line: 'A lizard of embers that loves its own element.', elements: ['fire'], loyalty: 6, bias: { flame: 2, bolt: 1.5, magma: 1, 'ring-flame': 1.5, 'ring-bolt': 1, ward: 1 }, accuracy: .85, precision: [.4, .4, .2], temperature: .9 }
+      // behind. Straying to another element costs it 3, less than a wound,
+      // so it does so when fire is clearly the wrong answer; at 6 it lost to
+      // a random player on the five-element wheel, where flame is beaten by
+      // two elements and turned back by the mirror.
+      { id: 'salamander', name: 'the Salamander', line: 'A lizard of embers that loves its own element.', elements: ['fire'], loyalty: 3, bias: { flame: 2, bolt: 1.5, magma: 1, 'ring-flame': 1.5, 'ring-bolt': 1, ward: 1 }, accuracy: .85, precision: [.4, .4, .2], temperature: .9 }
     ];
     const sq = n => n * n;
     function value(result, selfIndex) {
       const otherIndex = 1 - selfIndex, [self, other] = [result.bodies[selfIndex], result.bodies[otherIndex]];
       let v = .9 * (sq(self.ring.strength) - sq(other.ring.strength)) + .6 * (self.ring.elements.length - other.ring.elements.length);
+      // A wound is worth a share of a kill, so the monster presses a wounded
+      // caster and guards itself once wounded.
+      v += 10 / HITS * other.wounds - 14 / HITS * self.wounds;
       if (result.deaths[otherIndex]) v += 10;
       if (result.deaths[selfIndex]) v -= 14;
       return v;
@@ -478,7 +513,7 @@
         let expected = 0;
         for (const theirs of OPTIONS) {
           for (const g of guesses) {
-            const believed = { ring: { elements: g.elements, strength: other.ring.strength } };
+            const believed = { ring: { elements: g.elements, strength: other.ring.strength }, wounds: other.wounds || 0 };
             const result = applyRound(self, believed, id, theirs, [typical, typical]);
             expected += guess[theirs] * g.weight * value(result, 0);
           }
@@ -497,7 +532,7 @@
       return chosen;
     }
 
-    return { data, ELEMENTS, elementsById, ELEMENT_NAMES, ELEMENT_COLOURS, DEATHS, ROUND_SECONDS, MAX_POWER, MAX_RING, COMPOUND_COST, POWER_LEVELS, RELATION_NAMES, powerFor, castPower, isCompound, relations, beats, relationKind, setRelation, spells, rings, ringId, isRing, WARD, BLANK, FIZZLE, OPTIONS, SIMPLE, byId, reactionFor, derivedReaction, reactions, relation, because, strikeRing, raiseRing, applyRound, emptyBody, noRing, maskBody, maskCast, monsters, chooseSpell, monsterPower, scoreOptions, belief };
+    return { data, ELEMENTS, elementsById, ELEMENT_NAMES, ELEMENT_COLOURS, DEATHS, ROUND_SECONDS, MAX_POWER, MAX_RING, HITS, COMPOUND_COST, POWER_LEVELS, RELATION_NAMES, powerFor, castPower, isCompound, relations, beats, relationKind, setRelation, spells, rings, ringId, isRing, WARD, BLANK, FIZZLE, OPTIONS, SIMPLE, byId, reactionFor, derivedReaction, reactions, relation, because, strikeRing, raiseRing, applyRound, emptyBody, noRing, maskBody, maskCast, monsters, chooseSpell, monsterPower, scoreOptions, belief };
   }
 
   // The data file, written back the way it is kept: objects one key per

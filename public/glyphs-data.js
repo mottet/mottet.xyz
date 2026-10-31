@@ -15,6 +15,7 @@
     "seconds": 10,
     "maxPower": 3,
     "maxRing": 3,
+    "hits": 2,
     "powerLevels": [
       {
         "within": 0.5,
@@ -38,12 +39,12 @@
       }
     },
     {
-      "id": "water",
-      "name": "water",
-      "color": "#4f8aa3",
+      "id": "metal",
+      "name": "iron",
+      "color": "#8a97a8",
       "death": {
-        "name": "drowned",
-        "line": "The water closes over them and does not give them back."
+        "name": "cut down",
+        "line": "The iron finds the gap and the caster falls where they stood, cut down."
       }
     },
     {
@@ -63,9 +64,43 @@
         "name": "scattered",
         "line": "The wind unpicks them and carries them away as leaves."
       }
+    },
+    {
+      "id": "water",
+      "name": "water",
+      "color": "#4f8aa3",
+      "death": {
+        "name": "drowned",
+        "line": "The water closes over them and does not give them back."
+      }
     }
   ],
   "relations": [
+    {
+      "kind": "beats",
+      "from": "fire",
+      "to": "metal"
+    },
+    {
+      "kind": "beats",
+      "from": "metal",
+      "to": "earth"
+    },
+    {
+      "kind": "beats",
+      "from": "earth",
+      "to": "air"
+    },
+    {
+      "kind": "beats",
+      "from": "air",
+      "to": "water"
+    },
+    {
+      "kind": "beats",
+      "from": "water",
+      "to": "fire"
+    },
     {
       "kind": "beats",
       "from": "fire",
@@ -73,13 +108,13 @@
     },
     {
       "kind": "beats",
-      "from": "earth",
-      "to": "water"
+      "from": "metal",
+      "to": "air"
     },
     {
       "kind": "beats",
-      "from": "water",
-      "to": "air"
+      "from": "earth",
+      "to": "water"
     },
     {
       "kind": "beats",
@@ -87,14 +122,9 @@
       "to": "fire"
     },
     {
-      "kind": "quench",
-      "from": "fire",
-      "to": "water"
-    },
-    {
-      "kind": "pass",
-      "from": "earth",
-      "to": "air"
+      "kind": "beats",
+      "from": "water",
+      "to": "metal"
     }
   ],
   "spells": [
@@ -181,6 +211,21 @@
           "kind": "spiral",
           "turns": 2.5,
           "sign": -1
+        }
+      ]
+    },
+    {
+      "id": "iron",
+      "name": "Iron",
+      "elements": [
+        "metal"
+      ],
+      "kind": "attack",
+      "glyph": "a cross: two strokes, one laid across the other",
+      "flavour": "The smith's sign: a bar laid across a bar. Iron is edge and weight, and it answers to fire and to rust.",
+      "shapes": [
+        {
+          "kind": "cross"
         }
       ]
     },
@@ -302,9 +347,11 @@
     },
     "flame wave": {
       "name": "steam",
-      "x": {},
+      "x": {
+        "water": 1
+      },
       "y": {},
-      "line": "Fire and water meet in a hiss of steam. Nothing lands."
+      "line": "Fire and water meet in a hiss of steam, and the wave rolls on through it to the fire caster."
     },
     "flame stone": {
       "name": "lava",
@@ -330,6 +377,14 @@
       "y": {},
       "line": "The mirror turns the flame back to its caster."
     },
+    "flame iron": {
+      "name": "melts",
+      "x": {},
+      "y": {
+        "fire": 1
+      },
+      "line": "The flame runs the iron to a glowing pool that goes on to the iron caster."
+    },
     "wave wave": {
       "name": "flood",
       "x": {
@@ -349,12 +404,12 @@
       "line": "The stone drinks the wave and slides on as mud to the water caster."
     },
     "wave wind": {
-      "name": "rain",
-      "x": {},
-      "y": {
-        "water": 1
+      "name": "spray",
+      "x": {
+        "air": 1
       },
-      "line": "The wind carries the wave up and it comes down as rain on the wind caster."
+      "y": {},
+      "line": "The wind tears the wave to spray and goes on to the water caster."
     },
     "wave mirror": {
       "name": "flows through",
@@ -363,6 +418,14 @@
         "water": 1
       },
       "line": "Water finds its way round the mirror and reaches its caster."
+    },
+    "wave iron": {
+      "name": "rust",
+      "x": {},
+      "y": {
+        "water": 1
+      },
+      "line": "The wave eats the iron to rust and rolls on to the iron caster."
     },
     "stone stone": {
       "name": "quake",
@@ -375,14 +438,12 @@
       "line": "Two stones strike and the ground cracks under both casters."
     },
     "stone wind": {
-      "name": "pass",
-      "x": {
-        "air": 1
-      },
+      "name": "breaks",
+      "x": {},
       "y": {
         "earth": 1
       },
-      "line": "Heavy and light pass each other. Both go on."
+      "line": "The wind breaks on the stone, and the stone goes on to the wind caster."
     },
     "stone mirror": {
       "name": "shatters",
@@ -391,6 +452,14 @@
         "earth": 1
       },
       "line": "The stone shatters the mirror and strikes its caster."
+    },
+    "stone iron": {
+      "name": "split",
+      "x": {
+        "metal": 1
+      },
+      "y": {},
+      "line": "The iron splits the stone and goes on to the stone caster."
     },
     "wind wind": {
       "name": "gale",
@@ -409,6 +478,32 @@
       },
       "y": {},
       "line": "The mirror turns the wind back to its caster."
+    },
+    "wind iron": {
+      "name": "cleft",
+      "x": {
+        "metal": 1
+      },
+      "y": {},
+      "line": "The wind breaks on the edge of the iron, and the iron goes on to the wind caster."
+    },
+    "iron iron": {
+      "name": "sparks",
+      "x": {
+        "metal": 1
+      },
+      "y": {
+        "metal": 1
+      },
+      "line": "Two blades ring together and the sparks fly. Each goes on to the other caster."
+    },
+    "iron mirror": {
+      "name": "shatters",
+      "x": {},
+      "y": {
+        "metal": 1
+      },
+      "line": "The iron shatters the mirror and strikes its caster."
     },
     "mirror mirror": {
       "name": "stillness",
