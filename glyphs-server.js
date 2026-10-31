@@ -3,12 +3,13 @@
 // Glyphs duels between two players. A room is a four-letter code; the server
 // runs the clock and the rules, so neither phone sees the other's glyph until
 // the reaction is sent to both.
-const S = require('./public/glyphs-spells.js');
+const Rules = require('./public/glyphs-spells.js');
+// The rules in play; the forge swaps them when it saves new data.
+let S = Rules;
 
-const ROUND_MS = S.ROUND_SECONDS * 1000 + 1200; // the clock plus a grace for slow links
-const BETWEEN_MS = 4600; // time for the battlefield to play before the next sheet
+const roundMs = () => S.ROUND_SECONDS * 1000 + 1200; // the clock plus a grace for slow links
+const BETWEEN_MS = 14000; // time to read the battlefield before the next sheet
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-const VALID = new Set(S.OPTIONS.concat('fizzle'));
 
 module.exports = function attachGlyphs(io) {
   const rooms = new Map();
@@ -19,10 +20,15 @@ module.exports = function attachGlyphs(io) {
   };
   const roomOf = socket => rooms.get(socket.data.glyphsRoom);
   const swapPair = pair => [pair[1], pair[0]];
-  // Each player receives the round from their own side: index 0 is always "you".
-  const perspective = (result, side) => side === 0 ? result : {
-    bodies: swapPair(result.bodies), heals: swapPair(result.heals), cancellations: swapPair(result.cancellations), deaths: swapPair(result.deaths),
-    reaction: { ...result.reaction, marks: { a: result.reaction.marks.b, b: result.reaction.marks.a }, powers: swapPair(result.reaction.powers) }
+  // Each player receives the round from their own side: index 0 is always
+  // "you", and the other caster's ring is masked to its thickness.
+  const perspective = (result, side) => {
+    const ordered = side === 0 ? result : {
+      bodies: swapPair(result.bodies), raised: swapPair(result.raised), blows: swapPair(result.blows), deaths: swapPair(result.deaths),
+      reaction: { ...result.reaction, strikes: { a: result.reaction.strikes.b, b: result.reaction.strikes.a }, powers: swapPair(result.reaction.powers) }
+    };
+    const maskRaised = r => r && { before: S.maskBody({ ring: r.before }).ring, after: S.maskBody({ ring: r.after }).ring };
+    return { ...ordered, bodies: [ordered.bodies[0], S.maskBody(ordered.bodies[1])], raised: [ordered.raised[0], maskRaised(ordered.raised[1])] };
   };
 
   function leave(socket, reason = 'left') {
@@ -36,7 +42,6 @@ module.exports = function attachGlyphs(io) {
   }
   function start(room) {
     room.bodies = [S.emptyBody(), S.emptyBody()];
-    room.streaks = [null, null];
     room.round = 0;
     room.again = [false, false];
     room.phase = 'starting';
@@ -48,19 +53,18 @@ module.exports = function attachGlyphs(io) {
     room.phase = 'drawing';
     room.casts = [null, null];
     room.players.forEach(p => p.emit('glyphs:round', { round: room.round, seconds: S.ROUND_SECONDS }));
-    room.timer = setTimeout(() => resolve(room), ROUND_MS);
+    room.timer = setTimeout(() => resolve(room), roundMs());
   }
   function resolve(room) {
     if (room.phase !== 'drawing') return;
     room.phase = 'resolving';
     clearTimeout(room.timer);
-    const ids = room.casts.map(id => id || 'rest');
-    room.streaks = room.streaks.map((streak, i) => S.nextStreak(streak, ids[i]));
-    const powers = room.streaks.map(S.powerOf);
+    const ids = room.casts.map(cast => cast ? cast.id : 'blank');
+    const powers = room.casts.map(cast => cast ? cast.power : 1);
     const result = S.applyRound(room.bodies[0], room.bodies[1], ids[0], ids[1], powers);
     room.bodies = result.bodies;
     const ended = result.deaths.some(Boolean);
-    room.players.forEach((p, side) => p.emit('glyphs:result', { round: room.round, yours: ids[side], theirs: ids[1 - side], powers: side === 0 ? powers : swapPair(powers), result: perspective(result, side), ended }));
+    room.players.forEach((p, side) => p.emit('glyphs:result', { round: room.round, yours: ids[side], theirs: S.maskCast(ids[1 - side]), powers: side === 0 ? powers : swapPair(powers), result: perspective(result, side), ended, nextIn: ended ? 0 : BETWEEN_MS }));
     if (ended) { room.phase = 'ended'; return; }
     room.timer = setTimeout(() => nextRound(room), BETWEEN_MS);
   }
@@ -85,12 +89,15 @@ module.exports = function attachGlyphs(io) {
       reply({ code: room.code });
       start(room);
     });
-    socket.on('glyphs:cast', id => {
+    // A cast is the glyph the phone read and how cleanly it was drawn.
+    socket.on('glyphs:cast', cast => {
       const room = roomOf(socket);
       if (!room || room.phase !== 'drawing') return;
       const side = room.players.indexOf(socket);
       if (side < 0 || room.casts[side]) return;
-      room.casts[side] = VALID.has(id) ? id : 'fizzle';
+      const id = cast && typeof cast === 'object' ? cast.id : cast;
+      const power = Math.min(S.MAX_POWER, Math.max(1, Math.round(Number(cast && cast.power) || 1)));
+      room.casts[side] = { id: id in S.byId ? id : 'fizzle', power };
       room.players.forEach((p, i) => { if (i !== side) p.emit('glyphs:sealed'); });
       if (room.casts.every(Boolean)) resolve(room);
     });
@@ -105,5 +112,7 @@ module.exports = function attachGlyphs(io) {
     socket.on('disconnect', () => leave(socket, 'disconnected'));
   });
 
-  return { rooms };
+  // New data from the forge takes effect for the next round of every table.
+  const reload = data => { S = Rules.build(data); };
+  return { rooms, reload, get rules() { return S; } };
 };

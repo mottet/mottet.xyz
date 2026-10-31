@@ -145,5 +145,27 @@
   // A drawing whose best candidate is further than this is no glyph.
   const ACCEPT = 1.3;
 
-  return { N, ACCEPT, normalize, prepare, recognize, extent, cues };
+  // A glyph drawn inside a circle: one stroke that closes on itself without
+  // corners and encloses every other stroke is the ring, the rest is the glyph.
+  function bounds(strokes) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const s of strokes) for (const p of s) { minX = Math.min(minX, p[0]); minY = Math.min(minY, p[1]); maxX = Math.max(maxX, p[0]); maxY = Math.max(maxY, p[1]); }
+    return { minX, minY, maxX, maxY };
+  }
+  function splitRing(strokes) {
+    const live = strokes.filter(s => s.length > 1);
+    if (live.length < 2) return { ring: null, inner: live };
+    const candidates = live.map((stroke, index) => ({ stroke, index, cue: cues([stroke]), box: bounds([stroke]) }))
+      .filter(c => c.cue.closed && c.cue.corners === 0)
+      .sort((p, q) => (q.box.maxX - q.box.minX) * (q.box.maxY - q.box.minY) - (p.box.maxX - p.box.minX) * (p.box.maxY - p.box.minY));
+    for (const c of candidates) {
+      const rest = live.filter((_, i) => i !== c.index);
+      const inside = bounds(rest);
+      const slack = .08 * Math.max(c.box.maxX - c.box.minX, c.box.maxY - c.box.minY);
+      if (inside.minX >= c.box.minX - slack && inside.maxX <= c.box.maxX + slack && inside.minY >= c.box.minY - slack && inside.maxY <= c.box.maxY + slack) return { ring: c.stroke, inner: rest };
+    }
+    return { ring: null, inner: live };
+  }
+
+  return { N, ACCEPT, normalize, prepare, recognize, extent, cues, splitRing };
 });

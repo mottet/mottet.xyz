@@ -145,8 +145,12 @@ regeneration, and reduced motion.
 ten seconds; the player draws one glyph on a sheet of paper (a canvas with
 Pointer Events) while the monster "scratches its quill" off screen, and the
 two spells meet in the arena at the same moment. The page shows one scene at
-a time: casting sends the sheet away and brings up the battlefield, and the
-next round drops a fresh sheet in (reduced motion swaps without animating).
+a time: casting sends the sheet away and brings up the battlefield, where the
+tokens cross, the reaction blooms and the rings answer one badge at a time;
+against the monster the next sheet waits for a Next round button, between
+phones the server allows fourteen seconds and the page counts them down, and
+the end of a duel is a card inside the battlefield rather than an overlay
+(reduced motion swaps without animating).
 Only the reaction is shown:
 tokens for what each side cast slide to the centre and a named reaction blooms
 (inferno, steam, lava, fanned, reflected, mud, rain, quake, pass, breaks back,
@@ -155,48 +159,92 @@ narrates it. The shapes are never written down in the game. While drawing, the
 sheet glows in proportion to the recogniser's best score without naming the
 spell, and sets to brass once a glyph is read; a drawing that is no glyph
 fizzles, a blank sheet is a rest. Glyphs the player has made work are written
-into a grimoire on the page in their own hand (`localStorage`).
+into a grimoire on the page in their own hand (`localStorage`), and rewritten
+whenever a closer drawing of the same glyph is cast.
 
-There are no life points. A body holds marks in four elements (embers, drops,
-cracks, leaves); opposite marks cancel at the end of every round as steam or
-dust, and three marks of one element kill: burnt to ash, drowned, turned to
-stone, scattered. Rest removes one mark of the rester's heaviest element before
-the round's blow lands. The six glyphs are Flame (triangle), Wave (two crests),
-Stone (square), Wind (spiral), Ward (circle) and Mirror (one upright stroke).
-Four compound spells join two elements: Bolt (lightning stroke, fire and
-air), Frost (hexagon, water and air), Vine (an S, earth and water) and Magma
-(triangle apex down, fire and earth). A compound reacts as each of its parts
-would against the other spell and the marks add up, so the matrix for them is
-derived, not hand-written. Casting resolves the round at once: the monster has
-already chosen. Each caster's portrait shows badges for what they took (marks,
-fades, steam or dust, a death) and the narration ends with an outcome line per
-caster. The duel waits for the player to press Begin, against the Salamander or
-against a friend on another phone: `glyphs-server.js` (attached in
-`server.js`) sets a table under a four-letter code, the other player joins
-by code or by the `#duel=CODE` link, and the server keeps the clock, seals
-both casts, runs the rules and sends each side its own perspective of the
-round; the socket.io client is fetched only when asked for. `PORT` overrides
-the server's port (default 8080). Momentum: the same attack cast
-in consecutive rounds lands one more mark each round, up to three, and a mark
-is as strong as the spell of its element, so a reflected or fanned flame comes
-back with its caster's own momentum; rest, a fizzle, a guard or another glyph
-breaks the run. This keeps a caster who only rests from stalling the duel.
-The elements form a cycle, Flame > Stone > Wave > Wind > Flame, with two
-diagonals (Flame and Wave neutralise as steam; Stone and Wind pass each other
-and both land); the ring on the floor turns the heavy elements back and is
-leapt by the light ones, the mirror turns the light ones back and is soaked or
-shattered by the heavy ones; rest beats a guard and loses to an attack.
+There are no life points and no marks. A caster stands behind one ring at
+most, and a strike that gets through the ring, or finds none, kills by its
+element: burnt to ash, drowned, turned to stone, scattered. A bare circle is a
+Ward, a ring of no element that thickens whatever ring stands; an attack glyph
+drawn inside a circle is a ring of that element (the recogniser splits off
+the one closed, cornerless stroke that encloses the rest and reads the
+remainder). The same element thickens the ring, another replaces it, never
+beyond three. The other caster sees the ring's thickness, never its element:
+their portrait shows a bare ring, the server masks the element in what it
+sends, and only a strike reveals it through the badge, which names the pair
+of elements that decided it. A strike meets a ring in one of three ways. The
+ring turns it aside, untouched, when the ring's element beats or quenches the
+striking element. The strike goes straight through, whatever its power, when
+it beats or passes the ring's element. Otherwise (a bare Ward always) the ring
+wears by the strike's power, and a power as high as the ring breaks it. So a
+full bare Ward falls only to a perfect attack, a ring of water shrugs off
+every flame, and a ring of stone is paper to the weakest flame.
+Precision is power: the recogniser's distance to the glyph makes a spell power
+1, 2 or 3 (within 0.9 and 0.5), the sheet says "clean" or "perfect" as the
+glyph is read, and a perfect attack on an unguarded caster kills in one round.
+The glyphs are Flame (triangle), Wave (two crests), Stone (square), Wind
+(spiral), Ward (circle), Mirror (one upright stroke), and four compounds that
+join two elements: Bolt (lightning stroke, fire and air), Frost (a
+three-stroke snow crystal, water and air), Vine (an S, earth and water) and
+Magma (triangle apex down, fire and earth). A compound meets everything with
+whichever of its elements fares better, so a round has one reaction and one
+line: against another attack it overcomes when it beats the other somewhere
+and is beaten nowhere (the whole spell goes on), trades when each has the
+better of the other somewhere (both go on), and otherwise what is not quenched
+goes on; a mirror turns it back only if it reflects both elements. In return
+a compound is weaker than a natural element in two ways: against a ring it is
+as weak as its weaker element (the ring answers with the better of its
+answers: turned aside if either element would be, straight through only if
+both would be), and it is cast one power below the hand that drew it
+(`round.compoundCost`, never below 1), as an attack and as a ring, so it is
+never perfect and cannot break a full ring by force; the cast line says "cast
+at 2 as a compound". In the balance sim the compounds win fewer duels than
+any natural element. The elements form a
+cycle, Flame > Stone > Wave > Wind > Flame, with two diagonals (Flame and Wave
+quench each other as steam; Stone and Wind pass through each other); the
+loser of any arrow is struck by the winner's element. The mirror turns the
+light elements back into their caster's own ring and is soaked or shattered
+by the heavy ones. Casting resolves the round at once: the monster has already
+chosen, knowing the player's ring only by its thickness until a strike reveals
+it. Each caster's portrait shows badges for what happened to them (a ring
+raised, a ring that turned a blow aside, took it or gave way, a death) and the
+narration ends with an outcome line per caster. The duel waits for the player
+to press Begin, against the Salamander or against a friend on another phone:
+`glyphs-server.js` (attached in `server.js`) sets a table under a four-letter
+code, the other player joins by code or by the `#duel=CODE` link, and the
+server keeps the clock, seals both casts with the power each phone read, runs
+the rules and sends each side its own perspective of the round with the other
+ring masked; the socket.io client is fetched only when asked for. `PORT`
+overrides the server's port (default 8080).
 
-`glyphs-spells.js` holds all of this as data and pure functions (`reactions`,
-`applyRound`, `chooseSpell`, the monster profiles) and is shared by the game,
-the grimoire page and the Node checks. `glyphs-recognizer.js` is the $P
+`glyphs-data.js` holds the elements (id, name, colour, death), their
+relations (`beats` from one to another, or a symmetric `quench` or `pass`),
+the spells with their glyph shapes (a shape is a generator name and its
+parameters, or recorded strokes) and the reactions written by hand, as JSON
+inside a small wrapper. `glyphs-spells.js` builds the rules from it (pure
+functions: `reactions`, `applyRound`, `chooseSpell`, the monster profiles)
+and is shared by the game, the grimoire, the forge and the Node checks; a pair
+of attacks with no written reaction follows from the relations (the winner's
+element goes on to the loser, a quench cancels, a pass or nothing lets both
+land; a defence reflects the elements it is told to and lets the rest
+through), and `build(data)` makes a fresh set of rules from any data.
+`glyphs-wheel.js` draws the element wheel (an arrow points at what it beats,
+dashed is a quench, dotted a pass) for the duel's "The elements" panel, the
+grimoire and the forge. `glyphs-recognizer.js` is the $P
 point-cloud recogniser with two cues from the raw strokes (closure and corner
 count) that keep a square from reading as a circle; templates are generated
 from geometry, not recorded. `glyphs.js` owns the sheet, the clock, the
 monster's turn and the arena. The monster scores every option by expected
-marks against a belief over the player's next glyph (uniform prior plus
-history), adds its temperament and samples with softmax; the Salamander leans
-to Flame and fumbles 15% of its glyphs.
+value (rings kept, kills, its own death) against a belief over the player's
+next glyph (half a count per option, one per past cast, three per cast in the
+last three rounds), adds its temperament and samples with softmax. A monster
+follows its own elements: the Salamander is loyal to fire (`elements`,
+`loyalty` 6, about half a kill), so it casts Flame, Bolt and Magma, stands
+behind a ring of flame when threatened, and strays to another element only
+when nothing of fire can get through, as against a known ring of water. It
+fumbles 15% of its glyphs and draws them weak, clean or perfect with odds
+40/40/20. The unit check prints its cast mix and asserts it keeps to fire at
+least 60% of the time and rings between 15% and 45%.
 
 `/glyphs-grimoire.html` is the designer's grimoire: every glyph drawn from the
 templates, the full reaction matrix, deaths, the monster's mind, the
@@ -204,15 +252,34 @@ recogniser's thresholds and a test pad that ranks candidates for a drawing. It
 is deliberately not linked from the game or the house, and carries a spoiler
 banner.
 
+`/glyphs-editor.html` is the forge, linked only from the grimoire: it edits
+the data file in forms (elements and deaths, the wheel by clicking two
+elements or a line, spells with their shapes and a nearest-other-glyph
+readout, reactions in a table where derived pairs are in italics and typing
+writes them), tries every change against `validate` and `build` as it is
+made, keeps a drawing from its test sheet as a spell's glyph or variant, and
+saves with `POST /glyphs/data`. The server checks a token (`GLYPHS_EDIT_TOKEN`
+or the `.glyphs-edit-token` file beside `server.js`, read per request),
+validates, writes `public/glyphs-data.js` and rebuilds the rules the
+two-phone duels run on without a restart; the systemd unit needs
+`ReadWritePaths=` for that file since the home directory is mounted
+read-only. Download and Load a file cover a server without the token.
+
 Run `node scripts/check-glyphs.cjs --unit` for the rules (symmetric matrix,
-cycle, guards, rest, cancellation, deaths), the recogniser against a synthetic
+cycle, guards, rest, cancellation, deaths), the data (validation, derived
+reactions, turning a relation, a fifth element with its spell and ring, the
+wheel), the recogniser against a synthetic
 hand at two levels of sloppiness plus scribbles and flipped shapes, and a
 balance simulation that prints each option's record against a random opponent
-(read it after a rules change: no option should dominate). Run
+and the Salamander's record against players who only ward or only ring water
+(read it after a rules change: no option should dominate, no ring should stall). Run
 `HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:glyphs` with
 the server up for the browser check: a pointer-drawn triangle reads as Flame
 and lands, a blank sheet rests, a scribble fizzles without naming anything,
-momentum doubles a repeated flame, a death by fire ends the duel, the grimoire survives a reload, two browsers duel
+a perfect flame kills in one round, a glyph in a circle raises a ring the
+player sees and the monster does not, a strike reveals a ring, the grimoire survives a reload, the forge turns a
+relation on the wheel and the matrix follows, adds an element, keeps a drawing
+as a shape and is refused a save without the token, two browsers duel
 through a server the check starts itself on port 8097, the clock
 resolves a round on its own, the grimoire page is complete and its pad reads a
 circle as Ward, and a phone viewport has no horizontal overflow.

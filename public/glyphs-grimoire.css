@@ -23,6 +23,7 @@
 .matrix td strong { display: block; font: 400 13px/1.2 Federo, Georgia, serif; letter-spacing: 1px; text-transform: uppercase; color: var(--cream); }
 .matrix td .me { color: #e59b7a; }
 .matrix td .them { color: #9ccfa6; }
+.matrix td.derived { font-style: italic; background: #15241d; }
 .matrix td .none { color: var(--muted); font-style: italic; }
 .deaths { border-collapse: collapse; margin-top: 12px; width: 100%; font-size: 16px; }
 .deaths th, .deaths td { padding: 6px 8px; border: 1px solid #3a4c42; text-align: left; vertical-align: top; }

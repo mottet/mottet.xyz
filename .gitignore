@@ -62,5 +62,8 @@ typings/
 # dotenv environment variables file
 .env
 
+# the token the glyphs forge saves with
+.glyphs-edit-token
+
 # next.js build output
 .next

@@ -1,0 +1,52 @@
+.forge-bar { position: sticky; top: 0; z-index: 2; margin-top: 18px; padding: 10px 12px; border: 1.5px solid var(--brass-deep); border-radius: 12px; background: #182a22f2; backdrop-filter: blur(4px); }
+.forge-status { margin: 0; font-size: 16px; }
+.forge-status.is-bad { color: var(--rose); }
+.forge-status.is-good { color: #9ccfa6; }
+.forge-problems { margin: 4px 0 0; padding-left: 20px; color: var(--rose); font-size: 15px; }
+.forge-problems:empty { display: none; }
+.forge-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.forge-actions .control { font-size: 14px; padding: 6px 12px; }
+.forge-file { cursor: pointer; }
+.forge-file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.forge .control[disabled] { opacity: .45; cursor: not-allowed; }
+.forge input[type="text"], .forge input[type="number"], .forge select, .forge textarea { width: 100%; padding: 5px 7px; border: 1px solid #3a4c42; border-radius: 6px; background: #0f1a15; color: var(--cream); font: inherit; font-size: 15px; }
+.forge input[type="number"] { width: 5.5em; }
+.forge input[type="color"] { width: 44px; height: 30px; padding: 0; border: 1px solid #3a4c42; border-radius: 6px; background: #0f1a15; }
+.forge textarea { resize: vertical; }
+.forge input.is-bad, .forge textarea.is-bad { border-color: var(--rose); }
+.forge label { font-size: 14px; color: var(--muted); }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 12px 0; }
+.forge-table { border-collapse: collapse; width: 100%; font-size: 15px; }
+.forge-table th, .forge-table td { padding: 5px 6px; border: 1px solid #3a4c42; text-align: left; vertical-align: top; }
+.forge-table th { font: 400 13px/1.2 Federo, Georgia, serif; letter-spacing: 1px; text-transform: uppercase; color: var(--brass); background: #182a22; white-space: nowrap; }
+.forge-table .swatch { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; margin-right: 4px; }
+.forge-table .tiny { font-size: 13px; padding: 3px 8px; }
+.reactions td.is-derived input, .reactions td.is-derived textarea { font-style: italic; color: var(--muted); }
+.reactions .pair { font: 400 14px/1.2 Federo, Georgia, serif; letter-spacing: 1px; text-transform: uppercase; color: var(--cream); white-space: nowrap; }
+.reactions textarea { min-width: 220px; }
+.reactions input.name { min-width: 110px; }
+.reactions input.marks { min-width: 90px; }
+.spell-forms { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
+.spell-form { padding: 10px; border: 1px solid #3a4c42; border-radius: 12px; background: #182a22; display: grid; grid-template-columns: 96px 1fr; gap: 10px 12px; }
+.spell-form svg { width: 96px; height: 96px; border-radius: 10px; background: var(--paper); }
+.spell-form svg path { fill: none; stroke: var(--ink); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.spell-form svg .variant { stroke: #8c7349; stroke-width: 1.5; opacity: .6; }
+.spell-form .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 8px; }
+.spell-form .fields .wide { grid-column: 1 / -1; }
+.spell-form .checks { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 14px; }
+.spell-form .checks label { color: var(--cream); }
+.spell-form .nearest { grid-column: 1 / -1; margin: 0; font-size: 14px; font-style: italic; color: var(--muted); }
+.spell-form .nearest.is-close { color: var(--rose); }
+.shapes { grid-column: 1 / -1; margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.shape { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 6px; border: 1px dashed #3a4c42; border-radius: 8px; }
+.shape .which { font: 400 12px/1.2 Federo, Georgia, serif; letter-spacing: 1px; text-transform: uppercase; color: var(--brass); min-width: 54px; }
+.shape select { width: auto; }
+.shape label { display: inline-flex; align-items: center; gap: 4px; }
+.shape textarea { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; }
+.shape-actions, .spell-actions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.control.tiny { font-size: 13px; padding: 4px 10px; }
+.control.danger { border-color: var(--rose); color: var(--rose); }
+.pad-keep { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.pad-keep select { width: auto; }
+.forge-json { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; line-height: 1.4; margin-bottom: 8px; }
+@media (max-width: 600px) { .spell-forms { grid-template-columns: 1fr; } .spell-form { grid-template-columns: 80px 1fr; } .spell-form svg { width: 80px; height: 80px; } .spell-form .fields { grid-template-columns: 1fr; } }

@@ -4,13 +4,15 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta name="theme-color" content="#1f3329">
-	<meta name="description" content="Glyphs: draw a spell in secret within ten seconds and watch it meet your opponent's. The shapes are not written down.">
+	<meta name="description" content="Glyphs: draw a spell in secret within ten seconds and watch it meet your opponent's. The shapes are not written down, and the cleaner the hand, the stronger the spell.">
 	<title>Glyphs · Mottet</title>
 	<link rel="stylesheet" href="/houseNavigation.css">
-	<link rel="stylesheet" href="glyphs.css?v=glyphs-1">
-	<script src="glyphs-spells.js?v=glyphs-1" defer></script>
-	<script src="glyphs-recognizer.js?v=glyphs-1" defer></script>
-	<script src="glyphs.js?v=glyphs-1" defer></script>
+	<link rel="stylesheet" href="glyphs.css?v=glyphs-3">
+	<script src="glyphs-data.js?v=glyphs-3" defer></script>
+	<script src="glyphs-spells.js?v=glyphs-3" defer></script>
+	<script src="glyphs-wheel.js?v=glyphs-3" defer></script>
+	<script src="glyphs-recognizer.js?v=glyphs-3" defer></script>
+	<script src="glyphs.js?v=glyphs-3" defer></script>
 	<script src="/houseNavigation.js" defer></script>
 </head>
 <body>
@@ -36,7 +38,7 @@
 			<g id="g-token-ward"><circle r="22" fill="#1b2420" stroke="url(#g-brass)" stroke-width="2"/><circle r="12" fill="none" stroke="url(#g-brass)" stroke-width="3"/></g>
 			<g id="g-token-mirror"><circle r="22" fill="#1b2420" stroke="url(#g-brass)" stroke-width="2"/><path d="M-5-13H5V13H-5Z" fill="#cfd8d6" stroke="url(#g-brass)" stroke-width="1.5"/><path d="M-2-9L2-11" stroke="#fff" stroke-width="1.5"/></g>
 			<g id="g-token-fizzle"><circle r="22" fill="#1b2420" stroke="#6b705f" stroke-width="2"/><path d="M-8 8C-10-2 2-2 0-10M4 10C2 2 10 0 8-8" fill="none" stroke="#9aa08f" stroke-width="2.5" stroke-linecap="round"/></g>
-			<g id="g-token-rest"><circle r="22" fill="#1b2420" stroke="#6b705f" stroke-width="2" stroke-dasharray="4 4"/></g>
+			<g id="g-token-blank"><circle r="22" fill="#1b2420" stroke="#6b705f" stroke-width="2" stroke-dasharray="4 4"/></g>
 			<g id="g-token-bolt"><circle r="22" fill="#2b1a10" stroke="url(#g-brass)" stroke-width="2"/><path d="M4-15L-7 1H1L-4 15L8-3H0Z" fill="#ffd27a" stroke="#d8632a" stroke-width="1.2" stroke-linejoin="round"/></g>
 			<g id="g-token-frost"><circle r="22" fill="#10222b" stroke="url(#g-brass)" stroke-width="2"/><path d="M0-13V13M-11-6.5L11 6.5M-11 6.5L11-6.5" stroke="#cfe8ef" stroke-width="2.4" stroke-linecap="round"/><path d="M0-13L-3-9M0-13L3-9M0 13L-3 9M0 13L3 9" stroke="#cfe8ef" stroke-width="1.6" stroke-linecap="round"/></g>
 			<g id="g-token-vine"><circle r="22" fill="#1a2214" stroke="url(#g-brass)" stroke-width="2"/><path d="M-4 14C-12 4 8 2 0-8C-6-14 4-16 4-14" fill="none" stroke="url(#g-leaf)" stroke-width="3" stroke-linecap="round"/><path d="M-6 2C-12 0-14-6-9-8C-4-6-4 0-6 2ZM6 6C12 4 14-2 9-4C4-2 4 4 6 6Z" fill="url(#g-leaf)"/></g>
@@ -53,8 +55,8 @@
 			<section class="scene scene-arena" id="scene-arena" aria-label="The battlefield">
 		<section class="arena" aria-label="The arena">
 			<figure class="caster" id="caster-you" data-side="you">
-				<svg class="portrait" viewBox="-60 -70 120 140" aria-hidden="true" focusable="false"><g class="portrait-figure"><use href="#g-figure"/></g><g class="portrait-marks" data-marks></g></svg>
-				<figcaption><strong>You</strong><span class="caster-state" data-state>unmarked</span></figcaption>
+				<svg class="portrait" viewBox="-60 -70 120 140" aria-hidden="true" focusable="false"><g class="portrait-barrier" data-barrier></g><g class="portrait-figure"><use href="#g-figure"/></g><g class="portrait-marks" data-marks></g></svg>
+				<figcaption><strong>You</strong><span class="caster-state" data-state>no ring</span></figcaption>
 				<ul class="hits" data-hits aria-hidden="true"></ul>
 			</figure>
 			<div class="stage" id="stage" aria-hidden="true">
@@ -62,8 +64,8 @@
 				<p class="stage-name" id="stage-name"></p>
 			</div>
 			<figure class="caster" id="caster-foe" data-side="foe">
-				<svg class="portrait" viewBox="-60 -70 120 140" aria-hidden="true" focusable="false"><g class="portrait-figure"><use href="#g-figure"/></g><g class="portrait-marks" data-marks></g></svg>
-				<figcaption><strong id="foe-name">The Salamander</strong><span class="caster-state" data-state>unmarked</span><span class="quill" id="quill" aria-hidden="true"></span></figcaption>
+				<svg class="portrait" viewBox="-60 -70 120 140" aria-hidden="true" focusable="false"><g class="portrait-barrier" data-barrier></g><g class="portrait-figure"><use href="#g-figure"/></g><g class="portrait-marks" data-marks></g></svg>
+				<figcaption><strong id="foe-name">The Salamander</strong><span class="caster-state" data-state>no ring</span><span class="quill" id="quill" aria-hidden="true"></span></figcaption>
 				<ul class="hits" data-hits aria-hidden="true"></ul>
 			</figure>
 		</section>
@@ -72,6 +74,16 @@
 					<button type="button" class="control control-cast control-begin" id="begin">Fight the Salamander</button>
 					<button type="button" class="control control-begin" id="friend">Duel a friend</button>
 				</div>
+				<div class="arena-next" id="arena-next" hidden>
+					<button type="button" class="control control-cast control-begin" id="next">Next round</button>
+					<p class="arena-next-note" id="next-note" aria-live="polite"></p>
+				</div>
+				<section class="duel-end" id="duel-end" aria-labelledby="duel-end-title" hidden>
+					<h2 id="duel-end-title"></h2>
+					<p id="duel-end-line"></p>
+					<button type="button" class="control control-cast" id="again">Duel again</button>
+					<p class="duel-end-note" id="duel-end-note" hidden></p>
+				</section>
 				<div class="online" id="online" hidden>
 					<p class="online-status" id="online-status" aria-live="polite"></p>
 					<div class="online-host" id="online-host" hidden>
@@ -99,21 +111,20 @@
 					<button type="button" class="control control-cast" id="cast">Cast</button>
 					<button type="button" class="control" id="clear">Clear</button>
 				</div>
-				<p class="hint" id="hint">The ink will tell you when something stirs. Cast resolves at once; a blank sheet is a rest. The same spell cast round after round grows stronger.</p>
+				<p class="hint" id="hint">The ink will tell you when something stirs. The cleaner the glyph, the stronger the spell. A glyph inside a circle is a ring to stand behind; the other caster sees the ring, not what it is made of.</p>
 			</section>
 		</div>
+		<details class="elements" id="elements">
+			<summary>The elements</summary>
+			<p class="elements-note">An arrow points at the element it beats. Two arrows that stop each other in the middle: the two quench each other. Two arrows that cross and each reach the other: the two pass through each other.</p>
+			<div class="wheel" id="elements-wheel"></div>
+			<ul class="elements-rules" id="elements-rules"></ul>
+		</details>
 		<section class="grimoire" aria-labelledby="grimoire-title">
 			<h2 id="grimoire-title">Your grimoire</h2>
 			<p class="grimoire-note" id="grimoire-note">Nothing yet. A glyph that works is written here in your own hand.</p>
 			<ul class="grimoire-list" id="grimoire-list"></ul>
 		</section>
-		<div class="duel-end" id="duel-end" role="dialog" aria-labelledby="duel-end-title" aria-modal="true" hidden>
-			<div class="duel-end-card">
-				<h2 id="duel-end-title"></h2>
-				<p id="duel-end-line"></p>
-				<button type="button" class="control control-cast" id="again">Duel again</button>
-				<p class="duel-end-note" id="duel-end-note" hidden></p>
-			</div>
 		</div>
 	</main>
 	<a class="glyphs-house-return" id="house-return-fallback" href="/#first-floor">← Landing</a>

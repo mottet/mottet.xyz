@@ -7,11 +7,13 @@
 	<meta name="robots" content="noindex">
 	<title>Glyphs grimoire · Mottet</title>
 	<link rel="stylesheet" href="/houseNavigation.css">
-	<link rel="stylesheet" href="glyphs.css?v=glyphs-1">
-	<link rel="stylesheet" href="glyphs-grimoire.css?v=glyphs-1">
-	<script src="glyphs-spells.js?v=glyphs-1" defer></script>
-	<script src="glyphs-recognizer.js?v=glyphs-1" defer></script>
-	<script src="glyphs-grimoire.js?v=glyphs-1" defer></script>
+	<link rel="stylesheet" href="glyphs.css?v=glyphs-3">
+	<link rel="stylesheet" href="glyphs-grimoire.css?v=glyphs-3">
+	<script src="glyphs-data.js?v=glyphs-3" defer></script>
+	<script src="glyphs-spells.js?v=glyphs-3" defer></script>
+	<script src="glyphs-wheel.js?v=glyphs-3" defer></script>
+	<script src="glyphs-recognizer.js?v=glyphs-3" defer></script>
+	<script src="glyphs-grimoire.js?v=glyphs-3" defer></script>
 </head>
 <body class="grimoire-page">
 	<main class="book" aria-label="The designer's grimoire for Glyphs">
@@ -19,12 +21,19 @@
 			<p class="duel-kicker">The designer's grimoire</p>
 			<h1>Glyphs</h1>
 			<p class="duel-lede">Everything the game keeps from its players: the shapes, the matrix, the deaths, the monster's mind and the recogniser's thresholds. Rendered from the same rules file the game runs on.</p>
-			<p class="spoiler" role="note"><strong>Spoilers.</strong> Players are meant to discover the shapes by drawing. Do not link this page from the game or the house. <a href="/glyphs.html">Back to the duel</a>.</p>
+			<p class="spoiler" role="note"><strong>Spoilers.</strong> Players are meant to discover the shapes by drawing. Do not link this page from the game or the house. <a href="/glyphs.html">Back to the duel</a>. To add or change elements and spells, go to <a href="/glyphs-editor.html">the forge</a>.</p>
 		</header>
 
 		<section class="chapter" aria-labelledby="ch-rounds">
 			<h2 id="ch-rounds">The round</h2>
 			<ol class="rules" id="round-rules"></ol>
+		</section>
+
+		<section class="chapter" aria-labelledby="ch-elements">
+			<h2 id="ch-elements">The elements</h2>
+			<p class="chapter-note">An arrow points at the element it beats: the winner's spell goes on, a ring of the winner turns the loser aside, and the winner goes straight through a ring of the loser. Two arrows that stop each other in the middle are a quench: the two spells undo each other and a ring of either turns the other aside. Two arrows that cross and each reach the other element are a pass: both spells go on and each goes straight through a ring of the other. Anything else, and an element against itself, both go on and a ring wears. The matrix below and the ring table follow from this wheel unless a pair is written by hand.</p>
+			<div class="wheel" id="wheel"></div>
+			<ul class="rules" id="wheel-legend"></ul>
 		</section>
 
 		<section class="chapter" aria-labelledby="ch-spells">
@@ -34,12 +43,12 @@
 
 		<section class="chapter" aria-labelledby="ch-matrix">
 			<h2 id="ch-matrix">The reaction matrix</h2>
-			<p class="chapter-note">Row: what you cast. Column: what they cast. "+1 fire" is a mark you take, "them +1 fire" a mark they take. Rest heals one mark of the rester's heaviest element before the reaction lands; a fizzle is a rest without the heal.</p>
+			<p class="chapter-note">Row: what you cast. Column: what they cast. Each cell says which strikes go on to whom; a strike then meets that caster's ring (see Rings). Rings strike no one and are left out; a fizzle or blank sheet does nothing. A cell in italics is derived from the element wheel; the others are written by hand in the data.</p>
 			<div class="matrix-wrap"><table class="matrix" id="matrix"></table></div>
 		</section>
 
 		<section class="chapter" aria-labelledby="ch-bodies">
-			<h2 id="ch-bodies">Bodies and deaths</h2>
+			<h2 id="ch-bodies">Rings and deaths</h2>
 			<ul class="rules" id="body-rules"></ul>
 			<table class="deaths" id="deaths"></table>
 		</section>

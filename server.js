@@ -32,7 +32,32 @@ server.listen(port, '127.0.0.1', () => {
 const socket = require('socket.io');
 const io = socket(server);
 io.sockets.on('connection', newConnection);
-require('./glyphs-server.js')(io);
+const glyphs = require('./glyphs-server.js')(io);
+
+// The forge (/glyphs-editor.html) writes the glyphs data file back. It needs
+// the token in GLYPHS_EDIT_TOKEN or in a .glyphs-edit-token file beside this
+// file (read on each request, so it can be set without a restart), and the
+// service needs write access to public/glyphs-data.js.
+const fs = require('fs');
+const crypto = require('crypto');
+const GlyphsRules = require('./public/glyphs-spells.js');
+const GLYPHS_DATA = __dirname + '/public/glyphs-data.js';
+const glyphsToken = () => {
+	if (process.env.GLYPHS_EDIT_TOKEN) return process.env.GLYPHS_EDIT_TOKEN.trim();
+	try { return fs.readFileSync(__dirname + '/.glyphs-edit-token', 'utf8').trim(); } catch { return ''; }
+};
+const sameToken = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
+app.post('/glyphs/data', express.json({ limit: '4mb' }), (req, res) => {
+	const token = glyphsToken();
+	if (!token) return res.status(503).json({ ok: false, message: 'Saving is off on this server: set GLYPHS_EDIT_TOKEN or write a .glyphs-edit-token file beside server.js. Download the file instead.' });
+	if (!sameToken(String(req.get('x-glyphs-token') || ''), token)) return res.status(401).json({ ok: false, message: 'Wrong token.' });
+	const data = req.body && req.body.data;
+	const problems = GlyphsRules.validate(data);
+	if (problems.length) return res.status(400).json({ ok: false, problems });
+	try { fs.writeFileSync(GLYPHS_DATA, GlyphsRules.serialize(data)); } catch (error) { return res.status(500).json({ ok: false, message: `Could not write the data file: ${error.message}` }); }
+	glyphs.reload(data);
+	res.json({ ok: true });
+});
 
 const pieceArray = [
 	{ id: 0, x: 100, y: 670, w: 70, h: 70, color: 'blue' },

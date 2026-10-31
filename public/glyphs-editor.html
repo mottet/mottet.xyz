@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#1f3329">
+	<meta name="robots" content="noindex">
+	<title>Glyphs forge · Mottet</title>
+	<link rel="stylesheet" href="/houseNavigation.css">
+	<link rel="stylesheet" href="glyphs.css?v=glyphs-3">
+	<link rel="stylesheet" href="glyphs-grimoire.css?v=glyphs-3">
+	<link rel="stylesheet" href="glyphs-editor.css?v=glyphs-3">
+	<script src="glyphs-data.js?v=glyphs-3" defer></script>
+	<script src="glyphs-spells.js?v=glyphs-3" defer></script>
+	<script src="glyphs-recognizer.js?v=glyphs-3" defer></script>
+	<script src="glyphs-wheel.js?v=glyphs-3" defer></script>
+	<script src="glyphs-editor.js?v=glyphs-3" defer></script>
+</head>
+<body class="grimoire-page">
+	<main class="book forge" aria-label="The forge: edit the elements and spells of Glyphs">
+		<header class="duel-head">
+			<p class="duel-kicker">The designer's forge</p>
+			<h1>Glyphs</h1>
+			<p class="duel-lede">Add and change the elements, how they stand to one another, the spells and their glyphs, and the reactions. Every change is tried against the rules as you make it. Saving writes the data file the game runs on.</p>
+			<p class="spoiler" role="note"><strong>Spoilers.</strong> Not linked from the game or the house. <a href="/glyphs-grimoire.html">The grimoire</a> renders what is saved; <a href="/glyphs.html">the duel</a> plays it.</p>
+		</header>
+
+		<div class="forge-bar">
+			<p class="forge-status" id="status" aria-live="polite"></p>
+			<ul class="forge-problems" id="problems"></ul>
+			<div class="forge-actions">
+				<button type="button" class="control control-cast" id="save">Save to the server</button>
+				<button type="button" class="control" id="download">Download the file</button>
+				<label class="control forge-file">Load a file<input type="file" id="load" accept=".js,.json"></label>
+				<button type="button" class="control" id="revert">Revert to saved</button>
+			</div>
+		</div>
+
+		<section class="chapter" aria-labelledby="ch-elements">
+			<h2 id="ch-elements">The elements</h2>
+			<p class="chapter-note">Click one element, then another, to turn their relation: nothing, the first beats the second, the second beats the first, they quench each other (attacks cancel, rings of either turn the other aside), they pass each other (both land, rings of either give way). Clicking a line turns it as well.</p>
+			<div class="wheel" id="wheel"></div>
+			<ul class="rules" id="wheel-legend"></ul>
+			<div class="table-wrap"><table class="forge-table" id="elements"></table></div>
+			<button type="button" class="control" data-action="add-element">Add an element</button>
+		</section>
+
+		<section class="chapter" aria-labelledby="ch-spells">
+			<h2 id="ch-spells">The spells</h2>
+			<p class="chapter-note">The first shape is the glyph; the rest are variants the recogniser also accepts. Every attack also makes a ring when drawn inside a circle. Under each card the recogniser says which other glyph the shape is closest to: keep that distance above 0.5 or the two will be mistaken for each other.</p>
+			<ul class="spell-forms" id="spells"></ul>
+			<button type="button" class="control" data-action="add-spell">Add a spell</button>
+		</section>
+
+		<section class="chapter" aria-labelledby="ch-reactions">
+			<h2 id="ch-reactions">The reactions</h2>
+			<p class="chapter-note">What happens when two single-element attacks or defences meet. A pair not written by hand follows from the wheel (in italics); type in it to write it, or reset it to follow the wheel again. Strikes are element ids, comma separated, with a count after x: <code>fire</code>, <code>fire, air</code>, <code>fire x2</code>. Compounds react as their parts do.</p>
+			<div class="table-wrap"><table class="forge-table reactions" id="reactions"></table></div>
+		</section>
+
+		<section class="chapter" aria-labelledby="ch-pad">
+			<h2 id="ch-pad">The test sheet</h2>
+			<p class="chapter-note">Draw to see what the recogniser reads with the spells as they stand here. A drawing can be kept as a shape of any spell: the glyph of a new spell, or a variant of an old one.</p>
+			<div class="pad">
+				<div class="sheet-frame pad-frame" id="pad-frame"><canvas id="pad" width="400" height="400" role="img" tabindex="0" aria-label="Test sheet. Draw to see which glyph the recogniser reads."></canvas></div>
+				<div class="pad-side">
+					<p class="pad-reading" id="pad-reading" aria-live="polite">Draw on the sheet to see the ranked candidates.</p>
+					<ol class="pad-candidates" id="pad-candidates"></ol>
+					<div class="pad-keep">
+						<label>Keep it for <select id="pad-spell"></select></label>
+						<button type="button" class="control" id="pad-keep-glyph">as its glyph</button>
+						<button type="button" class="control" id="pad-keep-variant">as a variant</button>
+					</div>
+					<button type="button" class="control" id="pad-clear">Clear</button>
+				</div>
+			</div>
+		</section>
+
+		<section class="chapter" aria-labelledby="ch-data">
+			<h2 id="ch-data">The data</h2>
+			<p class="chapter-note">The same thing as text, for pasting or a change the forms do not reach. Apply replaces everything above with it.</p>
+			<textarea class="forge-json" id="json" spellcheck="false" rows="16"></textarea>
+			<button type="button" class="control" id="apply-json">Apply</button>
+		</section>
+	</main>
+</body>
+</html>

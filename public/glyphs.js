@@ -15,7 +15,7 @@
   const stage = el('stage'), stageArt = stage.querySelector('.stage-art'), stageName = el('stage-name');
   const casters = { you: el('caster-you'), foe: el('caster-foe') };
   const quill = el('quill'), duelEnd = el('duel-end'), againButton = el('again'), beginButton = el('begin'), friendButton = el('friend');
-  const actions = el('arena-actions'), online = el('online'), onlineStatus = el('online-status'), onlineHost = el('online-host'), onlineCode = el('online-code'), onlineLink = el('online-link'), onlineInput = el('online-input'), endNote = el('duel-end-note');
+  const actions = el('arena-actions'), nextBox = el('arena-next'), nextButton = el('next'), nextNote = el('next-note'), online = el('online'), onlineStatus = el('online-status'), onlineHost = el('online-host'), onlineCode = el('online-code'), onlineLink = el('online-link'), onlineInput = el('online-input'), endNote = el('duel-end-note');
   const table = document.querySelector('.duel');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const monster = S.monsters[0];
@@ -25,16 +25,25 @@
   const net = { mode: 'monster', socket: null, code: null };
   // The table shows one scene at a time; a change takes this long to settle.
   const sceneDelay = () => reducedMotion.matches ? 0 : 580;
+  // How long the spells take to cross the stage, and how long the reaction
+  // blooms before the rings answer. Slow enough to be read.
+  const TOKENS_MS = 1100, BLOOM_MS = 1300, HIT_MS = 650;
   const showScene = name => { table.dataset.scene = name; };
   el('foe-name').textContent = monsterName;
+  if (window.GlyphsWheel && el('elements-wheel')) {
+    el('elements-wheel').innerHTML = window.GlyphsWheel.svg(S, { id: 'elements', size: 320 });
+    if (el('elements-rules')) el('elements-rules').innerHTML = window.GlyphsWheel.rules(S);
+  }
 
   const templates = S.spells.flatMap(spell => spell.variants.map(strokes => ({ id: spell.id, strokes })));
   const prepared = R.prepare(templates);
   const MIN_EXTENT = .12; // of the sheet, below which a drawing is a smudge
   const STIR_SCORE = .18;
   const INK = '#1f3329';
+  // What the sheet says once a glyph is read, by the hand that drew it.
+  const PRECISION = { 1: 'the ink sets', 2: 'the ink sets, clean', 3: 'the ink sets, perfect' };
 
-  const state = { round: 0, phase: 'ready', you: S.emptyBody(), foe: S.emptyBody(), history: [], strokes: [], strokesCast: [], locked: null, foeSpell: null, roundStart: 0, timer: 0, streaks: { you: null, foe: null } };
+  const state = { round: 0, phase: 'ready', you: S.emptyBody(), foe: S.emptyBody(), history: [], strokes: [], strokesCast: [], locked: null, power: 1, foeSpell: null, foePower: 1, known: null, roundStart: 0, timer: 0 };
 
   // Drawing on the sheet. Coordinates are kept in sheet units (0..600).
   let drawing = false, scale = 1;
@@ -85,11 +94,21 @@
   // Reading the sheet: what the ink would be if cast now.
   const readSheet = () => {
     const strokes = state.strokes.filter(s => s.length > 1);
-    if (!strokes.length) return { id: 'rest', candidates: [] };
-    if (R.extent(strokes) < MIN_EXTENT * sheet.width) return { id: 'fizzle', candidates: [] };
-    const candidates = R.recognize(strokes, prepared);
+    if (!strokes.length) return { id: 'blank', candidates: [], power: 1, ring: false };
+    if (R.extent(strokes) < MIN_EXTENT * sheet.width) return { id: 'fizzle', candidates: [], power: 1, ring: false };
+    // A glyph inside a circle is a ring of that element.
+    const split = R.splitRing(strokes);
+    const read = split.ring ? split.inner : strokes;
+    const candidates = R.recognize(read, prepared);
     const best = candidates[0];
-    return { id: best && best.distance <= R.ACCEPT ? best.id : 'fizzle', candidates };
+    const accepted = best && best.distance <= R.ACCEPT;
+    if (!accepted) return { id: 'fizzle', candidates, power: 1, ring: Boolean(split.ring) };
+    const power = S.powerFor(best.distance);
+    if (split.ring) {
+      if (S.byId[best.id].kind !== 'attack') return { id: best.id === 'ward' ? 'ward' : 'fizzle', candidates, power, ring: true };
+      return { id: S.ringId(best.id), candidates, power, ring: true };
+    }
+    return { id: best.id, candidates, power, ring: false };
   };
   const showSheetState = text => {
     sheetState.textContent = text;
@@ -101,30 +120,45 @@
     const best = reading.candidates[0];
     const glow = best ? Math.max(0, Math.min(1, (R.ACCEPT * 1.6 - best.distance) / (R.ACCEPT * 1.6))) : 0;
     frame.style.setProperty('--glow', reading.id === 'fizzle' ? glow.toFixed(2) : '0');
-    frame.classList.toggle('is-set', reading.id !== 'rest' && reading.id !== 'fizzle');
-    if (reading.id === 'rest') showSheetState('');
+    frame.classList.toggle('is-set', reading.id !== 'blank' && reading.id !== 'fizzle');
+    if (reading.id === 'blank') showSheetState('');
     else if (reading.id === 'fizzle') showSheetState(best && best.score > STIR_SCORE ? 'the ink stirs' : 'the ink lies flat');
-    else showSheetState('the ink sets');
+    else showSheetState(reading.ring ? `${PRECISION[reading.power]}, in a ring` : PRECISION[reading.power]);
   };
 
-  // Marks and portraits.
-  const MARK_SLOTS = { fire: [[-44, 6], [-50, 28], [-40, 48]], water: [[44, 6], [50, 28], [40, 48]], earth: [[-18, 60], [0, 64], [18, 60]], air: [[-30, -56], [0, -66], [30, -56]] };
-  const bodyLine = body => {
-    const parts = S.ELEMENTS.filter(e => body[e]).map(e => `${body[e]} ${S.MARK_NAMES[e]}${body[e] > 1 ? 's' : ''}`);
-    return parts.length ? parts.join(', ') : 'unmarked';
+  // Rings and portraits. A caster sees the element of their own ring; the
+  // other side sees only how thick it is.
+  const RING_COLOURS = { fire: '#e08a4a', water: '#6fb0c8', earth: '#a39a86', air: '#9ec27a', hidden: 'url(#g-brass)', none: 'url(#g-brass)' };
+  const ringName = (ring, own) => {
+    if (!ring || !ring.strength) return 'no ring';
+    const el = ring.elements[0];
+    if (!el || el === 'hidden' || !own) return `a ring, ${ring.strength}`;
+    return `ring of ${S.ELEMENT_NAMES[el]}${ring.elements[1] ? ` and ${S.ELEMENT_NAMES[ring.elements[1]]}` : ''}, ${ring.strength}`;
+  };
+  const ringArcs = (ring, own) => {
+    if (!ring || !ring.strength) return '';
+    const el = own && ring.elements[0] && ring.elements[0] !== 'hidden' ? ring.elements[0] : (ring.elements.length ? 'hidden' : 'none');
+    const colour = RING_COLOURS[el] || S.ELEMENT_COLOURS[el];
+    return Array.from({ length: ring.strength }, (_, i) => `<circle r="${62 + i * 5}" fill="none" stroke="${colour}" stroke-width="1.8" stroke-dasharray="${el === 'none' || el === 'hidden' ? '14 7' : '0'}" opacity="${(.95 - i * .2).toFixed(2)}"/>`).join('');
   };
   const paintBody = (side, body, death) => {
-    const figure = casters[side], marks = figure.querySelector('[data-marks]');
-    marks.innerHTML = S.ELEMENTS.flatMap(e => MARK_SLOTS[e].slice(0, Math.min(body[e], S.DEATH_AT)).map(([x, y]) => `<use href="#g-mark-${e}" transform="translate(${x} ${y}) scale(1.3)"/>`)).join('');
-    figure.querySelector('[data-state]').textContent = death ? S.DEATHS[death].name : bodyLine(body);
+    const figure = casters[side];
+    figure.querySelector('[data-barrier]').innerHTML = ringArcs(body.ring, side === 'you');
+    figure.querySelector('[data-marks]').innerHTML = '';
+    figure.querySelector('[data-state]').textContent = death ? S.DEATHS[death].name : ringName(body.ring, side === 'you');
     figure.classList.toggle('is-dead', Boolean(death));
     if (death) figure.dataset.death = death; else delete figure.dataset.death;
   };
 
   // The stage: each side's casting arrives as a token, and the reaction blooms between them.
+  // A spell drawn in the defs has its own token; one added in the forge is
+  // a disc of its element's colour until it gets art.
   const tokenFor = id => {
     const spell = S.byId[id];
-    return `#g-token-${spell.elements.length === 1 ? spell.elements[0] : id}`;
+    const symbol = `g-token-${spell.elements.length === 1 ? spell.elements[0] : id}`;
+    if (document.getElementById(symbol)) return `<use href="#${symbol}"/>`;
+    const [first, second] = spell.elements.map(e => S.ELEMENT_COLOURS[e]);
+    return `<circle r="22" fill="#1b2420" stroke="url(#g-brass)" stroke-width="2"/><circle r="12" fill="${first || '#6b705f'}" stroke="${second || first || '#6b705f'}" stroke-width="4"/>`;
   };
   const BURSTS = {
     inferno: '<path d="M-26 20C-30-4-12-18 0-34C12-18 30-4 26 20C20 32-20 32-26 20Z" fill="url(#g-ember)" opacity=".9"/>',
@@ -153,14 +187,16 @@
     const parts = (reaction.parts || [reaction.name]).filter(name => BURSTS[name]).slice(0, 4);
     const spread = parts.length > 1 ? 44 : 0, size = parts.length > 2 ? .55 : parts.length > 1 ? .7 : 1;
     const bursts = parts.map((name, i) => `<g transform="translate(${((i - (parts.length - 1) / 2) * spread).toFixed(1)} 0) scale(${size})">${BURSTS[name]}</g>`).join('');
-    stageArt.innerHTML = `<g class="stage-token" data-token="you" transform="translate(${animate ? -130 : -92} 0)">${rings(reaction.powers[0])}<use href="${tokenFor(yours)}"/></g><g class="stage-token" data-token="foe" transform="translate(${animate ? 130 : 92} 0)">${rings(reaction.powers[1])}<use href="${tokenFor(theirs)}"/></g><g class="stage-burst" transform="translate(0 0)">${bursts}</g>`;
+    stageArt.innerHTML = `<g class="stage-token" data-token="you" transform="translate(${animate ? -130 : -92} 0)">${rings(reaction.powers[0])}${tokenFor(yours)}</g><g class="stage-token" data-token="foe" transform="translate(${animate ? 130 : 92} 0)">${rings(reaction.powers[1])}${tokenFor(theirs)}</g><g class="stage-burst" transform="translate(0 0)">${bursts}</g>`;
     stageName.textContent = reaction.name;
     if (animate) {
+      stageName.textContent = '';
       requestAnimationFrame(() => requestAnimationFrame(() => {
         stageArt.querySelector('[data-token="you"]').setAttribute('transform', 'translate(-92 0)');
         stageArt.querySelector('[data-token="foe"]').setAttribute('transform', 'translate(92 0)');
-        stage.classList.add('is-animating');
       }));
+      // The spells travel, then meet.
+      window.setTimeout(() => { stage.classList.add('is-animating'); stageName.textContent = reaction.name; }, TOKENS_MS);
     }
   };
   const clearStage = () => { stageArt.innerHTML = ''; stageName.textContent = ''; stage.classList.remove('is-animating'); };
@@ -174,55 +210,84 @@
     const grimoire = loadGrimoire();
     const entries = S.spells.filter(spell => grimoire[spell.id]);
     el('grimoire-note').hidden = entries.length > 0;
-    el('grimoire-list').innerHTML = entries.map(spell => `<li>${thumbnail(grimoire[spell.id].strokes)}<div><strong>${spell.name}</strong><small>${spell.element ? spell.element : spell.kind}</small></div></li>`).join('');
+    const hand = entry => typeof entry.distance === 'number' ? { 1: 'drawn', 2: 'drawn clean', 3: 'drawn perfect' }[S.powerFor(entry.distance)] : 'drawn';
+    el('grimoire-list').innerHTML = entries.map(spell => `<li data-hand="${typeof grimoire[spell.id].distance === 'number' ? S.powerFor(grimoire[spell.id].distance) : 1}">${thumbnail(grimoire[spell.id].strokes)}<div><strong>${spell.name}</strong><small>${spell.element ? spell.element : spell.kind} · ${hand(grimoire[spell.id])}</small></div></li>`).join('');
   };
-  const recordGlyph = (id, strokes) => {
+  // A glyph is written the first time it works, and rewritten whenever a
+  // closer drawing of it is cast.
+  const recordGlyph = (id, strokes, distance) => {
     const grimoire = loadGrimoire();
-    if (grimoire[id]) return;
+    const known = grimoire[id];
+    if (known && !(typeof distance === 'number' && (typeof known.distance !== 'number' || distance < known.distance))) return;
     // Fit the drawing into a unit box so the thumbnail is the player's hand, not the sheet.
     const pts = strokes.flat();
     const minX = Math.min(...pts.map(p => p[0])), minY = Math.min(...pts.map(p => p[1]));
     const size = Math.max(Math.max(...pts.map(p => p[0])) - minX, Math.max(...pts.map(p => p[1])) - minY) || 1;
     const offX = (1 - (Math.max(...pts.map(p => p[0])) - minX) / size) / 2, offY = (1 - (Math.max(...pts.map(p => p[1])) - minY) / size) / 2;
     const fitted = strokes.map(s => s.filter((_, i) => i % 3 === 0 || i === s.length - 1).map(p => [+(offX + (p[0] - minX) / size * .84 + .08).toFixed(3), +(offY + (p[1] - minY) / size * .84 + .08).toFixed(3)]));
-    grimoire[id] = { strokes: fitted, when: new Date().toISOString() };
+    grimoire[id] = { strokes: fitted, distance: typeof distance === 'number' ? +distance.toFixed(3) : undefined, when: new Date().toISOString() };
     saveGrimoire(grimoire);
     renderGrimoire();
   };
 
-  // What each caster took this round: badges by the portrait, a flash on the
-  // figure, and a plain outcome line.
-  const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
+  // What happened to each caster this round: badges by the portrait, a flash
+  // on the figure, and a plain outcome line. The other caster's ring is never
+  // named by element, except by what a strike reveals of it.
   const outcomeFor = (side, result, index, spellId) => {
-    const marks = index === 0 ? result.reaction.marks.a : result.reaction.marks.b;
+    const own = side === 'you';
     const items = [];
-    if (result.heals[index]) items.push({ kind: 'heal', text: `${S.MARK_NAMES[result.heals[index]]} fades` });
-    for (const e of S.ELEMENTS) if (marks[e]) items.push({ kind: e, text: `+${plural(marks[e], S.MARK_NAMES[e])}` });
-    for (const c of result.cancellations[index]) items.push({ kind: 'heal', text: `${c.name} clears ${c.count}` });
+    const raised = result.raised[index];
+    if (raised) {
+      const r = raised.after;
+      const name = own ? ringName(r, true) : `a ring, ${r.strength}`;
+      items.push({ kind: 'barrier', text: r.strength > raised.before.strength || raised.before.elements.join() !== r.elements.join() ? `${name} raised` : `${name} stands` });
+    }
+    // Each blow says what it did to the ring, in the wheel's words: turned
+    // aside (ring untouched), straight through (the wheel), broken (power as
+    // high as the ring), or worn (power off the ring). The badge is short;
+    // the outcome line carries the numbers and the reason.
+    for (const blow of result.blows[index]) {
+      if (blow.spent) continue;
+      const by = S.ELEMENT_NAMES[blow.element], why = blow.why ? ` (${blow.why})` : '';
+      if (blow.how === 'aside') items.push({ kind: 'barrier', text: 'turned aside', line: `the ring turns ${by} aside${why}` });
+      else if (blow.how === 'pierced') items.push({ kind: blow.element, text: `${by} straight through`, line: `${by} goes straight through the ring${why}` });
+      else if (blow.how === 'broken') items.push({ kind: blow.element, text: `${by} breaks the ring`, line: `${by} at ${blow.power} breaks the ring of ${blow.worn}` });
+      else if (blow.how === 'worn') items.push({ kind: 'barrier', text: `ring takes ${by} ${blow.power}`, line: `the ring takes ${by} at ${blow.power}, ${blow.left} left` });
+      else items.push({ kind: blow.element, text: `${by} strikes, no ring` });
+    }
     if (result.deaths[index]) items.push({ kind: 'death', text: S.DEATHS[result.deaths[index]].name });
-    if (!items.length) items.push({ kind: 'none', text: spellId === 'rest' ? 'rests' : 'untouched' });
+    if (!items.length) items.push({ kind: 'none', text: spellId === 'blank' ? 'nothing' : 'untouched' });
     return items;
   };
   const showHits = (side, items) => {
     const figure = casters[side], list = figure.querySelector('[data-hits]');
-    list.innerHTML = items.map((item, i) => `<li data-kind="${item.kind}" style="animation-delay:${i * 180}ms">${item.text}</li>`).join('');
+    list.innerHTML = items.map((item, i) => `<li data-kind="${item.kind}" style="${S.ELEMENT_COLOURS[item.kind] ? `--el:${S.ELEMENT_COLOURS[item.kind]};` : ''}animation-delay:${reducedMotion.matches ? 0 : i * HIT_MS}ms">${item.text}</li>`).join('');
     figure.classList.remove('is-hit', 'is-healed');
     void figure.offsetWidth;
-    if (items.some(item => S.ELEMENTS.includes(item.kind))) figure.classList.add('is-hit');
-    else if (items.some(item => item.kind === 'heal')) figure.classList.add('is-healed');
+    if (items.some(item => S.ELEMENTS.includes(item.kind) || item.kind === 'death')) figure.classList.add('is-hit');
+    else if (items.some(item => item.kind === 'barrier')) figure.classList.add('is-healed');
   };
   const clearHits = () => Object.values(casters).forEach(figure => { figure.querySelector('[data-hits]').innerHTML = ''; figure.classList.remove('is-hit', 'is-healed'); });
   // Narration, for the eye and the screen reader.
   const narrate = html => { narration.innerHTML = html; };
-  const outcomeLine = (name, items) => `<span data-kind="${items.some(i => S.ELEMENTS.includes(i.kind) || i.kind === 'death') ? 'hit' : items.some(i => i.kind === 'heal') ? 'heal' : 'none'}"><strong>${name}</strong> ${items.map(i => i.text).join(', ')}</span>`;
-  const TIMES = ['', '', 'twice over', 'thrice over'];
-  const yourCastLine = (id, heal, power) => {
+  const outcomeLine = (name, items) => `<span data-kind="${items.some(i => S.ELEMENTS.includes(i.kind) || i.kind === 'death') ? 'hit' : items.some(i => i.kind === 'barrier') ? 'heal' : 'none'}"><strong>${name}</strong> ${items.map(i => i.line || i.text).join(', ')}</span>`;
+  const HANDS = { 1: '', 2: ', cleanly', 3: ', perfectly' };
+  // A compound is cast below the hand that drew it, and the line says so.
+  const costNote = (id, power, cast) => cast < power ? `, cast at ${cast} as a compound` : '';
+  const yourCastLine = (id, power, cast = power) => {
     const spell = S.byId[id];
-    if (id === 'rest') return heal ? `You rest; ${aMark(heal)} fades.` : 'You rest, and there was nothing to settle.';
+    if (id === 'blank') return 'You cast nothing.';
     if (id === 'fizzle') return 'Your ink smoulders; it was no glyph.';
-    return `You cast <em>${spell.name}</em>${power > 1 ? `, ${TIMES[power]}` : ''}.`;
+    return `You cast <em>${spell.name}</em>${HANDS[power] || ''}${costNote(id, power, cast)}.`;
   };
-  const aMark = e => `${e === 'ember' || e === 'air' ? 'a' : 'a'} ${S.MARK_NAMES[e]}`;
+  const foeCastLine = (id, power, cast = power) => {
+    if (id === 'blank') return `${el('foe-name').textContent} cast nothing.`;
+    if (id === 'fizzle') return `${el('foe-name').textContent}'s ink smouldered.`;
+    const spell = S.byId[S.maskCast(id)];
+    const name = spell.kind === 'barrier' ? 'a ring' : spell.kind === 'defence' ? 'a mirror' : spell.name.toLowerCase();
+    return `${el('foe-name').textContent} cast ${name}${HANDS[power] || ''}${costNote(id, power, cast)}.`;
+  };
+
 
   // The clock and the round.
   const setTimer = remaining => {
@@ -239,6 +304,7 @@
     state.phase = 'drawing';
     state.locked = null;
     clearHits();
+    nextBox.hidden = true;
     showScene('sheet');
     state.roundStart = performance.now() + sceneDelay();
     roundLabel.textContent = `Round ${state.round}`;
@@ -258,12 +324,16 @@
     state.timer = requestAnimationFrame(tick);
   };
   const startRound = () => {
-    state.foeSpell = S.chooseSpell(monster, state.foe, state.you, state.history, Math.random, { self: state.streaks.foe, other: state.streaks.you });
+    state.foeSpell = S.chooseSpell(monster, state.foe, S.maskBody(state.you), state.history, Math.random, state.known);
+    state.foePower = S.monsterPower(monster);
     openRound(state.round + 1);
   };
   const sealSheet = () => {
     drawing = false;
-    state.locked = readSheet().id;
+    const reading = readSheet();
+    state.locked = reading.id;
+    state.power = reading.power;
+    state.distance = reading.candidates[0] ? reading.candidates[0].distance : null;
     state.strokesCast = state.strokes.filter(s => s.length > 1);
     frame.classList.add('is-locked');
     castButton.disabled = true; clearButton.disabled = true;
@@ -280,18 +350,18 @@
     if (state.phase !== 'drawing' || state.locked) return;
     sealSheet();
     if (net.mode === 'online') {
-      showSheetState(state.locked === 'rest' ? 'you rest · waiting for the other caster' : 'cast · waiting for the other caster');
+      showSheetState(state.locked === 'blank' ? 'nothing · waiting for the other caster' : 'cast · waiting for the other caster');
       sendCast();
       return;
     }
-    showSheetState(state.locked === 'rest' ? 'you rest' : 'cast');
+    showSheetState(state.locked === 'blank' ? 'nothing' : 'cast');
     // Casting seals both sheets: the monster answers at once.
     resolveRound();
   };
   const sendCast = () => {
     state.phase = 'locked';
     cancelAnimationFrame(state.timer);
-    if (net.socket) net.socket.emit('glyphs:cast', state.locked);
+    if (net.socket) net.socket.emit('glyphs:cast', { id: state.locked, power: state.power });
   };
   // Against the monster the page runs the rules itself.
   const resolveRound = () => {
@@ -299,11 +369,14 @@
     cancelAnimationFrame(state.timer);
     if (!state.locked) sealSheet();
     const yours = state.locked, theirs = state.foeSpell;
-    state.streaks.you = S.nextStreak(state.streaks.you, yours);
-    state.streaks.foe = S.nextStreak(state.streaks.foe, theirs);
-    const powers = [S.powerOf(state.streaks.you), S.powerOf(state.streaks.foe)];
+    const powers = [state.power, state.foePower];
     const result = S.applyRound(state.you, state.foe, yours, theirs, powers);
-    presentRound(yours, theirs, powers, result, () => { state.phase = 'between'; window.setTimeout(startRound, reducedMotion.matches ? 1600 : 3400); });
+    // A strike on the player's ring tells the monster what the ring is made
+    // of; a new ring of another element is a secret again.
+    if (result.blows[0].some(b => !b.spent)) state.known = result.bodies[0].ring.elements.slice();
+    if (result.raised[0] && result.raised[0].before.elements.join() !== result.raised[0].after.elements.join()) state.known = null;
+    if (!result.bodies[0].ring.strength) state.known = null;
+    presentRound(yours, theirs, powers, result, waitForNext);
   };
   // Both opponents end here: the sheet is sent, the battlefield comes up, the
   // spells meet, and what each caster took is shown.
@@ -316,26 +389,55 @@
     setTimer(0);
     state.you = result.bodies[0]; state.foe = result.bodies[1];
     state.history.push(yours);
-    if (yours !== 'rest' && yours !== 'fizzle') recordGlyph(yours, state.strokesCast);
+    if (yours !== 'blank' && yours !== 'fizzle') recordGlyph(S.isRing(yours) ? S.byId[yours].of : yours, S.isRing(yours) ? R.splitRing(state.strokesCast).inner : state.strokesCast, state.distance);
     const animate = !reducedMotion.matches;
     const foeName = el('foe-name').textContent;
     const yourItems = outcomeFor('you', result, 0, yours), foeItems = outcomeFor('foe', result, 1, theirs);
-    const story = `<p>Round ${state.round}. ${yourCastLine(yours, result.heals[0], powers[0])}</p><p class="narration-reaction"><strong>${result.reaction.name}</strong>${result.reaction.line}</p><p class="narration-outcomes">${outcomeLine('You', yourItems)}${outcomeLine(foeName, foeItems)}</p>`;
+    const story = `<p>Round ${state.round}. ${yourCastLine(yours, powers[0], result.reaction.powers[0])} ${foeCastLine(theirs, powers[1], result.reaction.powers[1])}</p><p class="narration-reaction"><strong>${result.reaction.name}</strong>${result.reaction.line}</p><p class="narration-outcomes">${outcomeLine('You', yourItems)}${outcomeLine(foeName, foeItems)}</p>`;
     const [youDead, foeDead] = result.deaths;
     showScene('arena');
-    window.setTimeout(() => paintStage(yours, theirs, result.reaction, animate), sceneDelay());
+    nextBox.hidden = true;
+    // The sheet goes, the spells cross, the reaction blooms, then the rings
+    // answer one badge at a time, and the words follow.
+    const t1 = sceneDelay(), t2 = t1 + (animate ? TOKENS_MS + BLOOM_MS : 0);
+    window.setTimeout(() => paintStage(yours, S.maskCast(theirs), result.reaction, animate), t1);
     window.setTimeout(() => {
       paintBody('you', state.you, youDead);
       paintBody('foe', state.foe, foeDead);
       showHits('you', yourItems);
       showHits('foe', foeItems);
       narrate(story + (youDead && foeDead ? '<p>Both fall in the same breath.</p>' : ''));
+      const settle = animate ? HIT_MS * Math.max(yourItems.length, foeItems.length) + 600 : 0;
       if (youDead || foeDead) {
-        window.setTimeout(() => endDuel(youDead, foeDead), animate ? 1400 : 0);
+        window.setTimeout(() => endDuel(youDead, foeDead), settle);
         return;
       }
-      next();
-    }, sceneDelay() + (animate ? 900 : 0));
+      window.setTimeout(next, settle);
+    }, t2);
+  };
+  // Against the monster the next sheet waits for the player; between phones
+  // the server sets the pace and the page counts it down.
+  let countdown = 0;
+  const waitForNext = () => {
+    state.phase = 'between';
+    nextNote.textContent = '';
+    nextButton.hidden = false;
+    nextBox.hidden = false;
+    nextButton.focus({ preventScroll: true });
+  };
+  const countDownTo = ms => {
+    state.phase = 'between';
+    nextButton.hidden = true;
+    nextBox.hidden = false;
+    const until = performance.now() + ms;
+    cancelAnimationFrame(countdown);
+    const tick = () => {
+      const left = Math.ceil((until - performance.now()) / 1000);
+      if (left <= 0 || state.phase !== 'between') { nextNote.textContent = ''; return; }
+      nextNote.textContent = `The next sheet comes in ${left} s.`;
+      countdown = requestAnimationFrame(tick);
+    };
+    tick();
   };
   const endDuel = (youDead, foeDead) => {
     state.phase = 'ended';
@@ -351,13 +453,13 @@
   // The table is set, but nothing moves until the player is ready.
   const startDuel = () => {
     cancelAnimationFrame(state.timer);
-    state.round = 0; state.history = []; state.phase = 'ready';
-    state.streaks = { you: null, foe: null };
+    state.round = 0; state.history = []; state.phase = 'ready'; state.known = null;
     state.you = S.emptyBody(); state.foe = S.emptyBody();
     paintBody('you', state.you, null); paintBody('foe', state.foe, null);
     clearStage();
     clearHits();
     duelEnd.hidden = true;
+    nextBox.hidden = true;
     showScene('arena');
     state.strokes = []; paintSheet(); showSheetState('');
     frame.classList.remove('is-locked', 'is-set'); frame.style.setProperty('--glow', '0');
@@ -407,14 +509,13 @@
       narrate('Both casters are at the table. The first sheet comes in a moment.');
       state.phase = 'waiting';
     });
-    socket.on('glyphs:round', ({ round, seconds }) => { duelEnd.hidden = true; openRound(round, seconds); });
+    socket.on('glyphs:round', ({ round, seconds }) => { duelEnd.hidden = true; nextBox.hidden = true; openRound(round, seconds); });
     socket.on('glyphs:sealed', () => { if (state.phase === 'drawing' || state.phase === 'locked') setQuill('sealed'); });
-    socket.on('glyphs:result', ({ round, yours, theirs, powers, result }) => {
+    socket.on('glyphs:result', ({ round, yours, theirs, powers, result, nextIn }) => {
       state.round = round;
-      state.streaks.you = S.nextStreak(state.streaks.you, yours);
-      state.streaks.foe = S.nextStreak(state.streaks.foe, theirs);
       if (!state.locked) sealSheet();
-      presentRound(yours, theirs, powers, result, () => { state.phase = 'between'; });
+      const arrived = performance.now();
+      presentRound(yours, theirs, powers, result, () => countDownTo(Math.max(0, (nextIn || 0) - (performance.now() - arrived))));
     });
     socket.on('glyphs:again-asked', () => { endNote.hidden = false; endNote.textContent = 'The other caster is ready for another duel.'; });
     socket.on('glyphs:left', () => {
@@ -468,6 +569,7 @@
   el('online-cancel').addEventListener('click', () => { leaveTable(); online.hidden = true; setStatus(''); });
 
   castButton.addEventListener('click', lockSpell);
+  nextButton.addEventListener('click', () => { if (state.phase === 'between' && net.mode !== 'online') startRound(); });
   clearButton.addEventListener('click', () => { if (canDraw()) clearSheet(); });
   beginButton.addEventListener('click', beginDuel);
   againButton.addEventListener('click', () => {
