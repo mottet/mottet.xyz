@@ -146,16 +146,24 @@ ten seconds; the player draws one glyph on a sheet of paper (a canvas with
 Pointer Events) while the monster "scratches its quill" off screen, and the
 two spells meet in the arena at the same moment. The page shows one scene at
 a time: casting sends the sheet away and brings up the battlefield, where the
-tokens cross, the reaction blooms and the rings answer one badge at a time;
+spells are cast, meet, and the rings answer one badge at a time;
 against the monster the next sheet waits for a Next round button, between
 phones the server allows fourteen seconds and the page counts them down, and
 the end of a duel is a card inside the battlefield rather than an overlay
 (reduced motion swaps without animating).
-Only the reaction is shown:
-tokens for what each side cast slide to the centre and a named reaction blooms
-(inferno, steam, smothered, fanned, reflected, mud, rust, slips, quake,
-pass, breaks back, leaps the ring...), marks land on the two bodies, and an `aria-live` line
-narrates it. The shapes are never written down in the game. While drawing, the
+Only the reaction is shown, and
+each cast is drawn as what it is rather than as a token: an attack gathers at
+the caster's hand as its element (a fireball, a rolling wave, a thrown
+boulder, a gust, an iron dart; a compound has a drawing of its own, an
+element from the forge is an orb of its colour) and flies off with a trail;
+a ring gathers round its caster, who takes a guard pose, and a mirror stands
+up in front of theirs. Two attacks meet in the middle and a named reaction
+blooms there (inferno, steam, smothered, fanned, melts, mud, rust, slips,
+quake, sparks...); an attack on a mirror meets it at the pane, which flares
+or shatters; any other attack flies straight on. Whatever comes out of a
+meeting flies on to the caster it lands on and arrives as their badge does,
+stopping at the ring's edge, turned aside or bursting through. An
+`aria-live` line narrates the round. The shapes are never written down in the game. While drawing, the
 sheet glows in proportion to the recogniser's best score without naming the
 spell, and sets to brass once a glyph is read; a drawing that is no glyph
 fizzles, a blank sheet is a rest. Glyphs the player has made work are written

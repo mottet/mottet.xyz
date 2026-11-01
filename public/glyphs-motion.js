@@ -75,9 +75,17 @@ window.GlyphsMotion = (() => {
     const angle = opts.angle === undefined ? rand(0, TAU) : opts.angle + rand(-(opts.arc || .4), opts.arc || .4);
     const speed = rand(opts.speed ? opts.speed * .3 : 20, opts.speed || 120);
     const r = opts.radius ? rand(0, opts.radius) : 0, ra = rand(0, TAU);
+    let px = x + Math.cos(ra) * r, py = y + Math.sin(ra) * r, vx = Math.cos(angle) * speed, vy = Math.sin(angle) * speed;
+    // An orbit: born on a circle round the point and moving along it, the
+    // way a ring gathers round its caster.
+    if (opts.orbit) {
+      const oa = rand(0, TAU), tangent = oa + Math.PI / 2;
+      px = x + Math.cos(oa) * opts.orbit; py = y + Math.sin(oa) * opts.orbit * (opts.squash || 1);
+      vx = Math.cos(tangent) * speed; vy = Math.sin(tangent) * speed * (opts.squash || 1);
+    }
     particles.push({
-      x: x + Math.cos(ra) * r, y: y + Math.sin(ra) * r,
-      vx: Math.cos(angle) * speed + (opts.vx || 0), vy: Math.sin(angle) * speed + (opts.vy || 0),
+      x: px, y: py,
+      vx: vx + (opts.vx || 0), vy: vy + (opts.vy || 0),
       life: rand(p.life[0], p.life[1]) * (opts.lifeScale || 1), age: 0,
       size: rand(p.size[0], p.size[1]) * (opts.sizeScale || 1), colour: pick(p.colours), p,
       spin: rand(-6, 6), rot: rand(0, TAU), phase: rand(0, TAU)
@@ -246,6 +254,9 @@ window.GlyphsMotion = (() => {
   };
   const SOUNDS = {
     ink: () => { tone(1320, { dur: .18, gain: .05, type: 'sine' }); tone(1980, { dur: .14, gain: .03, delay: .04 }); },
+    mirror: () => { tone(1568, { dur: .5, gain: .07, type: 'sine' }); tone(2349, { dur: .4, gain: .04, type: 'sine', delay: .05 }); noise({ dur: .3, type: 'highpass', freq: 5000, gain: .05, attack: .1 }); },
+    fizzle: () => { noise({ dur: .3, type: 'lowpass', freq: 700, to: 200, gain: .18 }); tone(220, { dur: .25, to: 90, gain: .06, type: 'triangle' }); },
+    launch: el => { noise({ dur: .4, freq: el === 'air' ? 1200 : 400, to: el === 'earth' ? 150 : 2200, q: .8, gain: .22, attack: .06 }); if (el === 'metal') tone(2400, { dur: .15, to: 1800, gain: .05, type: 'triangle' }); if (el === 'earth') tone(80, { dur: .25, to: 50, gain: .2 }); },
     seal: () => { noise({ dur: .35, freq: 600, to: 2800, q: .8, gain: .22 }); tone(880, { dur: .4, to: 1320, gain: .06, type: 'triangle', delay: .05 }); },
     cast: () => { noise({ dur: .55, freq: 300, to: 1800, q: .6, gain: .25, attack: .12 }); },
     clash: () => { noise({ dur: .22, type: 'lowpass', freq: 1400, to: 200, gain: .5 }); tone(110, { dur: .3, to: 40, gain: .5 }); noise({ dur: .5, type: 'bandpass', freq: 2200, to: 400, q: .5, gain: .18, delay: .03 }); },

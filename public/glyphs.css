@@ -94,7 +94,7 @@ button:focus-visible, canvas:focus-visible, a:focus-visible { outline: 2px solid
 .caster.is-dead .portrait-breath { animation: none; }
 @keyframes breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.012, 1.03); } }
 .portrait-pose use { opacity: 0; transition: opacity .16s ease; }
-.caster[data-pose="idle"] use[data-pose="idle"], .caster[data-pose="cast"] use[data-pose="cast"], .caster[data-pose="struck"] use[data-pose="struck"], .caster[data-pose="fallen"] use[data-pose="fallen"] { opacity: 1; }
+.caster[data-pose="idle"] use[data-pose="idle"], .caster[data-pose="cast"] use[data-pose="cast"], .caster[data-pose="guard"] use[data-pose="guard"], .caster[data-pose="struck"] use[data-pose="struck"], .caster[data-pose="fallen"] use[data-pose="fallen"] { opacity: 1; }
 .caster figcaption { text-align: center; line-height: 1.2; }
 .caster figcaption strong { display: block; font: 400 15px/1.2 Federo, Georgia, serif; letter-spacing: 1px; text-transform: uppercase; color: var(--brass); }
 .caster-state { display: block; font-style: italic; font-size: 15px; color: var(--muted); }
@@ -144,6 +144,32 @@ button:focus-visible, canvas:focus-visible, a:focus-visible { outline: 2px solid
 .stage-name { margin: 0; min-height: 22px; font: 400 17px/1.3 Federo, Georgia, serif; letter-spacing: 2px; text-transform: uppercase; color: var(--brass); text-align: center; }
 .stage-burst { transform-origin: 0 0; }
 .stage.is-animating .stage-burst { animation: burst .7s cubic-bezier(.2, 1.4, .4, 1) both, bloom 2.4s ease-in-out .7s infinite alternate; }
+/* A spell in flight: the outer group is moved by script, the drawing inside
+   moves the way its element does. */
+.stage-bolt { will-change: transform; }
+.bolt-face, .bolt-art, .bolt-spin { transform-box: fill-box; transform-origin: 50% 50%; }
+.bolt-art[data-art="fire"], .bolt-art[data-art="bolt"] { animation: flicker .16s ease-in-out infinite alternate; }
+@keyframes flicker { from { transform: scale(1.02, .9); } to { transform: scale(.98, 1.08); } }
+.bolt-art[data-art="water"] { animation: surge .5s ease-in-out infinite alternate; }
+@keyframes surge { from { transform: translateY(-2px) scaleX(.96); } to { transform: translateY(2px) scaleX(1.04); } }
+.bolt-art[data-art="earth"] .bolt-spin { animation: tumble 1.1s linear infinite; }
+.bolt-art[data-art="magma"] { animation: tumble 2.2s linear infinite; }
+@keyframes tumble { to { transform: rotate(360deg); } }
+.bolt-art[data-art="air"] path[stroke] { stroke-dasharray: 26 8; animation: gust .45s linear infinite; }
+@keyframes gust { to { stroke-dashoffset: -34; } }
+.bolt-art[data-art="metal"], .bolt-art[data-art="frost"] { animation: quiver .12s ease-in-out infinite alternate; }
+@keyframes quiver { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+.bolt-art[data-art="vine"] { animation: lash .32s ease-in-out infinite alternate; }
+@keyframes lash { from { transform: scaleY(.8); } to { transform: scaleY(1.15); } }
+.bolt-crackle { animation: crackle .14s steps(2) infinite; }
+@keyframes crackle { from { opacity: 1; } to { opacity: .1; } }
+.bolt-glow { animation: glow .6s ease-in-out infinite alternate; }
+@keyframes glow { from { opacity: .7; } to { opacity: 1; } }
+.bolt-glint { animation: glint .5s ease-in-out infinite alternate; }
+@keyframes glint { from { opacity: .2; } to { opacity: 1; } }
+.stage-mirror { transform-box: fill-box; transform-origin: 50% 100%; }
+.pane-glint { animation: paneGlint 2.2s ease-in-out infinite; }
+@keyframes paneGlint { 0%, 60% { transform: translateY(14px); opacity: 0; } 80% { opacity: .9; } 100% { transform: translateY(-18px); opacity: 0; } }
 @keyframes burst { 0% { transform: scale(.1) rotate(-20deg); opacity: 0; } 30% { opacity: 1; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
 @keyframes bloom { from { transform: scale(1); } to { transform: scale(1.06); } }
 .stage.is-animating .stage-name { animation: nameIn .5s cubic-bezier(.2, 1.2, .4, 1) both; }
@@ -229,6 +255,7 @@ button:focus-visible, canvas:focus-visible, a:focus-visible { outline: 2px solid
 	.hits li { animation: none; opacity: 1; }
 	.caster.is-hit .portrait-figure, .caster.is-healed .portrait-figure { animation: none; }
 	.stage.is-animating .stage-burst, .stage.is-animating .stage-name, .quill[data-quill="scratching"]::before { animation: none; }
+	.bolt-art, .bolt-spin, .bolt-art path, .bolt-crackle, .bolt-glow, .bolt-glint, .pane-glint { animation: none; }
 	.arena::before, .portrait-breath, .timer.is-late, .sheet-frame.is-late::after, .portrait-marks .wound.is-new { animation: none; }
 	.portrait-marks .wound.is-new { stroke-dasharray: none; }
 	.motion-layer { display: none; }

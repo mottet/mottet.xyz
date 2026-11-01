@@ -385,7 +385,9 @@ async function browser() {
     assert.equal(await page.locator('#caster-foe [data-state]').textContent(), 'wounded, no ring');
     assert.equal(await page.locator('#caster-foe [data-marks] .wound').count(), 1, 'a scar across the figure');
     assert.equal(await page.locator('#caster-foe.is-wounded').count(), 1);
-    assert.equal(await page.locator('.stage-token[data-token="you"] circle').count(), 2, 'two precision rings');
+    assert.equal(await page.locator('.stage-bolt[data-side="you"]').getAttribute('data-power'), '3', 'the flame flies at its hand');
+    assert.equal(await page.locator('.stage-bolt[data-side="you"]').getAttribute('data-art'), 'fire', 'drawn as fire, not a token');
+    assert.equal(await page.locator('.stage-bolt[data-side="foe"]').count(), 0, 'a fizzle sends nothing');
     assert.equal(await page.locator('#duel-end').isHidden(), true, 'one wound is not the end');
     await page.click('#next');
     await page.waitForFunction(() => window.glyphsDuel.state.phase === 'drawing' && window.glyphsDuel.state.round === 2);

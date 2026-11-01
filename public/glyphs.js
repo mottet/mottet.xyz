@@ -29,9 +29,11 @@
   const net = { mode: 'monster', socket: null, code: null };
   // The table shows one scene at a time; a change takes this long to settle.
   const sceneDelay = () => reducedMotion.matches ? 0 : 580;
-  // How long the spells take to cross the stage, and how long the reaction
-  // blooms before the rings answer. Slow enough to be read.
-  const TOKENS_MS = 1100, BLOOM_MS = 1300, HIT_MS = 650, HOLD_MS = 90;
+  // The beats of a round on the stage, slow enough to be read: a cast is
+  // gathered, flies to where it meets the other, the reaction blooms, what
+  // comes out of it flies on, and the rings answer one badge at a time. A
+  // spell with nothing to meet flies straight on; a quiet round just rests.
+  const CAST_MS = 520, FLY_MS = 620, BLOOM_MS = 1100, BLOOM_SHORT_MS = 650, STRIKE_MS = 480, DIRECT_MS = 900, STILL_MS = 500, HIT_MS = 650, HOLD_MS = 90;
   // Dust drifts through the candle light while the battlefield is in view.
   const showScene = name => { table.dataset.scene = name; M.ambient(name === 'arena', arena); };
   el('foe-name').textContent = monsterName;
@@ -214,7 +216,8 @@
   const setFigure = (side, kind) => {
     casters[side].querySelectorAll('[data-poses] use').forEach(use => {
       const suffix = use.dataset.pose === 'idle' ? '' : `-${use.dataset.pose}`;
-      use.setAttribute('href', document.getElementById(`g-${kind}${suffix}`) ? `#g-${kind}${suffix}` : `#g-figure${suffix}`);
+      const own = `g-${kind}${suffix}`;
+      use.setAttribute('href', document.getElementById(own) ? `#${own}` : document.getElementById(`g-${kind}`) ? `#g-${kind}` : `#g-figure${suffix}`);
     });
   };
   const paintBody = (side, body, death) => {
@@ -236,68 +239,228 @@
     return spell && spell.elements.length ? spell.elements : ['brass'];
   };
 
-  // The stage: each side's casting arrives as a token, and the reaction blooms between them.
-  // A spell drawn in the defs has its own token; one added in the forge is
-  // a disc of its element's colour until it gets art.
-  const tokenFor = id => {
-    const spell = S.byId[id];
-    const symbol = `g-token-${spell.elements.length === 1 ? spell.elements[0] : id}`;
-    if (document.getElementById(symbol)) return `<use href="#${symbol}"/>`;
-    const [first, second] = spell.elements.map(e => S.ELEMENT_COLOURS[e]);
-    return `<circle r="22" fill="#1b2420" stroke="url(#g-brass)" stroke-width="2"/><circle r="12" fill="${first || '#6b705f'}" stroke="${second || first || '#6b705f'}" stroke-width="4"/>`;
+  // The stage. What each side cast is drawn as its element in flight: an
+  // attack gathers at the caster's hand and flies; a ring gathers round its
+  // caster; a mirror stands up in front of them; ink that was no glyph
+  // puffs out. Two attacks meet in the middle and the reaction blooms
+  // there; an attack on a mirror meets it at the pane; any other attack
+  // flies straight on to the other caster's ring. What comes out of a
+  // meeting flies on to the caster it lands on and arrives as their badge
+  // does. A spell drawn in the defs has a drawing of its own; one added in
+  // the forge is an orb of its element's colour until it gets art.
+  const SVG_NS = 'http://www.w3.org/2000/svg', MIRROR_X = 96;
+  const BOLT_SCALE = { 1: .8, 2: 1, 3: 1.2 };
+  // How each element flies: a stone is thrown in an arc, wind wavers, iron goes straight.
+  const FLIGHT = { earth: { arc: 22 }, magma: { arc: 18 }, water: { arc: -4 }, air: { arc: 10, wave: 6 }, fire: { arc: 6 }, bolt: { arc: 4, wave: 4 }, vine: { arc: 8 }, frost: { arc: 2 } };
+  const spellKind = id => id === 'blank' || id === 'fizzle' ? id : (S.byId[id] || {}).kind;
+  // A point of the layout in the stage's own units, and back.
+  const stagePoint = (element, fx = .5, fy = .5) => {
+    const r = stageArt.getBoundingClientRect(), e = element.getBoundingClientRect(), k = 320 / (r.width || 320);
+    return [(e.left + e.width * fx - (r.left + r.width / 2)) * k, (e.top + e.height * fy - (r.top + r.height / 2)) * k];
   };
+  const layerPoint = (x, y) => { const [cx, cy] = M.at(stageArt, .5, .5), k = (stageArt.getBoundingClientRect().width || 320) / 320; return [cx + x * k, cy + y * k]; };
+  // Where a caster's hand is, and where a strike on them stops: the edge of
+  // their ring, on the stage's side.
+  const handPoint = side => stagePoint(casters[side].querySelector('.portrait'), side === 'you' ? 1.1 : -.1, .34);
+  const ringPoint = side => {
+    const portrait = casters[side].querySelector('.portrait');
+    const [x, y] = stagePoint(portrait, .5, .45), half = stagePoint(portrait, 1, .45)[0] - x;
+    // The outer ring stands a little beyond the portrait's box; with no
+    // ring the strike reaches the figure itself.
+    return [x + (side === 'you' ? 1 : -1) * half * (shown[side].ring ? 1.18 : .8), y];
+  };
+  const boltArt = elements => {
+    const spell = elements.length > 1 && S.spells.find(sp => sp.kind === 'attack' && sp.elements.length === elements.length && sp.elements.every(e => elements.includes(e)));
+    const key = spell ? spell.id : elements[0];
+    if (key && document.getElementById(`g-bolt-${key}`)) return { key, html: `<use href="#g-bolt-${key}"/>` };
+    const colour = S.ELEMENT_COLOURS[elements[0]] || '#9aa08f';
+    return { key: key || 'orb', html: `<path d="M-26 0C-16-9-4-10 8-7C18-4 20 4 8 7C-4 10-16 9-26 0Z" fill="${colour}" opacity=".6"/><circle cx="8" r="9" fill="${colour}"/><circle cx="10" cy="-2" r="3.5" fill="#fff" opacity=".7"/>` };
+  };
+  // A spell in flight, facing the way it flies.
+  const makeBolt = (side, elements, power, dir = side === 'you' ? 1 : -1) => {
+    const art = boltArt(elements), g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('class', 'stage-bolt'); g.dataset.side = side; g.dataset.power = power; g.dataset.art = art.key;
+    g.innerHTML = `<g class="bolt-face" transform="scale(${dir} 1)"><g class="bolt-art" data-art="${art.key}">${art.html}</g></g>`;
+    stageArt.append(g);
+    return g;
+  };
+  const place = (bolt, [x, y], k = 1) => { bolt.style.transform = `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${k})`; };
+  // A flight from one point to another, with the element's arc and waver.
+  const move = (bolt, from, to, k, ms, style = {}) => new Promise(resolve => {
+    if (!bolt.isConnected || !bolt.animate) { place(bolt, to, k); return resolve(); }
+    const frames = [];
+    for (let i = 0; i <= 16; i++) {
+      const t = i / 16, e = t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const x = from[0] + (to[0] - from[0]) * e, y = from[1] + (to[1] - from[1]) * e - (style.arc || 0) * Math.sin(Math.PI * t) + (style.wave ? Math.sin(t * Math.PI * 4) * style.wave : 0);
+      frames.push({ transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) scale(${k})`, offset: t });
+    }
+    const a = bolt.animate(frames, { duration: ms, easing: 'linear', fill: 'forwards' });
+    a.onfinish = () => { a.cancel(); place(bolt, to, k); resolve(); };
+  });
+  const trail = (bolt, elements, ms, rate = 50) => { for (const kind of elements) M.emit({ follow: bolt, kind, rate, duration: ms / 1000, speed: 40, lifeScale: .7, sizeScale: .8 }); };
+  // The reaction's drawing: a compound reaction shows the bursts of its parts side by side.
   const BURSTS = {
     inferno: '<path d="M-26 20C-30-4-12-18 0-34C12-18 30-4 26 20C20 32-20 32-26 20Z" fill="url(#g-ember)" opacity=".9"/>',
     steam: '<path d="M-34 10C-40-10-14-22 0-12C14-22 40-10 34 10C40 24 10 30 0 22C-10 30-40 24-34 10Z" fill="#dfe6e2" opacity=".8"/>',
-    lava: '<path d="M-36 14C-30-8-10-16 0-8C10-16 30-8 36 14C26 30-26 30-36 14Z" fill="url(#g-ember)"/><path d="M-20 18C-10 8 10 8 20 18" stroke="#2b1810" stroke-width="3" fill="none"/>',
+    smothered: '<path d="M-20-14C-16-22-24-26-18-34" fill="none" stroke="#9a9186" stroke-width="2" opacity=".6"/><path d="M-12-2C-6-16 2-20 0-28C8-20 14-12 12-2Z" fill="url(#g-ember)" opacity=".8"/><path d="M-30-2H30V16H-30Z" fill="url(#g-stone)"/>',
     fanned: '<path d="M-38 0C-18-22 18-22 38 0M-30 12C-12-6 12-6 30 12" fill="none" stroke="url(#g-leaf)" stroke-width="4" stroke-linecap="round"/><path d="M0-24C8-12 14-4 14 4A14 14 0 0 1-14 4C-14-4-8-12 0-24Z" fill="url(#g-ember)"/>',
-    held: '<circle r="30" fill="none" stroke="url(#g-brass)" stroke-width="5"/><circle r="22" fill="none" stroke="url(#g-brass)" stroke-width="1.5" opacity=".6"/>',
-    reflected: '<path d="M-6-32H6V32H-6Z" fill="#cfd8d6" stroke="url(#g-brass)" stroke-width="2"/><path d="M-40 0H-14M14 0H40" stroke="url(#g-brass)" stroke-width="3" stroke-dasharray="6 5"/>',
+    melts: '<path d="M-36 14C-20 4 20 4 36 14C20 24-20 24-36 14Z" fill="url(#g-ember)"/><path d="M-20-10L-4-14L16-2C10 4 0 6-8 2Z" fill="url(#g-iron)"/><path d="M-6 0C-2 6 2 8 0 14" fill="none" stroke="#ffa14a" stroke-width="3" stroke-linecap="round"/>',
+    reflected: '<path d="M0-30V-14M0 14V30M-26-14L-14-8M26-14L14-8M-26 14L-14 8M26 14L14 8" stroke="#fff6d6" stroke-width="3" stroke-linecap="round"/><circle r="10" fill="#fff6d6" opacity=".8"/>',
     flood: '<path d="M-40-4C-28-18-14-18-2-4C10 10 24 10 40-4M-40 12C-28-2-14-2-2 12C10 26 24 26 40 12" fill="none" stroke="url(#g-drop)" stroke-width="5" stroke-linecap="round"/>',
     mud: '<path d="M-38 16C-30-4-10-12 0-6C10-12 30-4 38 16Z" fill="#5e4a2e"/><path d="M-26 6C-14-8 14-8 26 6" fill="none" stroke="#4f8aa3" stroke-width="3" opacity=".7"/>',
-    rain: '<path d="M-30-10C-10-30 10-30 30-10" fill="none" stroke="url(#g-leaf)" stroke-width="4" stroke-linecap="round"/><path d="M-24 4V20M-8 8V26M8 4V20M24 8V26" stroke="url(#g-drop)" stroke-width="4" stroke-linecap="round"/>',
-    'flows through': '<path d="M-6-28H6V28H-6Z" fill="#cfd8d6" stroke="url(#g-brass)" stroke-width="2"/><path d="M-40 0C-28-12-16-12-10 0C-4 12 4 12 10 0C16-12 28-12 40 0" fill="none" stroke="url(#g-drop)" stroke-width="4"/>',
+    spray: '<path d="M-40 10C-28-4-14-6-2 4" fill="none" stroke="url(#g-drop)" stroke-width="5" stroke-linecap="round"/><path d="M-6 0C8-14 28-14 40-4" fill="none" stroke="url(#g-leaf)" stroke-width="4" stroke-linecap="round"/><circle cx="4" cy="-12" r="2" fill="#b9e2ee"/><circle cx="14" cy="-18" r="1.6" fill="#b9e2ee"/><circle cx="-4" cy="-20" r="1.4" fill="#b9e2ee"/><circle cx="24" cy="8" r="1.8" fill="#b9e2ee"/>',
+    'flows through': '<path d="M-40 0C-28-12-16-12-10 0C-4 12 4 12 10 0C16-12 28-12 40 0" fill="none" stroke="url(#g-drop)" stroke-width="4"/>',
+    rust: '<path d="M-24-4L-6-9L26-4L-6 1Z" fill="url(#g-iron)"/><path d="M-10-6L-2-8L4-5L-4-2ZM10-6L18-5L14-2Z" fill="#8a4b2a"/><path d="M-36 12C-24 2-12 2 0 12C12 22 24 22 36 12" fill="none" stroke="url(#g-drop)" stroke-width="4"/><path d="M14-12L18-14L17-10ZM22 2L26 0L25 4Z" fill="#8a4b2a"/>',
     quake: '<path d="M-40 18H40M-30 10L-22 2L-14 12L-6-2L2 10L10 0L18 12L26 4L34 14" fill="none" stroke="url(#g-stone)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>',
-    pass: '<path d="M-16-14H14V16H-16Z" fill="url(#g-stone)"/><path d="M-40 6C-24-14 0-14 10 2C18 14 32 10 40-4" fill="none" stroke="url(#g-leaf)" stroke-width="4" stroke-linecap="round"/>',
-    shatters: '<path d="M-6-30L6-30L8-6L-2 2L4 30L-6 30L-8 6L2-2Z" fill="#cfd8d6" stroke="url(#g-brass)" stroke-width="1.5"/><path d="M-30-8H-12V10H-30Z" fill="url(#g-stone)"/>',
+    breaks: '<path d="M-42-6C-32-14-22-12-16-6M-42 8C-32 0-22 2-16 8" fill="none" stroke="url(#g-leaf)" stroke-width="3" stroke-linecap="round"/><path d="M-14-16H14V16H-14Z" fill="url(#g-stone)"/><path d="M16-10L30-20M18 0L36-2M16 10L30 20" fill="none" stroke="#cfe0a8" stroke-width="2" stroke-linecap="round" opacity=".7"/>',
+    split: '<path d="M-30-14L-4-16L-6 16L-30 12Z" fill="url(#g-stone)"/><path d="M4-16L30-14L30 12L6 16Z" fill="url(#g-stone)"/><path d="M0-34L4-18L0 20L-4-18Z" fill="url(#g-iron)"/><path d="M-34 18L-30 14L-28 20ZM32 18L36 14L36 20Z" fill="#7a7262"/>',
+    shatters: '<path d="M-6-30L6-30L8-6L-2 2L4 30L-6 30L-8 6L2-2Z" fill="#cfd8d6" stroke="url(#g-brass)" stroke-width="1.5"/><path d="M12-20L20-26L18-14ZM-14 10L-22 14L-18 4ZM14 14L22 10L20 20Z" fill="#cfd8d6"/>',
+    'goes through': '<path d="M-6-30L6-30L8-6L-2 2L4 30L-6 30L-8 6L2-2Z" fill="#cfd8d6" stroke="url(#g-brass)" stroke-width="1.5"/><path d="M12-20L20-26L18-14ZM-14 10L-22 14L-18 4ZM14 14L22 10L20 20Z" fill="#cfd8d6"/>',
     gale: '<path d="M-42 0C-22-26 2-26 22 0C30 10 36 10 42 0M-36 14C-16-8 4-8 24 14" fill="none" stroke="url(#g-leaf)" stroke-width="5" stroke-linecap="round"/>',
-    stillness: '<circle r="24" fill="none" stroke="#6b705f" stroke-width="2" stroke-dasharray="4 5"/>',
-    lands: '<path d="M-30-6L0 10L30-6" fill="none" stroke="url(#g-brass)" stroke-width="4" stroke-linecap="round"/>',
-    quiet: '<path d="M-14 16C-14-4 0-4 0-16C0-4 14-4 14 16" fill="none" stroke="#6b705f" stroke-width="2" stroke-linecap="round"/>'
+    slips: '<path d="M-36-10C-16-18 8-18 28-10M-36 10C-16 18 8 18 28 10" fill="none" stroke="url(#g-leaf)" stroke-width="3" stroke-linecap="round"/><path d="M-30 0L-10-5L30 0L-10 5Z" fill="url(#g-iron)"/>',
+    sparks: '<path d="M-42-2L-6-6L-2 0L-6 6Z" fill="url(#g-iron)"/><path d="M42-2L6-6L2 0L6 6Z" fill="url(#g-iron)"/><path d="M0-4L4-20M2-2L18-12M-3-3L-16-16M1 3L10 18M-2 2L-18 10" fill="none" stroke="#ffd27a" stroke-width="2" stroke-linecap="round"/>'
   };
-  // Momentum shows as extra rings round the token.
-  const rings = power => Array.from({ length: power - 1 }, (_, i) => `<circle r="${27 + i * 5}" fill="none" stroke="url(#g-brass)" stroke-width="1.5" opacity="${(.9 - i * .25).toFixed(2)}"/>`).join('');
-  const paintStage = (yours, theirs, reaction, animate) => {
-    stage.classList.remove('is-animating');
-    // A compound reaction shows the bursts of its parts side by side.
+  const bloomArt = reaction => {
     const parts = (reaction.parts || [reaction.name]).filter(name => BURSTS[name]).slice(0, 4);
     const spread = parts.length > 1 ? 44 : 0, size = parts.length > 2 ? .55 : parts.length > 1 ? .7 : 1;
-    const bursts = parts.map((name, i) => `<g transform="translate(${((i - (parts.length - 1) / 2) * spread).toFixed(1)} 0) scale(${size})">${BURSTS[name]}</g>`).join('');
-    stageArt.innerHTML = `<g class="stage-token" data-token="you" transform="translate(-92 0)">${rings(reaction.powers[0])}${tokenFor(yours)}</g><g class="stage-token" data-token="foe" transform="translate(92 0)">${rings(reaction.powers[1])}${tokenFor(theirs)}</g><g class="stage-burst" transform="translate(0 0)">${bursts}</g>`;
-    stageName.textContent = reaction.name;
-    if (!animate) return;
-    stageName.textContent = '';
-    // The spells draw back, fly, and meet: a flash, a jolt, a held breath,
-    // then the reaction blooms.
-    const tokens = { you: stageArt.querySelector('[data-token="you"]'), foe: stageArt.querySelector('[data-token="foe"]') };
-    const fly = (token, from, to) => token.animate([
-      { transform: `translate(${from}px, 0)`, opacity: 0 }, { transform: `translate(${from + Math.sign(from) * 16}px, 0)`, opacity: 1, offset: .25 }, { transform: `translate(${to}px, 0)`, opacity: 1 }
-    ], { duration: TOKENS_MS, easing: 'cubic-bezier(.55, 0, .15, 1)' });
-    fly(tokens.you, -150, -92); fly(tokens.foe, 150, 92);
-    const spells = { you: yours, foe: theirs };
-    for (const side of ['you', 'foe']) {
-      setPose(side, 'cast', TOKENS_MS + HOLD_MS);
-      for (const kind of kindsOf(spells[side])) M.emit({ follow: tokens[side], kind, rate: 45, duration: TOKENS_MS / 1000, speed: 50, lifeScale: .7, sizeScale: .8 });
-    }
-    M.play('cast');
-    window.setTimeout(() => {
-      const [cx, cy] = M.at(stageArt, .5, .5);
-      M.flash(arenaFlash); M.shake(arena, 7, 340); M.play('clash');
-      for (const side of ['you', 'foe']) for (const kind of kindsOf(spells[side])) M.burst(cx, cy, kind, 32, { speed: 300, lifeScale: 1.1 });
-      window.setTimeout(() => { stage.classList.add('is-animating'); stageName.textContent = reaction.name; }, HOLD_MS);
-    }, TOKENS_MS);
+    return parts.map((name, i) => `<g transform="translate(${((i - (parts.length - 1) / 2) * spread).toFixed(1)} 0) scale(${size})">${BURSTS[name]}</g>`).join('');
   };
-  const clearStage = () => { stageArt.innerHTML = ''; stageName.textContent = ''; stage.classList.remove('is-animating'); };
+  const paintBloom = (reaction, [x, y]) => {
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('class', 'stage-bloom'); g.setAttribute('transform', `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    g.innerHTML = `<g class="stage-burst">${bloomArt(reaction)}</g>`;
+    stageArt.append(g);
+  };
+  const paintMirror = side => {
+    const g = document.createElementNS(SVG_NS, 'g');
+    g.setAttribute('class', 'stage-mirror'); g.dataset.side = side;
+    place(g, [side === 'you' ? -MIRROR_X : MIRROR_X, 0]);
+    g.innerHTML = '<g class="pane-rise"><use href="#g-mirror-pane"/></g>';
+    stageArt.append(g);
+    return g;
+  };
+  // The plan of a round: where the spells meet, if they do, and how long
+  // the stage takes before the first badge.
+  const stagePlan = (yours, theirs, reaction) => {
+    const a = spellKind(yours), b = spellKind(theirs);
+    const plan = { attack: { you: a === 'attack', foe: b === 'attack' }, mirror: a === 'defence' ? 'you' : b === 'defence' ? 'foe' : null, meet: null, bloom: 0 };
+    if (plan.attack.you && plan.attack.foe) plan.meet = [0, 0];
+    else if (plan.attack.you && plan.mirror === 'foe') plan.meet = [MIRROR_X - 18, 0];
+    else if (plan.attack.foe && plan.mirror === 'you') plan.meet = [-MIRROR_X + 18, 0];
+    if (plan.meet) plan.bloom = BURSTS[reaction.name] ? BLOOM_MS : BLOOM_SHORT_MS;
+    plan.total = plan.meet ? CAST_MS + FLY_MS + plan.bloom + STRIKE_MS : plan.attack.you || plan.attack.foe ? CAST_MS + DIRECT_MS : STILL_MS;
+    return plan;
+  };
+  // Callbacks of a round that was cleared are dropped.
+  let run = 0;
+  const later = (fn, ms) => { const id = run; window.setTimeout(() => { if (id === run) fn(); }, ms); };
+  const clearStage = () => { run += 1; stageArt.innerHTML = ''; stageName.textContent = ''; stage.classList.remove('is-animating'); };
+  const showName = name => { stage.classList.add('is-animating'); stageName.textContent = name; };
+  // Without motion the stage shows the round at rest: each spell at its
+  // side, the mirror, the reaction between them and its name.
+  const paintStill = (yours, theirs, reaction, plan, powers) => {
+    clearStage();
+    [yours, theirs].forEach((id, i) => {
+      const side = i ? 'foe' : 'you';
+      if (plan.attack[side]) place(makeBolt(side, S.byId[id].elements, powers[i]), [i ? 80 : -80, 0], BOLT_SCALE[powers[i]] || 1);
+    });
+    if (plan.mirror) paintMirror(plan.mirror);
+    if (plan.meet) paintBloom(reaction, plan.meet);
+    stageName.textContent = reaction.name;
+  };
+  // The round in motion. `items` are the badges each side will get, so a
+  // strike can arrive as its badge lands; `rings` the ring each side raised.
+  const playStage = (yours, theirs, reaction, plan, powers, items, rings) => {
+    clearStage();
+    const spells = { you: yours, foe: theirs }, bolts = {}, attackers = ['you', 'foe'].filter(side => plan.attack[side]);
+    const other = side => side === 'you' ? 'foe' : 'you';
+    let pane = null;
+    // The casts.
+    for (const side of ['you', 'foe']) {
+      const id = spells[side], kind = spellKind(id), portrait = casters[side].querySelector('.portrait');
+      const power = powers[side === 'you' ? 0 : 1];
+      if (kind === 'attack') {
+        setPose(side, 'cast', CAST_MS + (plan.meet ? FLY_MS : DIRECT_MS) + 200);
+        const elements = S.byId[id].elements, k = BOLT_SCALE[power] || 1, hand = handPoint(side);
+        const bolt = makeBolt(side, elements, power);
+        bolts[side] = { bolt, k, hand, elements, used: false };
+        place(bolt, hand, k);
+        if (bolt.animate) bolt.animate([{ transform: `translate(${hand[0]}px, ${hand[1]}px) scale(.15)`, opacity: 0 }, { transform: `translate(${hand[0]}px, ${hand[1]}px) scale(${k})`, opacity: 1 }], { duration: CAST_MS, easing: 'ease-out' });
+        trail(bolt, elements, CAST_MS, 35);
+      } else if (kind === 'barrier') {
+        setPose(side, 'guard', CAST_MS + FLY_MS + 500);
+        const [x, y] = M.at(portrait, .5, .45), r = M.radiusOf(portrait) * .95;
+        for (const kind of kindsOf(id).concat('brass')) M.emit({ from: [x, y], kind, rate: 45, duration: (CAST_MS + 300) / 1000, orbit: r, speed: 110, lifeScale: .8, sizeScale: .9 });
+        later(() => { if (rings[side]) paintRing(side, rings[side]); M.play('ring'); }, CAST_MS * .5);
+      } else if (kind === 'defence') {
+        setPose(side, 'guard', CAST_MS + FLY_MS + 500);
+        pane = paintMirror(side);
+        const rise = pane.querySelector('.pane-rise');
+        if (rise.animate) rise.animate([{ transform: 'translateY(30px) scaleY(.2)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: CAST_MS, easing: 'ease-out' });
+        M.play('mirror');
+      } else if (kind === 'fizzle') {
+        setPose(side, 'cast', 420);
+        M.emit({ follow: portrait, fx: side === 'you' ? 1 : 0, fy: .35, kind: 'ink', rate: 45, duration: .5, speed: 45 });
+        M.play('fizzle');
+      }
+    }
+    // The blows each side takes, in badge order; a strike flies to arrive
+    // with its badge. From a meeting it flies out of the bloom; with none,
+    // the attacker's own spell flies straight on.
+    const strikes = side => items[side].map((item, j) => ({ item, j })).filter(st => st.item.elements);
+    const land = (bolt, side, item) => {
+      if (item.fx === 'aside' && bolt.animate) {
+        const from = bolt.style.transform, back = side === 'you' ? 40 : -40;
+        bolt.animate([{ transform: from, opacity: 1 }, { transform: `${from} translate(${back}px, -34px) rotate(${side === 'you' ? -40 : 40}deg) scale(.7)`, opacity: 0 }], { duration: 480, easing: 'ease-out', fill: 'forwards' }).onfinish = () => bolt.remove();
+      } else bolt.remove();
+    };
+    for (const side of ['you', 'foe']) for (const { item, j } of strikes(side)) {
+      const arrive = plan.total + j * HIT_MS, k = BOLT_SCALE[item.power] || 1;
+      if (plan.meet) later(() => {
+        const bolt = makeBolt(other(side), item.elements, item.power, side === 'you' ? -1 : 1);
+        place(bolt, plan.meet, k);
+        trail(bolt, item.elements, STRIKE_MS);
+        move(bolt, plan.meet, ringPoint(side), k, STRIKE_MS, FLIGHT[bolt.dataset.art]).then(() => land(bolt, side, item));
+      }, arrive - STRIKE_MS);
+      else if (bolts[other(side)] && !bolts[other(side)].used) {
+        const b = bolts[other(side)];
+        b.used = true;
+        later(() => {
+          M.play('launch', b.elements[0]);
+          trail(b.bolt, b.elements, DIRECT_MS);
+          move(b.bolt, b.hand, ringPoint(side), b.k, DIRECT_MS, FLIGHT[b.bolt.dataset.art]).then(() => land(b.bolt, side, item));
+        }, arrive - DIRECT_MS);
+      }
+    }
+    if (!plan.meet) {
+      // An attack that lands on nobody still flies off; a quiet round, or
+      // one with nothing to meet, is named when it is over.
+      for (const side of attackers) if (!bolts[side].used) later(() => { const b = bolts[side]; M.play('launch', b.elements[0]); trail(b.bolt, b.elements, DIRECT_MS); move(b.bolt, b.hand, ringPoint(other(side)), b.k, DIRECT_MS, FLIGHT[b.bolt.dataset.art]).then(() => b.bolt.remove()); }, CAST_MS);
+      later(() => showName(reaction.name), plan.total - HOLD_MS);
+      return;
+    }
+    // The flight to the meeting, and the meeting: a flash, a jolt, a held
+    // breath, then the reaction blooms.
+    later(() => {
+      for (const side of attackers) {
+        const b = bolts[side], to = [plan.meet[0] + (side === 'you' ? -14 : 14), plan.meet[1]];
+        M.play('launch', b.elements[0]);
+        trail(b.bolt, b.elements, FLY_MS);
+        move(b.bolt, b.hand, to, b.k, FLY_MS, FLIGHT[b.bolt.dataset.art]);
+      }
+    }, CAST_MS);
+    later(() => {
+      const [cx, cy] = layerPoint(...plan.meet);
+      M.flash(arenaFlash); M.shake(arena, attackers.length > 1 ? 7 : 4, 340); M.play('clash');
+      for (const side of attackers) { for (const kind of bolts[side].elements) M.burst(cx, cy, kind, 32, { speed: 300, lifeScale: 1.1 }); bolts[side].bolt.remove(); }
+      if (pane) {
+        const broken = reaction.name === 'goes through' || reaction.name === 'shatters';
+        if (broken) { M.burst(cx, cy, 'brass', 30, { speed: 220 }); M.play('broken'); if (pane.animate) pane.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' }).onfinish = () => pane.remove(); else pane.remove(); }
+        else M.pulse(pane, 1.15, 420);
+      }
+      later(() => { paintBloom(reaction, plan.meet); showName(reaction.name); }, HOLD_MS);
+    }, CAST_MS + FLY_MS);
+  };
 
   // The grimoire keeps the glyphs this caster has made work, in their own hand.
   const GRIMOIRE_KEY = 'glyphs-grimoire';
@@ -338,7 +501,7 @@
     if (raised) {
       const r = raised.after;
       const name = own ? ringName(r, true) : `a ring, ${r.strength}`;
-      items.push({ kind: 'barrier', fx: 'raise', text: r.strength > raised.before.strength || raised.before.elements.join() !== r.elements.join() ? `${name} raised` : `${name} stands` });
+      items.push({ kind: 'barrier', fx: 'raise', ring: r, text: r.strength > raised.before.strength || raised.before.elements.join() !== r.elements.join() ? `${name} raised` : `${name} stands` });
     }
     // Each blow says what it did to the ring, in the wheel's words: turned
     // aside (ring untouched), straight through (the wheel), broken (power as
@@ -347,11 +510,12 @@
     for (const blow of result.blows[index]) {
       if (blow.spent) continue;
       const by = S.ELEMENT_NAMES[blow.element], why = blow.why ? ` (${blow.why})` : '';
-      if (blow.how === 'aside') items.push({ kind: 'barrier', fx: 'aside', element: blow.element, text: 'turned aside', line: `the ring turns ${by} aside${why}` });
-      else if (blow.how === 'pierced') items.push({ kind: blow.element, fx: 'strike', element: blow.element, text: `${by} straight through`, line: `${by} goes straight through the ring${why}` });
-      else if (blow.how === 'broken') items.push({ kind: blow.element, fx: 'broken', element: blow.element, text: `${by} breaks the ring`, line: `${by} at ${blow.power} breaks the ring of ${blow.worn}` });
-      else if (blow.how === 'worn') items.push({ kind: 'barrier', fx: 'worn', element: blow.element, text: `ring takes ${by} ${blow.power}`, line: `the ring takes ${by} at ${blow.power}, ${blow.left} left` });
-      else items.push({ kind: blow.element, fx: 'strike', element: blow.element, text: `${by} strikes, no ring` });
+      const strike = { element: blow.element, elements: blow.elements, power: blow.power };
+      if (blow.how === 'aside') items.push({ kind: 'barrier', fx: 'aside', ...strike, text: 'turned aside', line: `the ring turns ${by} aside${why}` });
+      else if (blow.how === 'pierced') items.push({ kind: blow.element, fx: 'strike', ...strike, text: `${by} straight through`, line: `${by} goes straight through the ring${why}` });
+      else if (blow.how === 'broken') items.push({ kind: blow.element, fx: 'broken', ...strike, text: `${by} breaks the ring`, line: `${by} at ${blow.power} breaks the ring of ${blow.worn}` });
+      else if (blow.how === 'worn') items.push({ kind: 'barrier', fx: 'worn', ...strike, text: `ring takes ${by} ${blow.power}`, line: `the ring takes ${by} at ${blow.power}, ${blow.left} left` });
+      else items.push({ kind: blow.element, fx: 'strike', ...strike, text: `${by} strikes, no ring` });
       // A strike that gets through is a wound, whatever its power; the last
       // wound is the death badge instead.
       if (blow.through && blow.wound && blow.wound < S.HITS) items.push({ kind: 'wound', fx: 'wound', wounds: blow.wound, text: S.HITS === 2 ? 'wounded' : `wound ${blow.wound} of ${S.HITS}`, line: S.HITS === 2 ? 'is wounded: one more strike and they fall' : `takes wound ${blow.wound} of ${S.HITS}` });
@@ -370,10 +534,9 @@
     const jolt = () => { figure.classList.remove('is-hit', 'is-healed'); void figure.offsetWidth; figure.classList.add('is-hit'); };
     switch (item.fx) {
       case 'raise':
-        paintRing(side, body.ring);
-        M.burst(x, y, 'brass', 28, { radius: r, speed: 50, lifeScale: 1.2 });
+        paintRing(side, item.ring || body.ring);
+        M.burst(x, y, 'brass', 18, { radius: r, speed: 50, lifeScale: 1.2 });
         figure.classList.add('is-healed');
-        M.play('ring');
         break;
       case 'aside':
         barrier.style.transformBox = 'fill-box'; barrier.style.transformOrigin = '50% 50%';
@@ -576,10 +739,12 @@
     const [youDead, foeDead] = result.deaths;
     showScene('arena');
     nextBox.hidden = true;
-    // The sheet goes, the spells cross, the reaction blooms, then the rings
-    // answer one badge at a time, and the words follow.
-    const t1 = sceneDelay(), t2 = t1 + (animate ? TOKENS_MS + BLOOM_MS : 0);
-    window.setTimeout(() => paintStage(yours, S.maskCast(theirs), result.reaction, animate), t1);
+    // The sheet goes, the spells are cast and meet, then the rings answer
+    // one badge at a time, and the words follow.
+    const masked = S.maskCast(theirs), plan = stagePlan(yours, masked, result.reaction), cast = result.reaction.powers;
+    const rings = { you: result.raised[0] && result.raised[0].after, foe: result.raised[1] && result.raised[1].after };
+    const t1 = sceneDelay(), t2 = t1 + (animate ? plan.total : 0);
+    window.setTimeout(() => animate ? playStage(yours, masked, result.reaction, plan, cast, { you: yourItems, foe: foeItems }, rings) : paintStill(yours, masked, result.reaction, plan, cast), t1);
     window.setTimeout(() => {
       showHits('you', yourItems, state.you, youDead);
       showHits('foe', foeItems, state.foe, foeDead);
