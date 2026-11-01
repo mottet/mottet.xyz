@@ -153,8 +153,8 @@ the end of a duel is a card inside the battlefield rather than an overlay
 (reduced motion swaps without animating).
 Only the reaction is shown:
 tokens for what each side cast slide to the centre and a named reaction blooms
-(inferno, steam, smothered, fanned, reflected, mud, rung, quake, pass,
-breaks back, leaps the ring...), marks land on the two bodies, and an `aria-live` line
+(inferno, steam, smothered, fanned, reflected, mud, rust, slips, quake,
+pass, breaks back, leaps the ring...), marks land on the two bodies, and an `aria-live` line
 narrates it. The shapes are never written down in the game. While drawing, the
 sheet glows in proportion to the recogniser's best score without naming the
 spell, and sets to brass once a glyph is read; a drawing that is no glyph
@@ -202,22 +202,21 @@ both would be), and it is cast one power below the hand that drew it
 (`round.compoundCost`, never below 1), as an attack and as a ring, so it is
 never perfect and cannot break a full ring by force; the cast line says "cast
 at 2 as a compound". In the balance sim the compounds win fewer duels than
-any natural element. The five elements form a
-pentagram. Round the rim each element beats the next and is beaten by the one
-before: Flame > Iron > Stone > Wind > Wave > Flame (melts, split, breaks,
-spray, steam); the loser of an arrow is struck by the winner's element. Across
-the star the pairs quench or pass, so that each element has one relation of
-each kind: Flame and Stone (smothered), Stone and Wave (mud) and Iron and Wind
-(rung) quench each other, both spells undone and a ring of either turning the
-other aside; Wind and Flame (fanned) and Wave and Iron (parted) pass through
-each other, both spells landing and a ring of either giving way. Five
-elements cannot pair off evenly, so Stone quenches twice and passes nothing:
-a ring of stone is the one ring pierced by a single element only (iron). No
-pair is left undecided. The mirror turns the light elements, flame and wind,
-back into their caster's own ring and is soaked, shattered or cut by the heavy
-ones. A ring answers a compound with its better answer, so on this wheel only
-Frost pierces a ring of flame (water beats it, wind passes it) and only Magma
-a ring of wind (stone beats it, flame passes it). Casting resolves the round at once: the monster has already
+any natural element. The five elements sit on a
+pentagram, and every pair is decided the way the two meet in the world rather
+than for symmetry (the balance comes second): Flame melts Iron, Iron splits
+Stone, Stone breaks Wind, Wind tears Wave to spray, Wave puts out Flame in
+steam, Stone smothers Flame and Wave rusts Iron (seven arrows; the loser of
+an arrow is struck by the winner's element); Stone and Wave quench each other
+in mud (both spells undone, a ring of either turns the other aside); Flame
+and Wind (fanned) and Iron and Wind (slips) pass through each other (both
+spells land, a ring of either gives way). No pair is left undecided, and each
+kind of relation is used at least once. So a ring of stone or of water turns
+three elements aside and a ring of flame, iron or wind only one. The mirror
+turns the light elements, flame and wind, back into their caster's own ring
+and is soaked, shattered or cut by the heavy ones. A ring answers a compound
+with its better answer: Frost pierces rings of flame and iron, Bolt a ring of
+iron, Vine a ring of flame and Magma a ring of wind. Casting resolves the round at once: the monster has already
 chosen, knowing the player's ring only by its thickness until a strike reveals
 it. Each caster's portrait shows badges for what happened to them (a ring
 raised, a ring that turned a blow aside, took it or gave way, a death) and the
@@ -252,12 +251,14 @@ value (rings kept, kills, its own death) against a belief over the player's
 next glyph (half a count per option, one per past cast, three per cast in the
 last three rounds), adds its temperament and samples with softmax. A monster
 follows its own elements: the Salamander is loyal to fire (`elements`,
-`loyalty` 3, less than a wound), so it casts Flame, Bolt and Magma, stands
-behind a ring of flame when threatened, and strays to another element only
-when nothing of fire can get through, as against a known ring of water. It
+`loyalty` 5), so it casts Flame, Bolt and Magma, stands behind a ring of
+flame when threatened, and strays to another element when nothing of fire can
+get through, as against a known ring of water or stone; flame being the
+weakest element on this wheel, it strays almost half the time. It
 fumbles 15% of its glyphs and draws them weak, clean or perfect with odds
 40/40/20. The unit check prints its cast mix and asserts it keeps to fire at
-least 55% of the time and rings between 15% and 45%.
+least half of the time and rings between 15% and 45% (the bound was 55% on
+the earlier wheels; the balance is to be revisited).
 
 `/glyphs-grimoire.html` is the designer's grimoire: every glyph drawn from the
 templates, the full reaction matrix, deaths, the monster's mind, the

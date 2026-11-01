@@ -102,9 +102,14 @@
       "to": "fire"
     },
     {
-      "kind": "quench",
-      "from": "fire",
-      "to": "earth"
+      "kind": "beats",
+      "from": "earth",
+      "to": "fire"
+    },
+    {
+      "kind": "beats",
+      "from": "water",
+      "to": "metal"
     },
     {
       "kind": "quench",
@@ -112,19 +117,14 @@
       "to": "water"
     },
     {
-      "kind": "quench",
-      "from": "metal",
+      "kind": "pass",
+      "from": "fire",
       "to": "air"
     },
     {
       "kind": "pass",
-      "from": "air",
-      "to": "fire"
-    },
-    {
-      "kind": "pass",
-      "from": "water",
-      "to": "metal"
+      "from": "metal",
+      "to": "air"
     }
   ],
   "spells": [
@@ -222,7 +222,7 @@
       ],
       "kind": "attack",
       "glyph": "a cross: two strokes, one laid across the other",
-      "flavour": "The smith's sign: a bar laid across a bar. Iron is edge and weight, and only fire undoes it.",
+      "flavour": "The smith's sign: a bar laid across a bar. Iron is edge and weight, and it answers to fire and to rust.",
       "shapes": [
         {
           "kind": "cross"
@@ -355,9 +355,11 @@
     },
     "flame stone": {
       "name": "smothered",
-      "x": {},
+      "x": {
+        "earth": 1
+      },
       "y": {},
-      "line": "The stone smothers the flame and the flame bakes the stone to slag. Nothing lands."
+      "line": "The stone smothers the flame and goes on to the one who lit it."
     },
     "flame wind": {
       "name": "fanned",
@@ -418,14 +420,12 @@
       "line": "Water finds its way round the mirror and reaches its caster."
     },
     "wave iron": {
-      "name": "parted",
-      "x": {
-        "metal": 1
-      },
+      "name": "rust",
+      "x": {},
       "y": {
         "water": 1
       },
-      "line": "The iron parts the wave and the wave closes round the iron. Each goes on to the other caster."
+      "line": "The wave eats the iron to rust and rolls on to the iron caster."
     },
     "stone stone": {
       "name": "quake",
@@ -480,10 +480,14 @@
       "line": "The mirror turns the wind back to its caster."
     },
     "wind iron": {
-      "name": "rung",
-      "x": {},
-      "y": {},
-      "line": "The wind rings the iron like a bell and spends itself, and the iron hangs humming where it stood. Nothing lands."
+      "name": "slips",
+      "x": {
+        "metal": 1
+      },
+      "y": {
+        "air": 1
+      },
+      "line": "The wind slips round the iron and the iron cuts nothing of the wind. Each goes on to the other caster."
     },
     "iron iron": {
       "name": "sparks",
