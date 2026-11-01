@@ -20,25 +20,27 @@ function unit() {
     assert.deepEqual(ab.strikes.a, ba.strikes.b, `${a}/${b} strikes`);
     assert.deepEqual(ab.strikes.b, ba.strikes.a, `${a}/${b} strikes`);
   }
-  // The pentagram: round the rim and across the star, every element beats
-  // two and is beaten by two, as strikes going on to a caster.
+  // The pentagram: round the rim every element beats the next and is beaten
+  // by the one before; across the star the pairs quench or pass, so each
+  // element has one relation of each kind, except stone, which quenches twice
+  // (five elements cannot pair off evenly).
   const goesTo = (r, side) => r.strikes[side].map(st => st.elements.join('+') + (st.source === 'own' ? '!' : ''));
   assert.deepEqual(S.ELEMENTS, ['fire', 'metal', 'earth', 'air', 'water']);
   for (const e of S.ELEMENTS) {
-    assert.equal(S.beats[e].length, 2, `${e} beats two`);
-    assert.equal(S.ELEMENTS.filter(o => S.beats[o].includes(e)).length, 2, `${e} is beaten by two`);
-    for (const o of S.ELEMENTS) if (o !== e) assert.notEqual(S.relationKind(e, o), 'none', `${e} and ${o} are decided`);
+    const kinds = S.ELEMENTS.filter(o => o !== e).map(o => S.relationKind(e, o)).sort();
+    assert.deepEqual(kinds, e === 'earth' ? ['beaten', 'beats', 'quench', 'quench'] : ['beaten', 'beats', 'pass', 'quench'], `${e} has one relation of each kind`);
   }
+  assert.equal(S.relations.filter(r => r.kind === 'quench').length, 3); assert.equal(S.relations.filter(r => r.kind === 'pass').length, 2);
   assert.deepEqual(goesTo(S.reactions('flame', 'iron'), 'b'), ['fire'], 'melts');
   assert.deepEqual(goesTo(S.reactions('iron', 'stone'), 'b'), ['metal'], 'split');
   assert.deepEqual(goesTo(S.reactions('stone', 'wind'), 'b'), ['earth'], 'breaks');
   assert.deepEqual(goesTo(S.reactions('wind', 'wave'), 'b'), ['air'], 'spray');
   assert.deepEqual(goesTo(S.reactions('wave', 'flame'), 'b'), ['water'], 'steam: the wave rolls on');
-  assert.deepEqual(goesTo(S.reactions('flame', 'stone'), 'b'), ['fire'], 'lava');
-  assert.deepEqual(goesTo(S.reactions('iron', 'wind'), 'b'), ['metal'], 'cleft');
-  assert.deepEqual(goesTo(S.reactions('stone', 'wave'), 'b'), ['earth'], 'mud');
-  assert.deepEqual(goesTo(S.reactions('wind', 'flame'), 'b'), ['air'], 'fanned: the loser is struck by the winner\'s element, as everywhere on the wheel');
-  assert.deepEqual(goesTo(S.reactions('wave', 'iron'), 'b'), ['water'], 'rust');
+  for (const [a, b, name] of [['flame', 'stone', 'smothered'], ['iron', 'wind', 'rung'], ['stone', 'wave', 'mud']]) {
+    assert.equal(S.reactions(a, b).name, name); assert.deepEqual([goesTo(S.reactions(a, b), 'a'), goesTo(S.reactions(a, b), 'b')], [[], []], `${name}: a quench, nothing lands`);
+  }
+  assert.deepEqual([goesTo(S.reactions('wind', 'flame'), 'a'), goesTo(S.reactions('wind', 'flame'), 'b')], [['fire'], ['air']], 'fanned: a pass, both go on');
+  assert.deepEqual([goesTo(S.reactions('wave', 'iron'), 'a'), goesTo(S.reactions('wave', 'iron'), 'b')], [['metal'], ['water']], 'parted: a pass, both go on');
   assert.equal(S.reactions('flame', 'wave').name, 'steam');
   assert.deepEqual(goesTo(S.reactions('mirror', 'flame'), 'b'), ['fire!']);
   assert.deepEqual(goesTo(S.reactions('mirror', 'stone'), 'a'), ['earth']);
@@ -49,7 +51,9 @@ function unit() {
   assert.equal(S.reactions('frost', 'flame').name, 'overcome');
   assert.deepEqual([goesTo(S.reactions('frost', 'flame'), 'a'), goesTo(S.reactions('frost', 'flame'), 'b')], [[], ['air+water']], 'the frost overcomes the flame and the whole frost goes on (elements in wheel order)');
   assert.equal(S.reactions('frost', 'flame').line, 'The frost overcomes the flame (water beats flame) and goes on to its caster.');
-  assert.equal(S.reactions('bolt', 'stone').name, 'trade'); assert.deepEqual([goesTo(S.reactions('bolt', 'stone'), 'a'), goesTo(S.reactions('bolt', 'stone'), 'b')], [['earth'], ['fire+air']], 'flame beats stone but stone beats wind: both go on');
+  assert.equal(S.reactions('bolt', 'stone').name, 'overcome'); assert.deepEqual([goesTo(S.reactions('bolt', 'stone'), 'a'), goesTo(S.reactions('bolt', 'stone'), 'b')], [['earth'], []], 'stone beats wind and the flame is only quenched: the stone overcomes the bolt');
+  assert.equal(S.reactions('magma', 'frost').name, 'trade', 'water beats flame, stone beats wind: both go on');
+  assert.equal(S.reactions('bolt', 'iron').name, 'overcome'); assert.deepEqual(goesTo(S.reactions('bolt', 'iron'), 'b'), ['fire+air'], 'flame beats iron and the wind is only quenched: the bolt overcomes the iron');
   assert.equal(S.reactions('bolt', 'vine').name, 'trade'); assert.deepEqual([goesTo(S.reactions('bolt', 'vine'), 'a'), goesTo(S.reactions('bolt', 'vine'), 'b')], [['earth+water'], ['fire+air']], 'each has the better of the other somewhere: both go on');
   assert.deepEqual(goesTo(S.reactions('bolt', 'mirror'), 'a'), ['fire+air!'], 'a mirror turns back a bolt, both elements of which it reflects');
   assert.deepEqual(goesTo(S.reactions('magma', 'mirror'), 'b'), ['fire+earth'], 'stone shatters the mirror, so the whole magma goes through');
@@ -76,13 +80,14 @@ function unit() {
   assert.deepEqual(r.deaths, [null, 'fire'], 'a perfect flame kills no faster than a weak one: it is the wound that counts');
   r = S.applyRound({ ring: { elements: [], strength: 0 }, wounds: 1 }, S.emptyBody(), 'blank', 'blank');
   assert.equal(r.bodies[0].wounds, 1, 'wounds stay');
-  // Relations: each element is strong against the two it beats and weak
-  // against the two that beat it.
+  // Relations: a ring is strong against the element it beats and the one it
+  // quenches, weak against the one that beats it and the one it passes.
   assert.equal(S.relation('fire', 'water'), 'strong', 'a ring of water stops flame'); assert.equal(S.relation('water', 'fire'), 'weak', 'and water goes through a ring of flame');
-  assert.equal(S.relation('fire', 'earth'), 'weak'); assert.equal(S.relation('earth', 'fire'), 'strong');
+  assert.equal(S.relation('fire', 'earth'), 'strong', 'a ring of stone smothers flame'); assert.equal(S.relation('earth', 'fire'), 'strong', 'and a ring of flame bakes stone: a quench is strong both ways');
+  assert.equal(S.relation('fire', 'air'), 'weak', 'flame goes through a ring of wind'); assert.equal(S.relation('air', 'fire'), 'weak', 'and wind through a ring of flame: a pass is weak both ways');
   assert.equal(S.relation('earth', 'air'), 'weak'); assert.equal(S.relation('air', 'earth'), 'strong');
   assert.equal(S.relation('metal', 'fire'), 'strong'); assert.equal(S.relation('fire', 'metal'), 'weak');
-  for (const e of S.ELEMENTS) assert.deepEqual(S.ELEMENTS.filter(o => o !== e).map(o => S.relation(o, e)).sort(), ['strong', 'strong', 'weak', 'weak'], `a ring of ${e} turns two aside and is pierced by two`);
+  for (const e of S.ELEMENTS) assert.deepEqual(S.ELEMENTS.filter(o => o !== e).map(o => S.relation(o, e)).sort(), e === 'earth' ? ['strong', 'strong', 'strong', 'weak'] : ['strong', 'strong', 'weak', 'weak'], `a ring of ${e} turns two aside and is pierced by two (a ring of stone turns three aside)`);
   assert.equal(S.relation('fire', 'fire'), 'neutral'); assert.equal(S.relation('fire', null), 'neutral');
   // A ring turns a strike aside, is pierced, breaks or wears; getting through is death.
   const ring = (elements, strength) => ({ ring: { elements, strength } });
@@ -90,9 +95,13 @@ function unit() {
   assert.deepEqual(r.deaths, [null, null], 'a thin ring of water turns aside a perfect flame');
   assert.equal(r.blows[1][0].how, 'aside'); assert.equal(r.blows[1][0].why, 'water beats flame');
   assert.equal(r.bodies[1].ring.strength, 1, 'a ring that turns a strike aside is untouched');
-  r = S.applyRound(S.emptyBody(), ring(['earth'], 3), 'flame', 'blank', [1, 1]);
-  assert.deepEqual(r.deaths, [null, null]); assert.equal(r.bodies[1].wounds, 1, 'a full ring of stone is nothing to the weakest flame, which wounds');
-  assert.equal(r.blows[1][0].how, 'pierced'); assert.equal(r.blows[1][0].why, 'flame beats stone'); assert.equal(r.bodies[1].ring.strength, 0, 'and the ring is gone');
+  r = S.applyRound(S.emptyBody(), ring(['earth'], 3), 'iron', 'blank', [1, 1]);
+  assert.deepEqual(r.deaths, [null, null]); assert.equal(r.bodies[1].wounds, 1, 'a full ring of stone is nothing to the weakest iron, which wounds');
+  assert.equal(r.blows[1][0].how, 'pierced'); assert.equal(r.blows[1][0].why, 'iron beats stone'); assert.equal(r.bodies[1].ring.strength, 0, 'and the ring is gone');
+  r = S.applyRound(S.emptyBody(), ring(['earth'], 1), 'flame', 'blank', [3, 1]);
+  assert.equal(r.blows[1][0].how, 'aside'); assert.equal(r.blows[1][0].why, 'stone and flame quench each other'); assert.equal(r.bodies[1].ring.strength, 1, 'a thin ring of stone smothers a perfect flame');
+  r = S.applyRound(S.emptyBody(), ring(['air'], 3), 'flame', 'blank', [1, 1]);
+  assert.equal(r.blows[1][0].how, 'pierced'); assert.equal(r.blows[1][0].why, 'wind and flame pass through each other'); assert.equal(r.bodies[1].wounds, 1, 'the weakest flame goes straight through a full ring of wind');
   r = S.applyRound(S.emptyBody(), ring([], 3), 'flame', 'blank', [3, 1]);
   assert.deepEqual(r.deaths, [null, null]); assert.equal(r.bodies[1].wounds, 1, 'a full bare ward breaks under a perfect attack');
   assert.equal(r.blows[1][0].how, 'broken'); assert.equal(r.blows[1][0].why, '');
@@ -107,11 +116,13 @@ function unit() {
   assert.equal(r.blows[1][0].element, 'fire', 'a ring of fire answers a bolt as flame against flame, not as the wind it cannot resist');
   assert.equal(r.blows[1][0].how, 'worn'); assert.deepEqual(r.deaths, [null, null]); assert.equal(r.bodies[1].ring.strength, 1, 'worn by the bolt\'s power, one below the hand');
   r = S.applyRound(S.emptyBody(), ring(['metal'], 1), 'bolt', 'blank', [3, 1]);
-  assert.equal(r.blows[1][0].how, 'aside', 'a ring of iron turns a bolt aside: it answers either element, and iron beats wind');
+  assert.equal(r.blows[1][0].how, 'aside', 'a ring of iron turns a bolt aside: it answers either element, and iron quenches wind');
   r = S.applyRound(S.emptyBody(), ring(['water'], 3), 'bolt', 'blank', [1, 1]);
   assert.equal(r.blows[1][0].how, 'aside', 'a ring of water turns a bolt aside as well: it answers the flame, whatever the wind would do');
   r = S.applyRound(S.emptyBody(), ring(['fire'], 3), 'frost', 'blank', [1, 1]);
-  assert.equal(r.blows[1][0].how, 'pierced'); assert.equal(r.bodies[1].wounds, 1, 'frost goes straight through a ring of flame, which neither water nor wind respects: the only ring a compound pierces on this wheel');
+  assert.equal(r.blows[1][0].how, 'pierced'); assert.equal(r.bodies[1].wounds, 1, 'frost goes straight through a ring of flame, which neither water nor wind respects');
+  r = S.applyRound(S.emptyBody(), ring(['air'], 3), 'magma', 'blank', [1, 1]);
+  assert.equal(r.blows[1][0].how, 'pierced', 'and magma through a ring of wind, which flame passes and stone beats: the two rings a compound pierces on this wheel');
   // Raising rings: a bare ward thickens, the same element thickens, another replaces, never beyond the cap.
   r = S.applyRound(ring(['water'], 2), S.emptyBody(), 'ward', 'blank', [3, 1]);
   assert.deepEqual(r.bodies[0].ring, { elements: ['water'], strength: S.MAX_RING });
@@ -123,10 +134,10 @@ function unit() {
   assert.deepEqual(r.deaths, [null, null], 'a ring raised this round stands against this round\'s blow');
   assert.deepEqual(r.bodies[0].ring, { elements: ['water'], strength: 3 }, 'water beats flame: the ring is untouched');
   // The mirror sends a perfect flame back into its caster's own ring.
-  r = S.applyRound(ring(['earth'], 3), S.emptyBody(), 'flame', 'mirror', [3, 1]);
-  assert.deepEqual(r.deaths, [null, null]); assert.equal(r.bodies[0].wounds, 1, 'a reflected perfect flame eats through its caster\'s own ring of stone and wounds them');
-  r = S.applyRound(ring(['air'], 3), S.emptyBody(), 'flame', 'mirror', [3, 1]);
-  assert.deepEqual(r.deaths, [null, null], 'a ring of wind turns the reflected flame aside');
+  r = S.applyRound(ring(['metal'], 3), S.emptyBody(), 'flame', 'mirror', [3, 1]);
+  assert.deepEqual(r.deaths, [null, null]); assert.equal(r.bodies[0].wounds, 1, 'a reflected perfect flame eats through its caster\'s own ring of iron and wounds them');
+  r = S.applyRound(ring(['water'], 3), S.emptyBody(), 'flame', 'mirror', [3, 1]);
+  assert.deepEqual(r.deaths, [null, null], 'a ring of water turns the reflected flame aside');
   // Masks: the other caster sees thickness only.
   assert.deepEqual(S.maskBody(ring(['fire'], 2)), { ring: { elements: ['hidden'], strength: 2 }, wounds: 0 });
   assert.deepEqual(S.maskBody({ ring: S.noRing(), wounds: 1 }), { ring: { elements: [], strength: 0 }, wounds: 1 }, 'wounds are plain to see');
@@ -157,8 +168,8 @@ function unit() {
   d = fork(); for (const key of ['flame stone', 'flame wave', 'stone wind', 'flame mirror', 'stone mirror']) delete d.reactions[key];
   let T = S.build(d);
   assert.equal(T.reactionFor('flame', 'stone').derived, true); assert.equal(S.reactionFor('flame', 'stone').derived, false);
-  assert.deepEqual(goesTo(T.reactions('flame', 'stone'), 'b'), ['fire'], 'flame beats stone: the stone caster takes fire');
-  assert.deepEqual(goesTo(T.reactions('stone', 'flame'), 'a'), ['fire']);
+  assert.equal(T.reactions('flame', 'stone').name, 'cancel'); assert.deepEqual(goesTo(T.reactions('flame', 'stone'), 'b'), [], 'flame and stone quench each other: nothing lands');
+  assert.deepEqual(goesTo(T.reactions('stone', 'flame'), 'a'), []);
   assert.equal(T.reactions('flame', 'wave').name, 'overcome'); assert.deepEqual(goesTo(T.reactions('flame', 'wave'), 'a'), ['water']);
   assert.deepEqual([goesTo(T.reactions('stone', 'wind'), 'a'), goesTo(T.reactions('stone', 'wind'), 'b')], [[], ['earth']]);
   d.relations = S.setRelation('fire', 'water', 'quench'); T = S.build(d);
@@ -189,7 +200,8 @@ function unit() {
   d.round.hits = 0; assert.ok(S.validate(d).some(p => /round\.hits/.test(p)));
   const Wh = require('../public/glyphs-wheel.js');
   const svg = Wh.svg(T, { id: 't' });
-  assert.equal((svg.match(/class="wheel-node/g) || []).length, 6); assert.equal((svg.match(/wheel-beats/g) || []).length, 12);
+  assert.equal((svg.match(/class="wheel-node/g) || []).length, 6); assert.equal((svg.match(/wheel-beats/g) || []).length, 7);
+  assert.equal((svg.match(/wheel-quench/g) || []).length, 3); assert.equal((svg.match(/wheel-pass/g) || []).length, 2);
   assert.match(Wh.legend(T), /Wood<\/strong> beats stone/);
   assert.match(Wh.rules(S), /second wound kills/); assert.match(Wh.rules(T), /no ring kills/);
   console.log('PASS data: validation, derived reactions, turning relations, a sixth element with its spell and ring, round.hits, the wheel');
@@ -289,8 +301,9 @@ function unit() {
   lines.push(`${monster.name} casts: ${Object.entries(casts).sort((p, q) => q[1] - p[1]).slice(0, 6).map(([id, n]) => `${S.byId[id].name} ${(n / cast * 100).toFixed(0)}%`).join(', ')}; its own element ${(share(ownCasts) * 100).toFixed(0)}%, rings ${(share(ringCasts) * 100).toFixed(0)}%`);
   console.log('INFO balance over 2000 duels each\n  ' + lines.join('\n  '));
   assert.ok(tally.a > tally.b, 'the monster should beat a player who draws at random');
-  // On the five-element wheel flame is beaten by two elements and turned back
-  // by the mirror, so the Salamander strays a little more than it used to.
+  // On the five-element wheel flame is beaten by water, passed by wind and
+  // turned back by the mirror, so the Salamander strays a little more than it
+  // used to.
   assert.ok(share(ownCasts) >= .55, 'the Salamander follows the flame');
   assert.ok(share(ringCasts) >= .15 && share(ringCasts) <= .45, 'and protects itself without turtling');
   assert.ok(S.scoreOptions(monster, S.emptyBody(), S.maskBody(S.emptyBody()), []).find(o => o.id === 'flame').score > S.scoreOptions(monster, S.emptyBody(), S.maskBody(S.emptyBody()), []).find(o => o.id === 'stone').score, 'on an empty board it prefers flame to stone');
@@ -501,12 +514,15 @@ async function browser() {
     assert.equal(await forge.locator('#reactions tbody tr').count(), S.SIMPLE.length * (S.SIMPLE.length + 1) / 2);
     assert.match(await forge.locator('#status').textContent(), /Everything here is saved/);
     await forge.click('#wheel .wheel-node[data-id="fire"]');
-    await forge.click('#wheel .wheel-node[data-id="earth"]');
-    assert.equal(await forge.locator('#wheel .wheel-beats[data-pair="earth fire"]').count(), 1, 'two clicks turn the arrow round');
+    await forge.click('#wheel .wheel-node[data-id="metal"]');
+    assert.equal(await forge.locator('#wheel .wheel-beats[data-pair="metal fire"]').count(), 1, 'two clicks turn the arrow round');
     assert.match(await forge.locator('#status').textContent(), /Unsaved/);
-    await forge.click('[data-reaction-row="flame stone"] [data-action="reset-reaction"]');
-    assert.equal(await forge.locator('[data-reaction-row="flame stone"] input.name').inputValue(), 'overcome');
-    assert.equal(await forge.locator('[data-reaction-row="flame stone"] input.marks').first().inputValue(), 'earth', 'stone now beats flame, so the flame caster takes earth');
+    await forge.click('[data-reaction-row="flame iron"] [data-action="reset-reaction"]');
+    assert.equal(await forge.locator('[data-reaction-row="flame iron"] input.name').inputValue(), 'overcome');
+    assert.equal(await forge.locator('[data-reaction-row="flame iron"] input.marks').first().inputValue(), 'metal', 'iron now beats flame, so the flame caster takes iron');
+    await forge.click('#wheel .wheel-node[data-id="fire"]');
+    await forge.click('#wheel .wheel-node[data-id="earth"]');
+    assert.equal(await forge.locator('#wheel .wheel-pass[data-pair="fire earth"]').count(), 1, 'one click turns a quench into a pass');
     await forge.click('[data-action="add-element"]');
     assert.equal(await forge.locator('#wheel .wheel-node').count(), S.ELEMENTS.length + 1);
     assert.match(await forge.locator('#status').textContent(), /Not valid/);

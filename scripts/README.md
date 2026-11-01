@@ -153,8 +153,8 @@ the end of a duel is a card inside the battlefield rather than an overlay
 (reduced motion swaps without animating).
 Only the reaction is shown:
 tokens for what each side cast slide to the centre and a named reaction blooms
-(inferno, steam, lava, fanned, reflected, mud, rain, quake, pass, breaks back,
-leaps the ring...), marks land on the two bodies, and an `aria-live` line
+(inferno, steam, smothered, fanned, reflected, mud, rung, quake, pass,
+breaks back, leaps the ring...), marks land on the two bodies, and an `aria-live` line
 narrates it. The shapes are never written down in the game. While drawing, the
 sheet glows in proportion to the recogniser's best score without naming the
 spell, and sets to brass once a glyph is read; a drawing that is no glyph
@@ -203,17 +203,21 @@ both would be), and it is cast one power below the hand that drew it
 never perfect and cannot break a full ring by force; the cast line says "cast
 at 2 as a compound". In the balance sim the compounds win fewer duels than
 any natural element. The five elements form a
-pentagram, the one arrangement of five in which every element beats two and
-is beaten by two: round the rim Flame > Iron > Stone > Wind > Wave > Flame
-(melts, split, breaks, spray, steam) and across the star Flame > Stone, Iron >
-Wind, Stone > Wave, Wind > Flame, Wave > Iron (lava, cleft, mud, fanned,
-rust); the loser of any arrow is struck by the winner's element, and no pair
-is left undecided. The engine still understands a quench (both spells undone,
-both rings strong) and a pass (both land, both rings weak) for the forge. The
-mirror turns the light elements, flame and wind, back into their caster's own
-ring and is soaked, shattered or cut by the heavy ones. A ring answers a
-compound with its better answer, so on this wheel only Frost pierces a ring
-(a ring of flame, which both water and wind beat). Casting resolves the round at once: the monster has already
+pentagram. Round the rim each element beats the next and is beaten by the one
+before: Flame > Iron > Stone > Wind > Wave > Flame (melts, split, breaks,
+spray, steam); the loser of an arrow is struck by the winner's element. Across
+the star the pairs quench or pass, so that each element has one relation of
+each kind: Flame and Stone (smothered), Stone and Wave (mud) and Iron and Wind
+(rung) quench each other, both spells undone and a ring of either turning the
+other aside; Wind and Flame (fanned) and Wave and Iron (parted) pass through
+each other, both spells landing and a ring of either giving way. Five
+elements cannot pair off evenly, so Stone quenches twice and passes nothing:
+a ring of stone is the one ring pierced by a single element only (iron). No
+pair is left undecided. The mirror turns the light elements, flame and wind,
+back into their caster's own ring and is soaked, shattered or cut by the heavy
+ones. A ring answers a compound with its better answer, so on this wheel only
+Frost pierces a ring of flame (water beats it, wind passes it) and only Magma
+a ring of wind (stone beats it, flame passes it). Casting resolves the round at once: the monster has already
 chosen, knowing the player's ring only by its thickness until a strike reveals
 it. Each caster's portrait shows badges for what happened to them (a ring
 raised, a ring that turned a blow aside, took it or gave way, a death) and the

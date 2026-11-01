@@ -102,27 +102,27 @@
       "to": "fire"
     },
     {
-      "kind": "beats",
+      "kind": "quench",
       "from": "fire",
       "to": "earth"
     },
     {
-      "kind": "beats",
-      "from": "metal",
-      "to": "air"
-    },
-    {
-      "kind": "beats",
+      "kind": "quench",
       "from": "earth",
       "to": "water"
     },
     {
-      "kind": "beats",
+      "kind": "quench",
+      "from": "metal",
+      "to": "air"
+    },
+    {
+      "kind": "pass",
       "from": "air",
       "to": "fire"
     },
     {
-      "kind": "beats",
+      "kind": "pass",
       "from": "water",
       "to": "metal"
     }
@@ -222,7 +222,7 @@
       ],
       "kind": "attack",
       "glyph": "a cross: two strokes, one laid across the other",
-      "flavour": "The smith's sign: a bar laid across a bar. Iron is edge and weight, and it answers to fire and to rust.",
+      "flavour": "The smith's sign: a bar laid across a bar. Iron is edge and weight, and only fire undoes it.",
       "shapes": [
         {
           "kind": "cross"
@@ -354,20 +354,20 @@
       "line": "Fire and water meet in a hiss of steam, and the wave rolls on through it to the fire caster."
     },
     "flame stone": {
-      "name": "lava",
+      "name": "smothered",
       "x": {},
-      "y": {
-        "fire": 1
-      },
-      "line": "The flame melts the stone, and the molten rock rolls on to the stone caster."
+      "y": {},
+      "line": "The stone smothers the flame and the flame bakes the stone to slag. Nothing lands."
     },
     "flame wind": {
       "name": "fanned",
       "x": {
         "air": 1
       },
-      "y": {},
-      "line": "The wind snuffs the flame and blows on to the one who lit it."
+      "y": {
+        "fire": 1
+      },
+      "line": "The wind fans the flame and the flame rides the wind. Each goes on to the other caster."
     },
     "flame mirror": {
       "name": "reflected",
@@ -397,11 +397,9 @@
     },
     "wave stone": {
       "name": "mud",
-      "x": {
-        "earth": 1
-      },
+      "x": {},
       "y": {},
-      "line": "The stone drinks the wave and slides on as mud to the water caster."
+      "line": "The stone drinks the wave and the wave softens the stone to mud. Nothing lands."
     },
     "wave wind": {
       "name": "spray",
@@ -420,12 +418,14 @@
       "line": "Water finds its way round the mirror and reaches its caster."
     },
     "wave iron": {
-      "name": "rust",
-      "x": {},
+      "name": "parted",
+      "x": {
+        "metal": 1
+      },
       "y": {
         "water": 1
       },
-      "line": "The wave eats the iron to rust and rolls on to the iron caster."
+      "line": "The iron parts the wave and the wave closes round the iron. Each goes on to the other caster."
     },
     "stone stone": {
       "name": "quake",
@@ -480,12 +480,10 @@
       "line": "The mirror turns the wind back to its caster."
     },
     "wind iron": {
-      "name": "cleft",
-      "x": {
-        "metal": 1
-      },
+      "name": "rung",
+      "x": {},
       "y": {},
-      "line": "The wind breaks on the edge of the iron, and the iron goes on to the wind caster."
+      "line": "The wind rings the iron like a bell and spends itself, and the iron hangs humming where it stood. Nothing lands."
     },
     "iron iron": {
       "name": "sparks",
