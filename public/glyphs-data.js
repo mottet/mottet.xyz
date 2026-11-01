@@ -103,28 +103,28 @@
     },
     {
       "kind": "beats",
-      "from": "fire",
-      "to": "earth"
-    },
-    {
-      "kind": "beats",
-      "from": "metal",
-      "to": "air"
-    },
-    {
-      "kind": "beats",
       "from": "earth",
-      "to": "water"
-    },
-    {
-      "kind": "beats",
-      "from": "air",
       "to": "fire"
     },
     {
       "kind": "beats",
       "from": "water",
       "to": "metal"
+    },
+    {
+      "kind": "quench",
+      "from": "earth",
+      "to": "water"
+    },
+    {
+      "kind": "pass",
+      "from": "fire",
+      "to": "air"
+    },
+    {
+      "kind": "pass",
+      "from": "metal",
+      "to": "air"
     }
   ],
   "spells": [
@@ -354,20 +354,22 @@
       "line": "Fire and water meet in a hiss of steam, and the wave rolls on through it to the fire caster."
     },
     "flame stone": {
-      "name": "lava",
-      "x": {},
-      "y": {
-        "fire": 1
+      "name": "smothered",
+      "x": {
+        "earth": 1
       },
-      "line": "The flame melts the stone, and the molten rock rolls on to the stone caster."
+      "y": {},
+      "line": "The stone smothers the flame and goes on to the one who lit it."
     },
     "flame wind": {
       "name": "fanned",
       "x": {
         "air": 1
       },
-      "y": {},
-      "line": "The wind snuffs the flame and blows on to the one who lit it."
+      "y": {
+        "fire": 1
+      },
+      "line": "The wind fans the flame and the flame rides the wind. Each goes on to the other caster."
     },
     "flame mirror": {
       "name": "reflected",
@@ -397,11 +399,9 @@
     },
     "wave stone": {
       "name": "mud",
-      "x": {
-        "earth": 1
-      },
+      "x": {},
       "y": {},
-      "line": "The stone drinks the wave and slides on as mud to the water caster."
+      "line": "The stone drinks the wave and the wave softens the stone to mud. Nothing lands."
     },
     "wave wind": {
       "name": "spray",
@@ -480,12 +480,14 @@
       "line": "The mirror turns the wind back to its caster."
     },
     "wind iron": {
-      "name": "cleft",
+      "name": "slips",
       "x": {
         "metal": 1
       },
-      "y": {},
-      "line": "The wind breaks on the edge of the iron, and the iron goes on to the wind caster."
+      "y": {
+        "air": 1
+      },
+      "line": "The wind slips round the iron and the iron cuts nothing of the wind. Each goes on to the other caster."
     },
     "iron iron": {
       "name": "sparks",

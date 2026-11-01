@@ -463,7 +463,7 @@
       // so it does so when fire is clearly the wrong answer; at 6 it lost to
       // a random player on the five-element wheel, where flame is beaten by
       // two elements and turned back by the mirror.
-      { id: 'salamander', name: 'the Salamander', line: 'A lizard of embers that loves its own element.', elements: ['fire'], loyalty: 3, bias: { flame: 2, bolt: 1.5, magma: 1, 'ring-flame': 1.5, 'ring-bolt': 1, ward: 1 }, accuracy: .85, precision: [.4, .4, .2], temperature: .9 }
+      { id: 'salamander', name: 'the Salamander', line: 'A lizard of embers that loves its own element.', elements: ['fire'], loyalty: 5, bias: { flame: 2, bolt: 1.5, magma: 1, 'ring-flame': 1.5, 'ring-bolt': 1, ward: 1 }, accuracy: .85, precision: [.4, .4, .2], temperature: .9 }
     ];
     const sq = n => n * n;
     function value(result, selfIndex) {
