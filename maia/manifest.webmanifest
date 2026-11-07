@@ -1,0 +1,15 @@
+{
+  "name": "Maia",
+  "short_name": "Maia",
+  "description": "A little site for Maia: her journal, her feeds and news for the family.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4efe2",
+  "theme_color": "#4f6b45",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
