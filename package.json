@@ -14,6 +14,7 @@
     "test:apartment": "node scripts/check-apartment.cjs",
     "test:board": "node scripts/check-board.cjs",
     "test:glyphs": "node scripts/check-glyphs.cjs",
+    "test:maia": "node scripts/check-maia.cjs",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
   },

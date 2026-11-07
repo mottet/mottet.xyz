@@ -308,6 +308,49 @@ through a server the check starts itself on port 8097, the clock
 resolves a round on its own, the grimoire page is complete and its pad reads a
 circle as Ward, and a phone viewport has no horizontal overflow.
 
+# Maia
+
+`maia.mottet.xyz` is a private site for Maia, born on 4 November 2026, served
+by the same `server.js` for that host name only (`maia-server.js`, mounted
+before the house's static files; `maia.localhost` is accepted too, which
+Chromium resolves to the loopback without any DNS, so the checks can reach
+it). The files are in `maia/`, outside `public/`, so nothing of them answers
+on mottet.xyz and nothing of the house answers there.
+
+Two passwords in `.maia-secrets.json` give two roles through a signed cookie:
+`parents` see and write everything, `family` read the news only. Every record
+is one JSON line appended to `data/maia/records.jsonl` (`id`, `type`, `rev`,
+`at`, `by` and the type's own fields; the latest line per id wins and
+`deleted: true` hides one), loaded into memory at start and broadcast on the
+socket.io namespace `/maia` as it is written, so the other phone updates at
+once. Types: `feed` (side, start, end, note), `care` (vitamin or medicine),
+`appointment`, `journal` (a day, text, measurements, photos), `news` (title
+and text as `{fr, en, zh}`) and `photo` (shrunk to 1600 px as JPEG on the
+phone before upload; `audience` turns to `family` when a news post carries
+it, and `/photos/<id>` checks the role).
+
+The page is one `index.html` with hash routes: a trilingual gate (French,
+English, Traditional Chinese, from the phone's language, kept in
+`localStorage`), then for the parents Today (her age, the running feed with
+its clock and Stop, the last feed and the suggested next side, Left / Right /
+Both, the vitamin D tick, the next appointment), Feeds, Journal, Care and News
+in English, or for the family the news in the chosen language with the first
+written language as fallback. The drawings (`maia-art.js`) are the forest
+side of the house: boughs, leaves, a wren and a blue tit, the sun by day and
+the moon by night (`data-theme`, remembered, from `prefers-color-scheme` at
+first), a nest where a list is empty. The tagged css and js carry
+`?v=maia-N`; bump it with every change.
+
+```sh
+node scripts/check-maia.cjs --unit
+HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:maia
+```
+
+The browser check starts its own server on port 8097 with a data folder and
+passwords of its own (`MAIA_DATA`, `MAIA_SECRETS`), so it never touches the
+live records. Deployment (DNS, Nginx, certificate, the systemd write path and
+the secrets file) is in `../deploy/README.md`.
+
 # Royal Game of Ur artwork and performance
 
 The Brussels Art Nouveau interior is drawn in `public/urGarden.js` as three SVG
