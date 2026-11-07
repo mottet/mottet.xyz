@@ -65,6 +65,10 @@ typings/
 # the token the glyphs forge saves with
 .glyphs-edit-token
 
+# Maia's passwords and her records and photos
+.maia-secrets.json
+data/
+
 # next.js build output
 .next
 # Claude Code worktrees

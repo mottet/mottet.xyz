@@ -43,6 +43,40 @@ node .yarn/releases/yarn-3.3.1.cjs install --immutable
 sudo systemctl restart mottet
 ```
 
+## maia.mottet.xyz
+
+Maia's site is served by the same Node.js app, which answers for that host
+name only (see `../maia-server.js`). It needs:
+
+- a DNS `A` record `maia.mottet.xyz` pointing at this server (and the `AAAA`
+  if `mottet.xyz` has one);
+- the Nginx site `maia.nginx.conf`, then a certificate of its own:
+
+  ```sh
+  sudo install -m 0644 deploy/maia.nginx.conf /etc/nginx/sites-available/maia.mottet.xyz
+  sudo ln -sfn /etc/nginx/sites-available/maia.mottet.xyz /etc/nginx/sites-enabled/maia.mottet.xyz
+  sudo nginx -t && sudo systemctl reload nginx
+  sudo certbot --nginx -d maia.mottet.xyz --redirect
+  ```
+
+- `ReadWritePaths=-/home/debian/mottet.xyz/data/maia` in the systemd unit
+  (`mottet.service` here carries it; copy it to the live unit, then
+  `sudo systemctl daemon-reload && sudo systemctl restart mottet`), because
+  `ProtectHome=read-only` would otherwise stop the records and photos being
+  written;
+- `.maia-secrets.json` beside `server.js` (gitignored, mode 600) holding the
+  two passwords and the cookie key:
+
+  ```json
+  { "parents": "...", "family": "...", "cookieSecret": "..." }
+  ```
+
+  It is read on every request, so passwords change without a restart. Without
+  it the gate answers 503 and nobody can log in.
+
+Records live in `data/maia/records.jsonl` and photos in `data/maia/photos/`;
+both are gitignored. Back them up with the secrets file.
+
 `install-services.sh` and `mottet.nginx.conf` are initial HTTP bootstrap files
 for a fresh Debian server with nginx, nodejs, certbot, and python3-certbot-nginx
 installed. Do not replace the live HTTPS configuration with the HTTP template.

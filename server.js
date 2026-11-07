@@ -2,6 +2,12 @@
 
 const express = require('express');
 const app = express();
+app.set('trust proxy', 'loopback'); // nginx sits in front: req.ip, req.secure and req.hostname come from its headers
+
+// Maia's site answers only on its own host names (see maia-server.js) and is
+// mounted before the house so nothing of the house shows there, nor the reverse.
+const maia = require('./maia-server.js')();
+app.use(maia.middleware);
 
 app.use(express.static(__dirname + '/public', {
 	setHeaders: (res, path) => {
@@ -33,6 +39,7 @@ const socket = require('socket.io');
 const io = socket(server);
 io.sockets.on('connection', newConnection);
 const glyphs = require('./glyphs-server.js')(io);
+maia.attach(io);
 
 // The forge (/glyphs-editor.html) writes the glyphs data file back. It needs
 // the token in GLYPHS_EDIT_TOKEN or in a .glyphs-edit-token file beside this

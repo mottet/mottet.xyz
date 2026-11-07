@@ -15,6 +15,8 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=read-only
+ReadWritePaths=/home/debian/mottet.xyz/public/glyphs-data.js
+ReadWritePaths=-/home/debian/mottet.xyz/data/maia
 UMask=0027
 
 [Install]
