@@ -213,14 +213,15 @@ at 2 as a compound". In the balance sim the compounds win fewer duels than
 any natural element. The five elements sit on a
 pentagram, and every pair is decided the way the two meet in the world rather
 than for symmetry (the balance comes second): Flame melts Iron, Iron splits
-Stone, Stone breaks Wind, Wind tears Wave to spray, Wave puts out Flame in
-steam, Stone smothers Flame and Wave rusts Iron (seven arrows; the loser of
-an arrow is struck by the winner's element); Stone and Wave quench each other
-in mud (both spells undone, a ring of either turns the other aside); Flame
-and Wind (fanned) and Iron and Wind (slips) pass through each other (both
-spells land, a ring of either gives way). No pair is left undecided, and each
-kind of relation is used at least once. So a ring of stone or of water turns
-three elements aside and a ring of flame, iron or wind only one. The mirror
+Stone, Wind tears Wave to spray, Wave puts out Flame in steam and Stone
+smothers Flame (five arrows; the loser of an arrow is struck by the winner's
+element); Stone and Wave quench each other in mud, and Wave and Iron in rust
+(both spells undone, a ring of either turns the other aside); Flame and Wind
+(fanned), Iron and Wind (slips) and Stone and Wind (blows over) pass through
+each other (both spells land, a ring of either gives way). No pair is left
+undecided, and each kind of relation is used at least once. So a ring of
+water turns three elements aside, a ring of stone or of iron two, and a ring
+of flame or of wind only one. The mirror
 turns the light elements, flame and wind, back into their caster's own ring
 and is soaked, shattered or cut by the heavy ones. A ring answers a compound
 with its better answer: Frost pierces rings of flame and iron, Bolt a ring of

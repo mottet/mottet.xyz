@@ -88,11 +88,6 @@
     },
     {
       "kind": "beats",
-      "from": "earth",
-      "to": "air"
-    },
-    {
-      "kind": "beats",
       "from": "air",
       "to": "water"
     },
@@ -105,11 +100,6 @@
       "kind": "beats",
       "from": "earth",
       "to": "fire"
-    },
-    {
-      "kind": "beats",
-      "from": "water",
-      "to": "metal"
     },
     {
       "kind": "quench",
@@ -125,6 +115,16 @@
       "kind": "pass",
       "from": "metal",
       "to": "air"
+    },
+    {
+      "kind": "pass",
+      "from": "earth",
+      "to": "air"
+    },
+    {
+      "kind": "quench",
+      "from": "water",
+      "to": "metal"
     }
   ],
   "spells": [
@@ -422,10 +422,8 @@
     "wave iron": {
       "name": "rust",
       "x": {},
-      "y": {
-        "water": 1
-      },
-      "line": "The wave eats the iron to rust and rolls on to the iron caster."
+      "y": {},
+      "line": "The iron parts the wave and the wave eats the iron to rust. Nothing lands."
     },
     "stone stone": {
       "name": "quake",
@@ -438,12 +436,14 @@
       "line": "Two stones strike and the ground cracks under both casters."
     },
     "stone wind": {
-      "name": "breaks",
-      "x": {},
+      "name": "blows over",
+      "x": {
+        "air": 1
+      },
       "y": {
         "earth": 1
       },
-      "line": "The wind breaks on the stone, and the stone goes on to the wind caster."
+      "line": "The wind blows over the stone and the stone falls through the wind. Each goes on to the other caster."
     },
     "stone mirror": {
       "name": "shatters",
