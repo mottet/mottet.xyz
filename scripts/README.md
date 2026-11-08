@@ -310,7 +310,7 @@ circle as Ward, and a phone viewport has no horizontal overflow.
 
 # Maia
 
-`maia.mottet.xyz` is a private site for Maia, born on 4 November 2026, served
+`maia.mottet.xyz` is a private site for Maïa, born on 4 November 2026, served
 by the same `server.js` for that host name only (`maia-server.js`, mounted
 before the house's static files; `maia.localhost` is accepted too, which
 Chromium resolves to the loopback without any DNS, so the checks can reach

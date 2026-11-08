@@ -1,7 +1,7 @@
 {
-  "name": "Maia",
-  "short_name": "Maia",
-  "description": "A little site for Maia: her journal, her feeds and news for the family.",
+  "name": "Maïa",
+  "short_name": "Maïa",
+  "description": "A little site for Maïa: her journal, her feeds and news for the family.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -1,6 +1,6 @@
 'use strict';
 
-// Maia's site. One page: a gate, then the parents' tools (Today, Feeds,
+// Maïa's site. One page: a gate, then the parents' tools (Today, Feeds,
 // Journal, Care, News) or the family's news, by the role the cookie holds.
 // Records come from /api/records and arrive live on the /maia socket; every
 // write goes through save(), which the server validates and broadcasts.
@@ -94,7 +94,8 @@
   }
   const themeButton = () => `<button class="btn btn-ghost" type="button" data-action="theme" aria-label="${esc(I.t(state.lang, 'theme'))}" title="${esc(I.t(state.lang, 'theme'))}">${A.icon('sun', 'when-day')}${A.icon('moon', 'when-night')}</button>`;
   const langSwitch = () => `<div class="lang-switch" role="group" aria-label="${esc(I.t(state.lang, 'language'))}">${I.LANGS.map(l => `<button type="button" data-action="lang" data-lang="${l}" aria-pressed="${l === state.lang}" lang="${l === 'zh' ? 'zh-Hant' : l}">${esc(I.STRINGS[l].lang)}</button>`).join('')}</div>`;
-  const facts = () => state.facts || { name: 'Maia', born: '2026-11-04T20:44:00+01:00', weight: 3500, height: 49, timezone: 'Europe/Paris' };
+  const NAME = 'Maïa';
+  const facts = () => ({ born: '2026-11-04T20:44:00+01:00', weight: 3500, height: 49, timezone: 'Europe/Paris', ...(state.facts || {}), name: NAME });
   function masthead(lang) {
     const f = facts(), born = new Date(f.born);
     return `<header class="masthead">${A.header()}<h1>${esc(f.name)}</h1>
@@ -174,7 +175,7 @@
     return `<h2>Journal</h2><div class="row"><button class="btn btn-primary" type="button" data-action="add-journal">${A.icon('pen')}Write today</button></div>
       ${entries.length ? entries.map(e => `<article class="card entry"><div class="date">${fmtDay(e.on)}</div>${e.title ? `<h3>${esc(e.title)}</h3>` : ''}
         ${(e.weight || e.height || e.head) ? `<div class="measures">${e.weight ? `<span>${I.number('en', e.weight / 1000, 3)} kg</span>` : ''}${e.height ? `<span>${e.height} cm</span>` : ''}${e.head ? `<span>head ${e.head} cm</span>` : ''}</div>` : ''}
-        <div class="text">${esc(e.text)}</div>${photoGrid(photosOf(e), 'Maia')}
+        <div class="text">${esc(e.text)}</div>${photoGrid(photosOf(e), NAME)}
         <div class="entry-actions"><button class="btn" type="button" data-action="edit-journal" data-id="${e.id}">${A.icon('pen')}Edit</button><button class="btn" type="button" data-action="share-journal" data-id="${e.id}">${A.icon('news')}Tell the family</button></div></article>`).join('')
       : `${A.nest()}<p class="empty">The first page is still blank.</p>`}`;
   }
@@ -183,16 +184,16 @@
     const list = cares(), groups = groupByDay(list, 'at'), appts = appointments();
     const upcoming = appts.filter(a => !a.done), done = appts.filter(a => a.done);
     return `<h2>Appointments</h2><div class="row"><button class="btn" type="button" data-action="add-appointment">${A.icon('calendar')}Add an appointment</button></div>
-      ${appts.length ? `<ul class="list card" style="padding:4px 16px">${upcoming.concat(done).map(a => `<li><button class="btn btn-ghost" type="button" data-action="toggle-appointment" data-id="${a.id}" aria-pressed="${a.done}" aria-label="${a.done ? 'Not done' : 'Done'}: ${esc(a.title)}" style="min-width:var(--tap);padding:0">${A.icon(a.done ? 'check' : 'calendar')}</button><button class="rowbtn" type="button" data-action="edit-appointment" data-id="${a.id}"><span class="what ${a.done ? 'done' : ''}">${esc(a.title)}<small>${a.at ? fmtDateTime(a.at) : 'no date'}${a.place ? ` · ${esc(a.place)}` : ''}${a.note ? ` · ${esc(a.note)}` : ''}</small></span></button></li>`).join('')}</ul>` : '<p class="empty">None planned.</p>'}
+      ${appts.length ? `<ul class="list card wrap" style="padding:4px 16px">${upcoming.concat(done).map(a => `<li><button class="btn btn-ghost" type="button" data-action="toggle-appointment" data-id="${a.id}" aria-pressed="${a.done}" aria-label="${a.done ? 'Not done' : 'Done'}: ${esc(a.title)}" style="min-width:var(--tap);padding:0">${A.icon(a.done ? 'check' : 'calendar')}</button><button class="rowbtn" type="button" data-action="edit-appointment" data-id="${a.id}"><span class="what ${a.done ? 'done' : ''}">${esc(a.title)}<small>${a.at ? fmtDateTime(a.at) : 'no date'}${a.place ? ` · ${esc(a.place)}` : ''}${a.note ? ` · ${esc(a.note)}` : ''}</small></span></button></li>`).join('')}</ul>` : '<p class="empty">None planned.</p>'}
       <h2>Vitamins and medicine</h2><div class="row"><button class="btn" type="button" data-action="add-care">${A.icon('pill')}Log a dose</button></div>
-      ${groups.size ? [...groups].map(([day, items]) => `<div class="day-head"><span>${fmtDay(day)}</span></div><ul class="list card" style="padding:4px 16px">${items.map(c => `<li><button class="rowbtn" type="button" data-action="edit-care" data-id="${c.id}">${A.icon(c.kind === 'vitamin' ? 'drop' : 'pill')}<span class="when">${fmtTime(c.at)}</span><span class="what">${esc(c.name)}${c.dose || c.note ? `<small>${esc([c.dose, c.note].filter(Boolean).join(' · '))}</small>` : ''}</span></button></li>`).join('')}</ul>`).join('') : `${A.nest()}<p class="empty">No dose logged yet.</p>`}`;
+      ${groups.size ? [...groups].map(([day, items]) => `<div class="day-head"><span>${fmtDay(day)}</span></div><ul class="list card wrap" style="padding:4px 16px">${items.map(c => `<li><button class="rowbtn" type="button" data-action="edit-care" data-id="${c.id}">${A.icon(c.kind === 'vitamin' ? 'drop' : 'pill')}<span class="when">${fmtTime(c.at)}</span><span class="what">${esc(c.name)}${c.dose || c.note ? `<small>${esc([c.dose, c.note].filter(Boolean).join(' · '))}</small>` : ''}</span></button></li>`).join('')}</ul>`).join('') : `${A.nest()}<p class="empty">No dose logged yet.</p>`}`;
   }
 
   function newsView() {
     const posts = news();
     return `<h2>News for the family</h2><p class="note">What you write here is read by the family in French, English or Chinese; a missing translation shows another language.</p>
       <div class="row"><button class="btn btn-primary" type="button" data-action="add-news">${A.icon('news')}Write some news</button></div>
-      ${posts.length ? posts.map(p => `<article class="card entry"><div class="date">${fmtDay(p.on)} · ${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), 'Maia')}
+      ${posts.length ? posts.map(p => `<article class="card entry"><div class="date">${fmtDay(p.on)} · ${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), NAME)}
         <div class="entry-actions"><button class="btn" type="button" data-action="edit-news" data-id="${p.id}">${A.icon('pen')}Edit</button></div></article>`).join('') : `${A.nest()}<p class="empty">Nothing told yet.</p>`}`;
   }
 

@@ -1,6 +1,6 @@
 'use strict';
 
-// The drawings of Maia's site: the forest side of the house. Boughs, leaves
+// The drawings of Maïa's site: the forest side of the house. Boughs, leaves
 // and two birds across the top, a sprig between sections, a nest for empty
 // lists, and the small marks the tools use. All vector, all inked in the
 // page's own colours through CSS variables, so day and night paint them.
@@ -81,7 +81,7 @@ window.MaiaArt = (function () {
     check: '<path d="M5 12l5 5 9-10"/>',
     today: '<path d="M4 20V10l8-6 8 6v10h-6v-6h-4v6Z"/>',
     care: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10Z"/>',
-    feed: '<path d="M8 4h8v3a4 4 0 0 1-4 4 4 4 0 0 1-4-4Z"/><path d="M12 11v4M9 20a3 3 0 0 1 6 0"/>',
+    feeds: '<path d="M8 4h8v3a4 4 0 0 1-4 4 4 4 0 0 1-4-4Z"/><path d="M12 11v4M9 20a3 3 0 0 1 6 0"/>',
     leave: '<path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M14 16l4-4-4-4M18 12H9"/>',
     lang: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/>',
     trash: '<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/>',

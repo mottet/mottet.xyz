@@ -45,7 +45,7 @@ sudo systemctl restart mottet
 
 ## maia.mottet.xyz
 
-Maia's site is served by the same Node.js app, which answers for that host
+Maïa's site is served by the same Node.js app, which answers for that host
 name only (see `../maia-server.js`). `deploy-maia.sh` runs every step below
 in order (`sudo sh deploy/deploy-maia.sh`, once DNS points here). It needs:
 

@@ -1,4 +1,4 @@
-/* Maia's site: the forest side of the house. Cream paper, moss and bark by
+/* Maïa's site: the forest side of the house. Cream paper, moss and bark by
    day; a dark wood under the moon by night, for the three o'clock feeds. */
 @font-face { font-family: Federo; font-style: normal; font-weight: 400; font-display: swap; src: url('/assets/fonts/federo-regular.woff2') format('woff2'); }
 @font-face { font-family: 'Cormorant Garamond'; font-style: normal; font-weight: 400 600; font-display: swap; src: url('/assets/fonts/cormorant-garamond-regular.woff2') format('woff2'); }
@@ -23,7 +23,7 @@ html[data-theme="night"] {
 }
 
 * { box-sizing: border-box; }
-html { background: var(--paper); -webkit-text-size-adjust: 100%; }
+html { background: var(--paper); -webkit-text-size-adjust: 100%; overflow-x: clip; }
 body { margin: 0; min-height: 100vh; min-height: 100dvh; font-family: 'Cormorant Garamond', Georgia, 'Noto Serif TC', 'PingFang TC', 'Microsoft JhengHei', serif; font-size: 19px; line-height: 1.4; color: var(--ink); background: var(--paper); background-image: radial-gradient(ellipse at 50% -10%, var(--sun-core) 0, transparent 55%); }
 html[data-theme="night"] body { background-image: radial-gradient(ellipse at 50% -10%, rgba(233,228,207,.12) 0, transparent 50%); }
 :lang(zh) { font-family: 'Noto Serif TC', 'PingFang TC', 'Microsoft JhengHei', 'Cormorant Garamond', serif; }
@@ -107,10 +107,11 @@ html[data-theme="night"] .segment button[aria-pressed="true"] { color: #0f1512; 
 .list li { display: flex; align-items: center; gap: 12px; min-height: var(--tap); padding: 8px 0; border-top: 1px solid var(--line); }
 .list li:first-child { border-top: 0; }
 .list .when { min-width: 64px; font-variant-numeric: tabular-nums; color: var(--ink-2); }
-.list .what { flex: 1; min-width: 0; }
+.list .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .list .what small { display: block; color: var(--ink-3); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .list .amount { font-variant-numeric: tabular-nums; color: var(--bark); }
-.list button.rowbtn { all: unset; display: flex; align-items: center; gap: 12px; flex: 1; min-height: var(--tap); cursor: pointer; }
+.list button.rowbtn { all: unset; display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; min-height: var(--tap); cursor: pointer; }
+.list.wrap .what small { white-space: normal; overflow: visible; }
 .list .done { text-decoration: line-through; color: var(--ink-3); }
 .day-head { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 0 6px; color: var(--bark); font-family: Federo, serif; font-size: 18px; }
 .day-head small { font-family: 'Cormorant Garamond', serif; color: var(--ink-3); font-size: 16px; }

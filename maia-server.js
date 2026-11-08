@@ -1,6 +1,6 @@
 'use strict';
 
-// Maia's site at maia.mottet.xyz: a journal, a feeding log and care notes for
+// Maïa's site at maia.mottet.xyz: a journal, a feeding log and care notes for
 // her parents, and news for the family. It lives in the same process as the
 // house and is mounted only for its own host names, so nothing of it answers
 // on mottet.xyz. Records are one JSON line each in data/maia/records.jsonl
@@ -11,7 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 
-const FACTS = { name: 'Maia', born: '2026-11-04T20:44:00+01:00', weight: 3500, height: 49, timezone: 'Europe/Paris' };
+const FACTS = { born: '2026-11-04T20:44:00+01:00', weight: 3500, height: 49, timezone: 'Europe/Paris' };
 const HOSTS = new Set(['maia.mottet.xyz', 'maia.localhost'].concat((process.env.MAIA_HOSTS || '').split(',').filter(Boolean)));
 const ROLES = ['parents', 'family'];
 const TYPES = ['feed', 'care', 'appointment', 'journal', 'news', 'photo'];

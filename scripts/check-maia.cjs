@@ -111,6 +111,8 @@ async function browser() {
     await page.fill('input[name=password]', secrets.parents); await page.click('.gate button[type=submit]');
     await page.waitForSelector('#view-today');
     assert.equal(await page.locator('.tabs a').count(), 5);
+    assert.equal(await page.evaluate(() => [...document.querySelectorAll('.tabs a svg')].filter(s => !s.firstElementChild).length), 0, 'every tab has its drawing');
+    assert.equal(await page.locator('h1').textContent(), 'Maïa');
     assert.match(await page.locator('.masthead .age').textContent(), /Today she is/);
 
     // A feed starts on one phone and is stopped from the other.
@@ -176,8 +178,15 @@ async function browser() {
     // Care: an appointment shows on Today and can be ticked done.
     await page.click('a[href="#care"]'); await page.waitForSelector('#view-care');
     await page.click('[data-action=add-appointment]'); await page.waitForSelector('dialog[open]');
-    await page.fill('dialog input[name=title]', 'Pediatrician'); await page.click('dialog button[type=submit]');
+    await page.fill('dialog input[name=title]', 'Pediatrician, first visit with the vaccination booklet');
+    await page.fill('dialog input[name=place]', 'Cabinet du Dr Dupont, 12 rue des Lilas, Paris 11e');
+    await page.fill('dialog textarea[name=note]', 'Bring the carnet de santé and the mutuelle card, and ask about the vitamin D dose');
+    await page.click('dialog button[type=submit]');
     await page.waitForSelector('#view-care .list li');
+    const fit = await page.evaluate(() => ({ page: document.documentElement.scrollWidth, phone: innerWidth, tabs: document.querySelector('.tabs').getBoundingClientRect().bottom <= innerHeight }));
+    assert.equal(fit.page, fit.phone, 'a long appointment does not widen the page past the phone');
+    assert.ok(fit.tabs, 'the tab bar stays on screen on the Care tab');
+    assert.match(await page.locator('#view-care .list small').textContent(), /Dr Dupont.*vitamin D/, 'place and note are shown in full');
     await page.click('a[href="#today"]'); await page.waitForSelector('#view-today');
     assert.match(await page.locator('#view-today').textContent(), /Pediatrician/);
     await page.click('a[href="#care"]'); await page.waitForSelector('#view-care');
