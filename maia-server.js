@@ -10,6 +10,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const createPush = require('./maia-push.js');
 
 const FACTS = { born: '2026-11-04T20:44:00+01:00', weight: 3500, height: 49, timezone: 'Europe/Paris' };
 const HOSTS = new Set(['maia.mottet.xyz', 'maia.localhost'].concat((process.env.MAIA_HOSTS || '').split(',').filter(Boolean)));
@@ -114,6 +115,8 @@ module.exports = function maia(options = {}) {
   const site = options.site || path.join(__dirname, 'maia');
   const fonts = options.fonts || path.join(__dirname, 'public', 'assets', 'fonts');
   const store = openStore(dir);
+  // Reminders by Web Push; a check passes its own `send` to catch what goes out.
+  const push = createPush({ dir, store, timezone: FACTS.timezone, send: options.send, log: options.log || (m => console.error(`[maia] ${m}`)) });
   const router = express.Router();
   const failures = new Map(); // address -> [timestamps]
   let nsp = null;
@@ -173,6 +176,7 @@ module.exports = function maia(options = {}) {
       ? { id, type, deleted: true, at: new Date().toISOString(), by: req.role }
       : { id, type, at: existing ? existing.at : new Date().toISOString(), by: req.role, ...SHAPES[type](body) };
     store.put(rec);
+    if (type === 'journal' && !existing) push.journal(rec, str(req.get('x-maia-push'), 32));
     // Photos that go into news become visible to the family.
     if (type === 'news' && !rec.deleted) for (const pid of rec.photos) {
       const photo = store.records.get(pid);
@@ -180,6 +184,24 @@ module.exports = function maia(options = {}) {
     }
     broadcast(rec);
     res.json({ ok: true, record: rec });
+  });
+
+  // Reminders: each parents' phone leaves its subscription and its choices.
+  router.post('/api/push/state', express.json({ limit: '4kb' }), (req, res) => {
+    if (!needParents(req, res)) return;
+    const sub = typeof req.body.endpoint === 'string' ? push.find(req.body.endpoint) : null;
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, key: push.publicKey(), id: sub ? sub.id : null, settings: sub ? sub.settings : null, defaults: createPush.DEFAULTS });
+  });
+  router.post('/api/push/subscribe', express.json({ limit: '8kb' }), (req, res) => {
+    if (!needParents(req, res)) return;
+    const sub = push.subscribe(req.role, req.body.subscription, req.body.settings);
+    if (!sub) return res.status(400).json({ ok: false, message: 'That is not a push subscription.' });
+    res.json({ ok: true, id: sub.id, settings: sub.settings });
+  });
+  router.post('/api/push/unsubscribe', express.json({ limit: '4kb' }), (req, res) => {
+    if (!needParents(req, res)) return;
+    res.json({ ok: true, gone: typeof req.body.endpoint === 'string' && push.unsubscribe(req.body.endpoint) });
   });
 
   // Photos: the phone resizes before sending; the server keeps the bytes as they come.
@@ -207,7 +229,7 @@ module.exports = function maia(options = {}) {
 
   // The site itself. The page is never cached; tagged css and js may be.
   router.use('/assets/fonts', express.static(fonts, { immutable: true, maxAge: '1y' }));
-  router.use(express.static(site, { index: 'index.html', setHeaders: (res, file) => { if (file.endsWith('.html') || file.endsWith('.webmanifest')) res.set('Cache-Control', 'no-cache'); } }));
+  router.use(express.static(site, { index: 'index.html', setHeaders: (res, file) => { if (file.endsWith('.html') || file.endsWith('.webmanifest') || file.endsWith('sw.js')) res.set('Cache-Control', 'no-cache'); } }));
   router.use((req, res) => res.status(404).type('text/plain').send('Not here.'));
 
   function broadcast(rec) {
@@ -225,11 +247,12 @@ module.exports = function maia(options = {}) {
       next();
     });
     nsp.on('connection', socket => { socket.join(socket.data.role); });
+    push.start();
     return nsp;
   }
 
   const middleware = (req, res, next) => (isHost(req) ? router(req, res, next) : next());
-  return { middleware, router, attach, store, isHost, FACTS, HOSTS, readSecrets: () => readSecrets(secretsFile), roleOf: req => roleOf(req, readSecrets(secretsFile)), cookieFor: role => cookieFor(role, readSecrets(secretsFile), true) };
+  return { middleware, router, attach, store, push, isHost, FACTS, HOSTS, readSecrets: () => readSecrets(secretsFile), roleOf: req => roleOf(req, readSecrets(secretsFile)), cookieFor: role => cookieFor(role, readSecrets(secretsFile), true) };
 };
 
 module.exports.FACTS = FACTS;

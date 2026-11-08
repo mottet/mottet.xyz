@@ -341,6 +341,22 @@ the moon by night (`data-theme`, remembered, from `prefers-color-scheme` at
 first), a nest where a list is empty. The tagged css and js carry
 `?v=maia-N`; bump it with every change.
 
+Reminders reach the parents' phones by Web Push (`maia-push.js`, the
+`web-push` package, `maia/sw.js` as the service worker, which caches nothing).
+Each phone turns them on from the Reminders card on Today, and keeps its own
+choices on the server (`POST /api/push/state`, `/subscribe`, `/unsubscribe`,
+parents only): vitamin D not logged by a chosen hour (then once more three
+hours on), an appointment the evening before at seven and an hour before, a
+feed still running after 40 minutes, no feed for 3 hours then every 39
+minutes (silent after 12 hours, when nobody is logging), and a new journal
+page written on the other phone (the writer's phone is named in the
+`X-Maia-Push` header, so it is skipped). The planner `plan()` is pure and
+runs every half minute on the server, in her time zone; what was sent is kept
+by key in `data/maia/push.json` with the subscriptions and the VAPID key pair
+made on first use, so a restart repeats nothing. A phone that answers 404 or
+410 is forgotten. On an iPhone push only works from the home-screen app, and
+the card says so.
+
 ```sh
 node scripts/check-maia.cjs --unit
 HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:maia

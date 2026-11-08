@@ -75,8 +75,10 @@ in order (`sudo sh deploy/deploy-maia.sh`, once DNS points here). It needs:
   It is read on every request, so passwords change without a restart. Without
   it the gate answers 503 and nobody can log in.
 
-Records live in `data/maia/records.jsonl` and photos in `data/maia/photos/`;
-both are gitignored. Back them up with the secrets file.
+Records live in `data/maia/records.jsonl`, photos in `data/maia/photos/` and
+the reminders (push subscriptions and the VAPID key pair) in
+`data/maia/push.json`; all gitignored. Back them up with the secrets file. If
+`push.json` is lost, every phone has to turn its reminders on again.
 
 `install-services.sh` and `mottet.nginx.conf` are initial HTTP bootstrap files
 for a fresh Debian server with nginx, nodejs, certbot, and python3-certbot-nginx

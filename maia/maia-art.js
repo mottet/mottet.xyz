@@ -85,6 +85,8 @@ window.MaiaArt = (function () {
     leave: '<path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M14 16l4-4-4-4M18 12H9"/>',
     lang: '<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/>',
     trash: '<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4Z"/><path d="M10 20a2 2 0 0 0 4 0M12 3v2"/>',
+    'bell-off': '<path d="M8 7a6 6 0 0 1 10 4v5l2 2H9M6 11v5l-2 2h3"/><path d="M10 20a2 2 0 0 0 4 0M4 4l16 16"/>',
   };
   const icon = (name, cls = '') => `<svg class="icon ${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[name] || ''}</svg>`;
 

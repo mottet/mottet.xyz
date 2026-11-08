@@ -94,6 +94,12 @@ html[data-theme="night"] .btn-primary { color: #0f1512; }
 .segment button[aria-pressed="true"] { background: var(--moss); color: #fff; }
 html[data-theme="night"] .segment button[aria-pressed="true"] { color: #0f1512; }
 
+/* Reminder choices */
+.check { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+.check input[type=checkbox] { width: 22px; height: 22px; margin: 0; flex: none; accent-color: var(--moss); }
+.check label { flex: 1; }
+.check input[type=time] { min-height: 40px; padding: 4px 8px; border: 1.5px solid var(--line); border-radius: 8px; background: var(--card); }
+
 /* Cards and lists */
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); margin: 0 0 14px; }
 .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }

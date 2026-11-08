@@ -55,7 +55,7 @@
   const post = (path, data) => api(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
   async function save(rec) {
     try {
-      const { record } = await post('/api/records', rec);
+      const { record } = await api('/api/records', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Maia-Push': push.id || '' }, body: JSON.stringify(rec) });
       state.records.set(record.id, record);
       render();
       return record;
@@ -78,7 +78,7 @@
     try {
       const me = await api('/api/me');
       state.facts = me.facts; state.role = me.role;
-      if (state.role) { await loadRecords(); connect(); }
+      if (state.role) { await loadRecords(); connect(); pushInit(); }
     } catch (error) { state.gateError = error.message; }
     app.removeAttribute('aria-busy');
     render();
@@ -159,7 +159,52 @@
     <section class="card" aria-label="Care today">
       <div class="row"><button class="btn ${vit ? 'btn-primary' : ''}" type="button" data-action="vitamin" aria-pressed="${Boolean(vit)}">${A.icon(vit ? 'check' : 'drop')}${vit ? `Vitamin D given at ${fmtTime(vit.at)}` : 'Vitamin D not yet today'}</button></div>
       ${next ? `<p style="margin:12px 0 0">${A.icon('calendar', 'inline')} <b>${esc(next.title)}</b>, ${fmtDateTime(next.at)}${next.place ? `, ${esc(next.place)}` : ''}</p>` : '<p class="note" style="margin:12px 0 0">No appointment coming.</p>'}
-    </section>${A.sprig()}`;
+    </section>${remindersCard()}${A.sprig()}`;
+  }
+
+  // ---- reminders, by Web Push ------------------------------------------------
+  // Each phone subscribes on its own and keeps its own choices on the server.
+  // An iPhone only pushes from the home-screen app, so the card says so there.
+  const push = {
+    ready: false, busy: false, sub: null, id: store.get('maia-push-id') || null, settings: null, key: null, defaults: null,
+    supported: 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window,
+    standalone: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true,
+    ios: /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1),
+  };
+  const b64 = s => { const raw = atob((s + '='.repeat((4 - s.length % 4) % 4)).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
+  async function pushInit() {
+    if (!push.supported || state.role !== 'parents') { push.ready = true; return; }
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      push.sub = await reg.pushManager.getSubscription();
+      const st = await post('/api/push/state', { endpoint: push.sub ? push.sub.endpoint : '' });
+      push.key = st.key; push.defaults = st.defaults; push.id = st.id; push.settings = st.settings;
+      store.set('maia-push-id', push.id || '');
+    } catch (error) { push.error = error.message; }
+    push.ready = true;
+    if (state.role === 'parents' && view() === 'today') render();
+  }
+  async function pushSettings(settings) {
+    if (!push.sub) return;
+    try { const r = await post('/api/push/subscribe', { subscription: push.sub.toJSON(), settings }); push.settings = r.settings; } catch (error) { toast(error.message); }
+  }
+  function remindersCard() {
+    const head = title => `<h2 id="reminders" style="margin:0 0 6px">${title}</h2>`;
+    if (!push.supported) return `<section class="card" aria-labelledby="reminders">${head('Reminders')}<p class="note" style="margin:0">${push.ios && !push.standalone ? 'On an iPhone, reminders come from the home-screen app: Share, then “Add to Home Screen”, and open it from there.' : 'This browser cannot show reminders. Chrome on Android or the home-screen app on an iPhone can.'}</p></section>`;
+    if (!push.ready) return '';
+    if (!push.id || !push.settings) return `<section class="card" aria-labelledby="reminders">${head('Reminders')}<p class="note">Vitamin D, appointments, a feed that runs long, a long gap between feeds, and new journal pages, as notes on this phone.</p>
+      <div class="row"><button class="btn" type="button" data-action="push-on" ${push.busy ? 'disabled' : ''}>${A.icon('bell')}${push.busy ? 'Asking the phone…' : 'Turn on reminders on this phone'}</button></div>${push.error ? `<p class="note" style="margin:8px 0 0">${esc(push.error)}</p>` : ''}</section>`;
+    const s = push.settings, on = k => (s[k] ? 'checked' : '');
+    const line = (k, text, extra = '') => `<div class="check"><input type="checkbox" id="rem-${k}" name="${k}" ${on(k)}><label for="rem-${k}">${text}</label>${extra}</div>`;
+    return `<section class="card" aria-labelledby="reminders">${head('Reminders on this phone')}
+      <form data-form="reminders">
+        ${line('vitamin', 'Vitamin D not logged by', `<input type="time" name="vitaminAt" value="${esc(s.vitaminAt)}" aria-label="Vitamin D reminder time">`)}
+        ${line('appointments', 'Appointments, the evening before and an hour before')}
+        ${line('longFeed', 'A feed still running after 40 minutes')}
+        ${line('noFeed', 'No feed for 3 hours, then every 39 minutes')}
+        ${line('journal', 'A new page in the journal, written on the other phone')}
+      </form>
+      <div class="row" style="margin-top:8px"><button class="btn btn-ghost" type="button" data-action="push-off">${A.icon('bell-off')}Turn off on this phone</button></div></section>`;
   }
 
   function feedsView() {
@@ -354,7 +399,30 @@
     'share-journal': b => { const e = state.records.get(b.dataset.id); if (e) newsDialog(null, { on: e.on, title: { en: e.title }, text: { en: e.text }, photos: [...(e.photos || [])] }); },
     'add-news': () => newsDialog(null),
     'edit-news': b => newsDialog(state.records.get(b.dataset.id)),
+    async 'push-on'() {
+      if (push.busy) return;
+      push.busy = true; push.error = ''; render();
+      try {
+        if ((await Notification.requestPermission()) !== 'granted') throw new Error('Notifications are blocked for this site. Allow them in the phone settings, then try again.');
+        const reg = await navigator.serviceWorker.ready;
+        push.sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(push.key) });
+        const r = await post('/api/push/subscribe', { subscription: push.sub.toJSON(), settings: push.settings || push.defaults });
+        push.id = r.id; push.settings = r.settings; store.set('maia-push-id', r.id);
+        toast('Reminders are on for this phone.');
+      } catch (error) { push.error = error.message; }
+      push.busy = false; render();
+    },
+    async 'push-off'() {
+      try { if (push.sub) { await post('/api/push/unsubscribe', { endpoint: push.sub.endpoint }); await push.sub.unsubscribe(); } } catch { /* the server forgot it either way */ }
+      push.sub = null; push.id = null; push.settings = null; store.set('maia-push-id', '');
+      render();
+    },
   };
+  app.addEventListener('change', event => {
+    const form = event.target.closest('[data-form="reminders"]');
+    if (!form) return;
+    pushSettings({ vitamin: form.vitamin.checked, vitaminAt: form.vitaminAt.value || '10:00', appointments: form.appointments.checked, longFeed: form.longFeed.checked, noFeed: form.noFeed.checked, journal: form.journal.checked });
+  });
   app.addEventListener('click', event => {
     const b = event.target.closest('[data-action]');
     if (!b || !actions[b.dataset.action]) return;
@@ -370,7 +438,7 @@
     try {
       const { role } = await post('/api/login', { password });
       state.role = role; state.gateError = '';
-      await loadRecords(); connect(); render();
+      await loadRecords(); connect(); render(); pushInit();
     } catch (error) {
       state.gateError = /wrong/i.test(error.message) ? I.t(state.lang, 'wrong') : /many/i.test(error.message) ? I.t(state.lang, 'tooMany') : /off|locked/i.test(error.message) ? I.t(state.lang, 'off') : error.message;
       render();
@@ -378,6 +446,6 @@
     }
   });
   window.addEventListener('hashchange', render);
-  window.MaiaApp = { state, render, save, feeds, running, journal, news, cares, appointments, elapsed, duration, ago };
+  window.MaiaApp = { state, render, save, feeds, running, journal, news, cares, appointments, elapsed, duration, ago, push };
   boot();
 })();
