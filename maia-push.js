@@ -13,7 +13,7 @@ const crypto = require('crypto');
 const MINUTE = 60000, HOUR = 3600000;
 const LONG_FEED_MS = 40 * MINUTE;        // a feed still running after this long
 const NO_FEED_MS = 3 * HOUR;             // quiet this long after a feed ends...
-const NO_FEED_AGAIN_MS = 39 * MINUTE;    // ...then again at this interval
+const NO_FEED_AGAIN_MS = 30 * MINUTE;    // ...then again at this interval
 const NO_FEED_GIVE_UP_MS = 12 * HOUR;    // and silence after this: nobody is logging
 const VITAMIN_AGAIN_MS = 3 * HOUR;       // a second nudge if the drops are still not given
 const EVE_MINUTES = 19 * 60;             // the evening-before note for an appointment
@@ -79,7 +79,7 @@ function plan({ records, subscriptions, now = Date.now(), sent = {}, timezone = 
     if (local.day === dayBefore(apptDay) && local.minutes >= EVE_MINUTES) due(`appt:${a.id}:eve:${a.at}`, s => s.settings.appointments, { title: 'Tomorrow', body: `${a.title}${where}, ${clock(timezone, at)}.`, url: '/#care', tag: `appt-${a.id}` });
   }
 
-  // Feeds: one still running after forty minutes; none for three hours, then every thirty-nine.
+  // Feeds: one still running after forty minutes; none for three hours, then every thirty.
   const feeds = live.filter(r => r.type === 'feed');
   const running = feeds.filter(f => !f.end).sort((a, b) => Date.parse(a.start) - Date.parse(b.start))[0];
   if (running) {

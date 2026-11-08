@@ -110,11 +110,11 @@ async function reminders() {
   const done = { ...run, end: '2026-11-08T14:20:00+01:00' };
   assert.deepEqual(keys([done], '2026-11-08T17:19:00+01:00', noVit), []);
   assert.deepEqual(keys([done], '2026-11-08T17:20:00+01:00', noVit), ['nofeed:f1:0>p1']);
-  assert.deepEqual(keys([done], '2026-11-08T17:58:00+01:00', noVit), ['nofeed:f1:0>p1'], 'the same slot until the next one');
-  const planGap = Push.plan({ records: records([done]), subscriptions: noVit, now: T('2026-11-08T17:59:00+01:00') });
+  assert.deepEqual(keys([done], '2026-11-08T17:49:00+01:00', noVit), ['nofeed:f1:0>p1'], 'the same slot until the next one');
+  const planGap = Push.plan({ records: records([done]), subscriptions: noVit, now: T('2026-11-08T17:50:00+01:00') });
   assert.deepEqual(planGap.map(r => r.key), ['nofeed:f1:1']);
-  assert.equal(planGap[0].body, 'Last one ended 3 h 39 ago, the right side at 14:20.');
-  assert.deepEqual(keys([done, { ...run, id: 'f2', start: '2026-11-08T17:30:00+01:00' }], '2026-11-08T17:59:00+01:00', noVit), [], 'a feed under way quiets the gap');
+  assert.equal(planGap[0].body, 'Last one ended 3 h 30 ago, the right side at 14:20.');
+  assert.deepEqual(keys([done, { ...run, id: 'f2', start: '2026-11-08T17:30:00+01:00' }], '2026-11-08T17:50:00+01:00', noVit), [], 'a feed under way quiets the gap');
   assert.deepEqual(keys([done], '2026-11-09T03:00:00+01:00', noVit), [], 'twelve hours on, nobody is logging');
   assert.deepEqual(keys([done], '2026-11-08T17:20:00+01:00', [phone('p2', { vitamin: false, noFeed: false })]), [], 'this phone does not want it');
   assert.deepEqual(keys([done], '2026-11-08T17:20:00+01:00', [{ ...phone('f1'), role: 'family' }]), [], 'never the family');
