@@ -101,23 +101,23 @@ async function reminders() {
   assert.deepEqual(keys([{ ...appt, done: true }], '2026-11-09T13:00:00+01:00', noVit), []);
   assert.deepEqual(keys([appt], '2026-11-09T15:00:00+01:00', noVit), [], 'half an hour after, it is too late to say');
   assert.deepEqual(keys([appt], '2026-11-09T13:00:00+01:00', [phone('p1', { vitamin: false, appointments: false })]), []);
-  // A feed running forty minutes; none for three hours, then every thirty-nine; silence after twelve.
+  // A feed running forty minutes; none for two and a half hours, then every thirty minutes; silence after twelve.
   const run = { id: 'f1', type: 'feed', side: 'right', start: '2026-11-08T14:00:00+01:00', end: null };
   assert.deepEqual(keys([run], '2026-11-08T14:39:00+01:00', noVit), []);
   const planLong = Push.plan({ records: records([run]), subscriptions: noVit, now: T('2026-11-08T14:41:00+01:00') });
   assert.deepEqual(planLong.map(r => r.key), ['long:f1']);
   assert.equal(planLong[0].body, 'On the right side since 14:00, 41 min ago.');
   const done = { ...run, end: '2026-11-08T14:20:00+01:00' };
-  assert.deepEqual(keys([done], '2026-11-08T17:19:00+01:00', noVit), []);
-  assert.deepEqual(keys([done], '2026-11-08T17:20:00+01:00', noVit), ['nofeed:f1:0>p1']);
-  assert.deepEqual(keys([done], '2026-11-08T17:49:00+01:00', noVit), ['nofeed:f1:0>p1'], 'the same slot until the next one');
-  const planGap = Push.plan({ records: records([done]), subscriptions: noVit, now: T('2026-11-08T17:50:00+01:00') });
+  assert.deepEqual(keys([done], '2026-11-08T16:49:00+01:00', noVit), []);
+  assert.deepEqual(keys([done], '2026-11-08T16:50:00+01:00', noVit), ['nofeed:f1:0>p1']);
+  assert.deepEqual(keys([done], '2026-11-08T17:19:00+01:00', noVit), ['nofeed:f1:0>p1'], 'the same slot until the next one');
+  const planGap = Push.plan({ records: records([done]), subscriptions: noVit, now: T('2026-11-08T17:20:00+01:00') });
   assert.deepEqual(planGap.map(r => r.key), ['nofeed:f1:1']);
-  assert.equal(planGap[0].body, 'Last one ended 3 h 30 ago, the right side at 14:20.');
-  assert.deepEqual(keys([done, { ...run, id: 'f2', start: '2026-11-08T17:30:00+01:00' }], '2026-11-08T17:50:00+01:00', noVit), [], 'a feed under way quiets the gap');
+  assert.equal(planGap[0].body, 'Last one ended 3 h ago, the right side at 14:20.');
+  assert.deepEqual(keys([done, { ...run, id: 'f2', start: '2026-11-08T17:30:00+01:00' }], '2026-11-08T17:20:00+01:00', noVit), [], 'a feed under way quiets the gap');
   assert.deepEqual(keys([done], '2026-11-09T03:00:00+01:00', noVit), [], 'twelve hours on, nobody is logging');
-  assert.deepEqual(keys([done], '2026-11-08T17:20:00+01:00', [phone('p2', { vitamin: false, noFeed: false })]), [], 'this phone does not want it');
-  assert.deepEqual(keys([done], '2026-11-08T17:20:00+01:00', [{ ...phone('f1'), role: 'family' }]), [], 'never the family');
+  assert.deepEqual(keys([done], '2026-11-08T16:50:00+01:00', [phone('p2', { vitamin: false, noFeed: false })]), [], 'this phone does not want it');
+  assert.deepEqual(keys([done], '2026-11-08T16:50:00+01:00', [{ ...phone('f1'), role: 'family' }]), [], 'never the family');
 
   // The module: keys made once, a phone's choices kept, each reminder sent once, a gone phone dropped, the journal told to the other phone.
   const dir = tmp(); const store = Maia.openStore(dir);
@@ -135,10 +135,10 @@ async function reminders() {
   assert.equal(push.subscribe('parents', { endpoint: 'https://push.example/aaaa', keys: { p256dh: 'p2', auth: 'a2' } }, { vitaminAt: '08:30' }).id, a.id, 'the same phone keeps its id');
   assert.equal(push.find('https://push.example/aaaa').settings.vitaminAt, '08:30');
   store.put({ id: 'feed0001', type: 'feed', side: 'left', start: '2026-11-08T14:00:00+01:00', end: '2026-11-08T14:20:00+01:00' });
-  assert.deepEqual(push.tick(T('2026-11-08T17:20:00+01:00')).map(r => r.key), ['nofeed:feed0001:0']);
-  assert.deepEqual(push.tick(T('2026-11-08T17:21:00+01:00')), [], 'not twice');
+  assert.deepEqual(push.tick(T('2026-11-08T16:50:00+01:00')).map(r => r.key), ['nofeed:feed0001:0']);
+  assert.deepEqual(push.tick(T('2026-11-08T16:51:00+01:00')), [], 'not twice');
   push = make();
-  assert.deepEqual(push.tick(T('2026-11-08T17:22:00+01:00')), [], 'nor after a restart');
+  assert.deepEqual(push.tick(T('2026-11-08T16:52:00+01:00')), [], 'nor after a restart');
   await push.flush();
   assert.deepEqual(sent, [`${b.id}:No feed for a while`], 'only the phone that wants the gap reminder');
   fail = b.id;

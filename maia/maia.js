@@ -201,7 +201,7 @@
         ${line('vitamin', 'Vitamin D not logged by', `<input type="time" name="vitaminAt" value="${esc(s.vitaminAt)}" aria-label="Vitamin D reminder time">`)}
         ${line('appointments', 'Appointments, the evening before and an hour before')}
         ${line('longFeed', 'A feed still running after 40 minutes')}
-        ${line('noFeed', 'No feed for 3 hours, then every 30 minutes')}
+        ${line('noFeed', 'No feed for 2½ hours, then every 30 minutes')}
         ${line('journal', 'A new page in the journal, written on the other phone')}
       </form>
       <div class="row" style="margin-top:8px"><button class="btn btn-ghost" type="button" data-action="push-off">${A.icon('bell-off')}Turn off on this phone</button></div></section>`;

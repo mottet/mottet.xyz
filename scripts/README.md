@@ -347,7 +347,7 @@ Each phone turns them on from the Reminders card on Today, and keeps its own
 choices on the server (`POST /api/push/state`, `/subscribe`, `/unsubscribe`,
 parents only): vitamin D not logged by a chosen hour (then once more three
 hours on), an appointment the evening before at seven and an hour before, a
-feed still running after 40 minutes, no feed for 3 hours then every 30
+feed still running after 40 minutes, no feed for 2½ hours then every 30
 minutes (silent after 12 hours, when nobody is logging), and a new journal
 page written on the other phone (the writer's phone is named in the
 `X-Maia-Push` header, so it is skipped). The planner `plan()` is pure and
