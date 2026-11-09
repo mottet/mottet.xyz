@@ -265,7 +265,7 @@ class Graph {
     const rows = [];
     for (const n of nodes) {
       if (n.role !== 'hub' || n.pool) continue;
-      const basis = n.id.startsWith('OFGL') ? 'local-ofgl' : n.id.includes('.M.') ? 'budget-plf' : 'sna';
+      const basis = n.id.startsWith('OFGL') ? 'local-ofgl' : n.id === 'PS' || n.id.startsWith('PS.') ? 'cps' : n.id.includes('.M.') ? 'budget-plf' : 'sna';
       const wanted = basis === 'sna' && defaultYear ? `${defaultYear}/sna` : null;
       const keys = Object.keys(n.totals || {}).filter(k => k.endsWith(`/${basis}`)).sort().reverse();
       const key = wanted && keys.includes(wanted) ? wanted : keys[0];

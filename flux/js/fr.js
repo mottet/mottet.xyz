@@ -46,6 +46,7 @@ export const BASES = {
   sna: { label: 'Comptabilité nationale', short: 'Comptes nationaux', note: 'Comptes nationaux (SEC 2010, base 2020) : la mesure officielle du déficit et de la dépense publique, consolidée entre administrations.' },
   'budget-exec': { label: 'Budget exécuté', short: 'Exécution', note: "Crédits de paiement consommés, en comptabilité budgétaire de l'État." },
   'budget-lfi': { label: 'Loi de finances initiale', short: 'LFI', note: 'Crédits votés pour l’année.' },
+  cps: { label: 'Comptes de la protection sociale', short: 'Protection sociale (DREES)', note: 'Comptes de la protection sociale (DREES) : tous les régimes, publics et privés ; ressources et emplois hors transferts entre régimes.' },
   'local-ofgl': { label: 'Collectivités locales (comptes de gestion)', short: 'Collectivités (OFGL)', note: 'Comptes de gestion consolidés par l’OFGL.' },
   'budget-plf': { label: 'Projet de loi de finances', short: 'Budget de l’État (PLF)', note: 'Budget général de l’État tel que déposé par le Gouvernement : crédits de paiement par mission, programme, action et sous-action, recettes nettes par impôt, prélèvements sur recettes. Budgets annexes et comptes spéciaux non compris.' },
 };
@@ -90,6 +91,7 @@ export const T = {
   hubLevels: ['Administrations publiques', 'Centrale, locale, sociale', 'État, ODAC, collectivités, ODAL, régimes, hôpitaux', 'Communes, départements, régions, syndicats'],
   budgetLevels: ['État (budget général)', 'Missions', 'Programmes', 'Actions', 'Sous-actions'],
   localLevels: ['Collectivités locales', 'Communes, intercommunalités, départements, régions', 'Par département, région ou collectivité'],
+  socialLevels: ['Protection sociale', 'Par groupe de régimes', 'Par secteur', 'Par régime'],
   sideLevels: ['Par secteur', 'Par opération'],
   op: 'Opération',
   from: 'De',

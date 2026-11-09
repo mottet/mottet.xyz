@@ -445,6 +445,23 @@ the group opens; a column with more than forty members of one group keeps
 its largest and folds the rest into "Autres (n)", a sum of the same
 figures.
 
+Social protection is a fourth basis (`cps`, 2021 to 2024, hub `PS`), from
+the DREES comptes de la protection sociale, which cover every régime,
+public and private (`build/social.cjs`, `mappings/cps.json`). The
+workbook attached to the dataset gives the resources (contributions by
+payer, earmarked taxes, public contributions…) and the uses other than
+benefits, for the total and for four groups of régimes, transfers between
+régimes excluded; the open dataset gives the benefits by institutional
+sector down to each régime and by risk down to each benefit (about 230
+of them). The benefits are a tree on the beneficiary side (`PREST`), split
+by risk under the total, each group, each sector and each régime, so the
+right column opens whatever the level of the middle one. The balance
+(resources minus uses) is a computed residual; per group it also holds the
+transfers between régimes, and says so. The builder stops if the lines do
+not add up to the published totals or if the dataset and the workbook
+disagree on the benefits. The workbook's "ajustement comptable" line is
+outside its totals and is not drawn.
+
 The graph model (`flux/graph/r/<release>/`): `nodes.json` (trees of
 sectors and counterpart classes, with per-year totals), `provenance.json`,
 and one `edges/<year>-<basis>.json` per year and accounting basis (`sna`

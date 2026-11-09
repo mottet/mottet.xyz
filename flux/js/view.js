@@ -7,10 +7,9 @@ import { HUB, isUnsplit, unsplitOf } from './model.js';
 import { T } from './fr.js';
 
 // Canonical order of the counterparts on each side; anything else follows by rank.
-const PAYER_ORDER = ['S14', 'S11', 'S12', 'S15', 'CONTRIB.LOCAUX', 'PRODUITS', 'PAYEURS', 'CONTRIB.D91', 'S13111', 'PEREQ', 'FINANCEURS.PUBLICS', 'S2', 'S2.EU', 'ACHETEURS', 'PLACEMENTS', 'DIVERS.IN', 'CAPITAL', 'POOL', 'OFGL.POOL', 'IMPUTE', 'FINANCEMENT'];
-const BENEF_ORDER = ['S14', 'S14.AGENTS', 'CHARGES.SOC', 'FOURNISSEURS', 'S13112', 'CREANCIERS', 'PRODUCTEURS', 'PRODUITS', 'S1313', 'AUTRES.COLL', 'DIVERS.OUT', 'CAPITAL', 'INSTITUTIONS', 'S2.EU', 'S2', 'S12', 'S15', 'S11', 'POOL', 'OFGL.POOL', 'NONRECOUVRE', 'IMPUTE', 'FINANCEMENT'];
+const PAYER_ORDER = ['EMPLOYEURS', 'S14', 'CONTRIBUABLES', 'BUDGETS.PUBLICS', 'S11', 'S12', 'S15', 'CONTRIB.LOCAUX', 'PRODUITS', 'PAYEURS', 'CONTRIB.D91', 'S13111', 'PEREQ', 'FINANCEURS.PUBLICS', 'S2', 'S2.EU', 'ACHETEURS', 'PLACEMENTS', 'DIVERS.IN', 'CAPITAL', 'POOL', 'OFGL.POOL', 'IMPUTE', 'FINANCEMENT'];
+const BENEF_ORDER = ['PREST', 'CPS.GESTION', 'S14', 'S14.AGENTS', 'CHARGES.SOC', 'FOURNISSEURS', 'S13112', 'CREANCIERS', 'PRODUCTEURS', 'PRODUITS', 'S1313', 'AUTRES.COLL', 'DIVERS.OUT', 'CAPITAL', 'INSTITUTIONS', 'S2.EU', 'S2', 'S12', 'S15', 'S11', 'POOL', 'OFGL.POOL', 'NONRECOUVRE', 'IMPUTE', 'FINANCEMENT', 'CPS.SOLDE'];
 
-const orderIndex = (list, id) => { const base = id.replace(/\.(ND|\*)$/, ''); const i = list.indexOf(base); return i < 0 ? 100 : i; };
 
 /** The sector a node belongs to, for colour. */
 export function sectorOf(model, id) {
@@ -19,13 +18,15 @@ export function sectorOf(model, id) {
   if (!n) return 'other';
   if (model.isPool(base)) return 'hub';
   if (n.kind === 'budget') return 'central';
+  if (n.kind === 'benefit') return 'households';
+  if (base === 'PS' || base.startsWith('PS.')) return base.startsWith('PS.APU') ? 'central' : base.startsWith('PS.SOC') ? 'finance' : base.startsWith('PS.ISBL') ? 'nonprofit' : 'social';
   if (n.kind === 'localtype' || n.kind === 'entity' || base === 'OFGL') return 'local';
   if (model.isHub(base, 'S13')) {
     const top = [base, ...model.ancestors(base)].find(a => ['S1311', 'S1313', 'S1314'].includes(a));
     return top ? { S1311: 'central', S1313: 'local', S1314: 'social' }[top] : 'hub';
   }
   const root = [base, ...model.ancestors(base)].pop();
-  return { S14: 'households', S11: 'firms', S12: 'finance', S15: 'nonprofit', S2: 'world', FINANCEMENT: 'debt', IMPUTE: 'imputed', PRODUITS: 'products', PAYEURS: 'products' }[root] || 'other';
+  return { S14: 'households', S11: 'firms', S12: 'finance', S15: 'nonprofit', S2: 'world', FINANCEMENT: 'debt', IMPUTE: 'imputed', PRODUITS: 'products', PAYEURS: 'products', EMPLOYEURS: 'firms', CONTRIBUABLES: 'products', 'BUDGETS.PUBLICS': 'central', 'CPS.SOLDE': 'debt' }[root] || 'other';
 }
 
 /** A display label for a column node (handles "non ventilé" and "non détaillé"). */
@@ -71,7 +72,11 @@ export function buildView(model, state, { root = HUB, pooled = false } = {}) {
     const ids = new Set();
     for (const r of roll.ribbons) if (r.side === side) ids.add(side === 'payeurs' ? r.from : r.to);
     for (const r of roll.ribbons) if (r.side === side) { if (model.isPool(r.from)) ids.add(r.from); if (model.isPool(r.to)) ids.add(r.to); }
-    const sorted = Array.from(ids).sort((a, b) => orderIndex(order, a) - orderIndex(order, b) || (model.node(a)?.rank ?? 0) - (model.node(b)?.rank ?? 0) || (a < b ? -1 : 1));
+    // A node the order does not list takes the place of its nearest listed ancestor; inside a tree, the ranks from the top down decide.
+    const place = id => { const base = id.replace(/\.(ND|\*)$/, ''); let i = order.indexOf(base); if (i < 0) for (const a of model.ancestors(base)) { i = order.indexOf(a); if (i >= 0) break; } return i < 0 ? 100 : i; };
+    const path = id => { const base = id.replace(/\.(ND|\*)$/, ''); return [...model.ancestors(base).reverse(), base].map(x => model.node(x)?.rank ?? 0); };
+    const byPath = (a, b) => { const pa = path(a), pb = path(b); for (let i = 0; i < Math.min(pa.length, pb.length); i++) if (pa[i] !== pb[i]) return pa[i] - pb[i]; return pa.length - pb.length; };
+    const sorted = Array.from(ids).sort((a, b) => place(a) - place(b) || byPath(a, b) || (a < b ? -1 : 1));
     for (const id of sorted) addNode(id, column, side);
   };
   sideNodes('payeurs', 0, PAYER_ORDER);

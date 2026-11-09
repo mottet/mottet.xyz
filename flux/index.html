@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr" data-tag="flux-5">
+<html lang="fr" data-tag="flux-7">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -13,9 +13,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;1,400&family=Public+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="flux.css?v=flux-5">
+<link rel="stylesheet" href="flux.css?v=flux-7">
 <script>try{var t=localStorage.getItem('flux-theme');var q=new URLSearchParams(location.search).get('t');t=q==='clair'||q==='sombre'?q:t;if(t==='clair')document.documentElement.dataset.theme='light';else if(t==='sombre')document.documentElement.dataset.theme='dark';}catch(e){}</script>
-<link rel="modulepreload" href="flux.js?v=flux-5">
+<link rel="modulepreload" href="flux.js?v=flux-7">
 <link rel="modulepreload" href="js/model.js">
 <link rel="modulepreload" href="js/layout.js">
 <link rel="modulepreload" href="js/scene.js">
@@ -37,7 +37,7 @@
   </div>
   <label>Année <select id="year" name="year"></select></label>
   <label hidden>Base <select id="basis" name="basis"></select></label>
-  <label>Administrations <select id="hub-level" name="hub-level"></select></label>
+  <label>Niveau de détail <select id="hub-level" name="hub-level"></select></label>
   <label class="check"><input type="checkbox" id="ops" name="ops"> Par opération</label>
   <span id="chips" class="chips" hidden></span>
   <span class="spacer"></span>
@@ -47,7 +47,7 @@
   <label class="theme">Thème <select id="theme" name="theme"><option value="auto">Automatique</option><option value="clair">Clair</option><option value="sombre">Sombre</option></select></label>
 </nav>
 <main class="stage">
-  <div class="column-heads" aria-hidden="true"><span>Qui paie</span><span>Administrations publiques</span><span>Qui reçoit</span></div>
+  <div class="column-heads" aria-hidden="true"><span>Qui paie</span><span id="head-hub">Administrations publiques</span><span>Qui reçoit</span></div>
   <div id="chart" class="chart" role="group" aria-label="Diagramme des flux ; Tab pour parcourir les nœuds, Entrée pour développer, Échap pour replier"></div>
   <div class="zoom" role="group" aria-label="Zoom du graphique">
     <button type="button" id="zoom-out" aria-label="Réduire le graphique" title="Réduire (touche −)">−</button>
@@ -68,6 +68,6 @@
 <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="live" class="visually-hidden" aria-live="polite"></div>
-<script type="module" src="flux.js?v=flux-5"></script>
+<script type="module" src="flux.js?v=flux-7"></script>
 </body>
 </html>

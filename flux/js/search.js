@@ -33,4 +33,4 @@ export class SearchIndex {
 }
 
 /** The basis a node belongs to, from the tree its id sits in. */
-export const basisOf = id => (id.startsWith('OFGL') ? 'local-ofgl' : id.includes('.M.') ? 'budget-plf' : 'sna');
+export const basisOf = id => (id.startsWith('OFGL') ? 'local-ofgl' : id === 'PS' || id.startsWith('PS.') ? 'cps' : id.includes('.M.') ? 'budget-plf' : 'sna');

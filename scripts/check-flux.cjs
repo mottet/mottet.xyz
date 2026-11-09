@@ -311,7 +311,7 @@ async function data(dir = path.join(ROOT, 'flux', 'graph')) {
     let n = byId.get(id);
     if (!n && focus) { if (!focusNodes.has(focus)) focusNodes.set(focus, new Map(readJson(focusFiles[focus]).nodes.map(x => [x.id, x]))); n = focusNodes.get(focus).get(id); }
     if (!n) { problems.push(`search: ${id} is not a node`); continue; }
-    const basis = id.startsWith('OFGL') ? 'local-ofgl' : id.includes('.M.') ? 'budget-plf' : 'sna';
+    const basis = id.startsWith('OFGL') ? 'local-ofgl' : id === 'PS' || id.startsWith('PS.') ? 'cps' : id.includes('.M.') ? 'budget-plf' : 'sna';
     const t = n.totals[`${year}/${basis}`];
     if (!t || Math.max(t.in, t.out) !== keur || n.label !== label) problems.push(`search: ${id} ${label} ${keur} does not match its node`);
   }
@@ -446,6 +446,21 @@ async function browser() {
       assert.match(await page.textContent('#hit-0'), /203.*Infrastructures/);
       await page.locator('#hit-0').dispatchEvent('pointerdown'); await page.waitForTimeout(1200);
       assert.match(page.url(), /b=budget-plf.*f=S13111\.M\.[A-Z]+\.P203/);
+      // Social protection: financing on the left, benefits by risk on the right at every level of the régimes.
+      await page.goto(`${base}?b=cps`, { waitUntil: 'networkidle' }); await page.waitForTimeout(700);
+      assert.match(await page.textContent('#headline'), /Protection sociale 2024 : 933\u00a0milliards/);
+      assert.equal(await page.textContent('#head-hub'), 'Protection sociale');
+      assert.equal(await page.locator('.chart .node[data-id="payeurs:EMPLOYEURS"]').count(), 1);
+      await page.locator('.chart .node[data-id="benef:PREST"] .bar').click(); await page.waitForTimeout(700);
+      assert.match(await page.locator('.chart .node[data-id="benef:PREST.R2"]').getAttribute('aria-label'), /Vieillesse-survie, 427\u00a0Md€/);
+      await page.locator('.chart .node[data-id="apu:PS"] .bar').click(); await page.waitForTimeout(700);
+      assert.equal(await page.locator('.chart .node[data-id="apu:PS.ASSO"]').count(), 1, 'the régimes open by group');
+      assert.match(await page.locator('.chart .node[data-id="benef:PREST.R2"]').getAttribute('aria-label'), /Vieillesse-survie, 427\u00a0Md€/, 'the risks keep their totals when the régimes open');
+      assert.equal(await page.locator('.chart .node[data-id="benef:PREST.*"]').count(), 0, 'nothing is left unsplit');
+      await page.fill('#search', 'caisse nationale d assurance vieillesse'); await page.waitForSelector('#search-results li[id="hit-0"]');
+      await page.keyboard.press('Enter'); await page.waitForTimeout(1000);
+      assert.match(page.url(), /b=cps.*f=PS\.ASSO\.S13141\.caisse-nationale-d-assurance-vieillesse/);
+      assert.match(await page.textContent('#headline'), /assurance vieillesse\. En 2024, .*163\u00a0Md€ versés/);
       await page.fill('#search', 'qqqq'); await page.waitForSelector('#search-results .none'); await page.keyboard.press('Escape');
       await page.goto(base, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
       await page.selectOption('#basis', 'sna'); await page.waitForTimeout(800);

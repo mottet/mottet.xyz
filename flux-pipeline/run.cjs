@@ -21,6 +21,8 @@ const { fetchLocal, buildLocal, OPS: LOCAL_OPS } = require('./build/local.cjs');
 const vmParser = require('./parsers/vm-tome1.cjs');
 const { client: odsClient } = require('./lib/ods.cjs');
 const { toText } = require('./lib/pdf.cjs');
+const { readXlsx } = require('./lib/xlsx.cjs');
+const { buildSocial } = require('./build/social.cjs');
 
 const args = process.argv.slice(2);
 const flag = name => args.includes(`--${name}`);
@@ -81,6 +83,12 @@ async function main() {
   const ofgl = odsClient('https://data.ofgl.fr', 'ofgl');
   const local = await fetchLocal({ ods: ofgl, year: 2024, offline });
 
+  // Social protection: the DREES workbook (resources and uses) and the full dataset of benefits by régime.
+  const cpsYears = years.filter(y => y <= 2024);
+  const cpsBook = await fetchCached({ source: 'drees', url: SOURCES['drees-cps-xlsx'].file, name: 'la-protection-sociale-en-france', ext: '.xlsx', offline });
+  const cpsRows = await drees.exportJson('305_les-comptes-de-la-protection-sociale', { where: `annee in (${cpsYears.map(y => `'${y}'`).join(',')})` }, { offline });
+  vintages.push({ source: 'drees-cps-xlsx', retrieved: cpsBook.retrieved, sha256: cpsBook.sha256 });
+
   // Build.
   const graph = new Graph({ registry });
   graph.ops = { ...LOCAL_OPS };
@@ -91,6 +99,9 @@ async function main() {
   controls['2024/local-ofgl'] = { in: loc.totalIn, out: loc.totalOut, solde: -loc.balance, unit: 'KEUR' };
   console.error(`local 2024: in ${(loc.totalIn / 1e6).toFixed(1)} Md€, out ${(loc.totalOut / 1e6).toFixed(1)} Md€, fonds de roulement ${(loc.balance / 1e6).toFixed(2)} Md€`);
   console.error(`budget 2025: ${budget.missions} missions, ${budget.rows} lines, out ${(budget.totalOut / 1e6).toFixed(1)} Md€, in ${(budget.totalIn / 1e6).toFixed(1)} Md€, solde ${(budget.solde / 1e6).toFixed(1)} Md€`);
+  const social = buildSocial({ graph, registry, workbook: readXlsx(fs.readFileSync(cpsBook.file)), rows: cpsRows.rows, years: cpsYears });
+  bases.cps = { root: 'PS', label: 'Protection sociale', years: social.years, note: 'Comptes de la protection sociale (DREES) : tous les régimes, publics et privés ; ressources et emplois hors transferts entre régimes ; 2024 semi-définitif.' };
+  for (const y of social.years) { controls[`${y}/cps`] = { ...social.summary[y], unit: 'KEUR' }; console.error(`cps ${y}: resources ${(social.summary[y].resources / 1e6).toFixed(1)} Md€, uses ${(social.summary[y].uses / 1e6).toFixed(1)} Md€, benefits ${(social.summary[y].benefits / 1e6).toFixed(1)} Md€`); }
   graph.finalize();
   const problems = graph.validate();
   if (problems.length) { console.error(problems.join('\n')); process.exit(1); }

@@ -1,7 +1,7 @@
 // Flux service worker: the code is precached by tag (bumped with every
 // change), the shards of a release are kept as long as the index names
 // that release, the index itself is always fetched fresh when online.
-const TAG = 'flux-5';
+const TAG = 'flux-7';
 const CODE = `flux-code-${TAG}`;
 const DATA = 'flux-data';
 const FILES = ['./', 'index.html', 'flux.css?v=' + TAG, 'flux.js?v=' + TAG, 'js/fr.js', 'js/model.js', 'js/view.js', 'js/layout.js', 'js/interpolate.js', 'js/store.js', 'js/url-state.js', 'js/data.js', 'js/scene.js', 'js/render-ribbons.js', 'js/render-nodes.js', 'js/ui/h.js', 'js/ui/panels.js', 'js/compact.js', 'js/search.js', 'icon.svg', 'manifest.webmanifest'];

@@ -124,7 +124,9 @@ export class Model {
       if (hs) {
         const end = e[hs];
         if (hubCut.open.has(end)) {
-          const k = hubKids(e).filter(c => this.within(c.to, end) || this.within(c.from, end));
+          // A child refines the hub end when its own hub end is strictly finer; a child that keeps the hub end and
+          // refines the counterpart (benefits by risk under a régime, say) belongs to step 2.
+          const k = hubKids(e).filter(c => (c.to !== end && this.within(c.to, end)) || (c.from !== end && this.within(c.from, end)));
           if (k.length) { for (const c of k) walk(c, state); return; }
           picked.push({ edge: e, unsplit: hs }); return;
         }
@@ -165,7 +167,7 @@ export class Model {
         const descend = (e, side) => {
           if (inside(e, side)) { walk(useAltFor(e) || e, {}); return; }
           if (!this.within(cutRoot, e[side])) return; // leads elsewhere
-          for (const c of hubKids(e)) { const cs = this.within(c.to, e[side]) ? 'to' : (this.within(c.from, e[side]) ? 'from' : null); if (cs) descend(c, cs); }
+          for (const c of hubKids(e)) { const cs = c.to !== e[side] && this.within(c.to, e[side]) ? 'to' : (c.from !== e[side] && this.within(c.from, e[side]) ? 'from' : null); if (cs) descend(c, cs); }
         };
         const useAltFor = () => null;
         descend(r, hs0);

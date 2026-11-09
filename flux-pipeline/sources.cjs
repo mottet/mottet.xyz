@@ -55,6 +55,14 @@ const SOURCES = {
     licence: 'LO2',
     note: "Compte satellite des comptes nationaux : prestations de protection sociale par risque (santé, vieillesse-survie, famille, emploi, logement, pauvreté) et par régime ou sous-secteur, millions d'euros. Comprend les prestations en nature produites par les administrations elles-mêmes (soins des hôpitaux publics), que la dépense des comptes nationaux porte en rémunérations et achats.",
   },
+  'drees-cps-xlsx': {
+    org: 'DREES (ministère chargé de la santé et des solidarités)',
+    title: 'La protection sociale en France de 1959 à 2024 (classeur des comptes de la protection sociale)',
+    url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/305_les-comptes-de-la-protection-sociale/information/',
+    file: 'https://data.drees.solidarites-sante.gouv.fr/api/explore/v2.1/catalog/datasets/305_les-comptes-de-la-protection-sociale/attachments/la_protection_sociale_en_france_de_1959_a_2024xlsx',
+    licence: 'LO2',
+    note: "Emplois et ressources de la protection sociale hors transferts entre régimes, pour l'ensemble et par groupe de régimes (administrations de sécurité sociale, État et collectivités, sociétés, institutions sans but lucratif), millions d'euros ; 2024 semi-définitif.",
+  },
   'ofgl': {
     org: 'Observatoire des finances et de la gestion publique locales (OFGL)',
     title: 'Comptes consolidés des collectivités locales (data.ofgl.fr)',

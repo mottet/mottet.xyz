@@ -1,0 +1,170 @@
+{
+  "note": "Comptes de la protection sociale (DREES). Chaque ligne du tableau des opérations est rattachée à la contrepartie que son intitulé désigne ; quand l'intitulé ne nomme pas un payeur ou un bénéficiaire précis, la classe est élargie et dite telle. Les groupes de régimes sont ceux des feuilles du classeur ; les secteurs institutionnels du jeu de données y sont rangés par leur code. La ligne « Ajustement comptable » du classeur n'entre pas dans le total des emplois : elle n'est pas reprise.",
+  "source": "https://data.drees.solidarites-sante.gouv.fr/explore/dataset/305_les-comptes-de-la-protection-sociale/",
+  "totalSheet": "opérations_1959_2024",
+  "groups": {
+    "ASSO": {
+      "sheet": "opérations_ASSO",
+      "label": "Régimes des administrations de sécurité sociale",
+      "short": "Sécurité sociale",
+      "sectors": [
+        "S13141",
+        "S13142"
+      ]
+    },
+    "APU": {
+      "sheet": "opérations_APUC_APUL",
+      "label": "Régimes d'intervention de l'État, des organismes centraux et des collectivités locales",
+      "short": "État et collectivités",
+      "sectors": [
+        "S13111",
+        "S13112",
+        "S1313"
+      ]
+    },
+    "SOC": {
+      "sheet": "opérations_SF_SNF",
+      "label": "Régimes des sociétés financières et non financières (mutuelles, assurances, institutions de prévoyance, fonds de pension, employeurs)",
+      "short": "Mutuelles, assurances, employeurs",
+      "sectors": [
+        "S12_OA",
+        "S12_FP",
+        "S11_S12A"
+      ]
+    },
+    "ISBL": {
+      "sheet": "opérations_ISBLSM",
+      "label": "Régime d'intervention sociale des institutions sans but lucratif au service des ménages",
+      "short": "Associations",
+      "sectors": [
+        "S15"
+      ]
+    }
+  },
+  "resources": [
+    {
+      "row": "Cotisations sociales d'employeurs",
+      "from": "EMPLOYEURS",
+      "op": "COT-EMPLOYEURS",
+      "derivation": "single-counterpart"
+    },
+    {
+      "row": "Cotisations sociales de salariés",
+      "from": "S14",
+      "op": "COT-SALARIES",
+      "derivation": "single-counterpart"
+    },
+    {
+      "row": "Autres cotisations sociales",
+      "from": "S14",
+      "op": "COT-AUTRES",
+      "label": "Autres cotisations sociales (travailleurs indépendants, inactifs, cotisations aux mutuelles et assurances)",
+      "derivation": "widened"
+    },
+    {
+      "row": "Cotisations sociales imputées",
+      "from": "IMPUTE",
+      "op": "COT-IMPUTEES",
+      "label": "Cotisations sociales imputées (prestations versées directement par les employeurs, sans cotisation réelle)",
+      "derivation": "single-counterpart"
+    },
+    {
+      "row": "Impôts et taxes affectés",
+      "from": "CONTRIBUABLES",
+      "op": "ITAF",
+      "label": "Impôts et taxes affectés (CSG, CRDS, fractions de TVA, taxes sur les salaires, le tabac, l'alcool…)",
+      "derivation": "widened"
+    },
+    {
+      "row": "Contributions publiques",
+      "from": "BUDGETS.PUBLICS",
+      "op": "CONTRIB-PUBLIQUES",
+      "label": "Contributions publiques (budgets de l'État et des collectivités)",
+      "derivation": "single-counterpart"
+    },
+    {
+      "row": "Produits financiers (depuis 1981)",
+      "from": "PLACEMENTS",
+      "op": "PRODUITS-FIN",
+      "label": "Produits financiers",
+      "derivation": "single-counterpart"
+    },
+    {
+      "row": "Autres recettes (depuis 1981)",
+      "from": "DIVERS.IN",
+      "op": "AUTRES-RECETTES",
+      "label": "Autres recettes",
+      "derivation": "widened"
+    },
+    {
+      "row": "Recettes du compte de capital (depuis 2006)",
+      "from": "CAPITAL",
+      "op": "RECETTES-CAPITAL",
+      "label": "Recettes du compte de capital",
+      "derivation": "widened"
+    }
+  ],
+  "resourcesTotal": "TOTAL DES RESSOURCES HORS TRANSFERTS *",
+  "uses": [
+    {
+      "row": "Frais non financiers",
+      "to": "CPS.GESTION",
+      "op": "FRAIS-GESTION",
+      "label": "Frais non financiers (gestion des régimes)",
+      "derivation": "widened"
+    },
+    {
+      "row": "Frais financiers (depuis 1981)",
+      "to": "CREANCIERS",
+      "op": "FRAIS-FIN",
+      "label": "Frais financiers",
+      "derivation": "single-counterpart"
+    },
+    {
+      "row": "Autres emplois (depuis 1981)",
+      "to": "DIVERS.OUT",
+      "op": "AUTRES-EMPLOIS",
+      "label": "Autres emplois",
+      "derivation": "widened"
+    },
+    {
+      "row": "Emplois du compte de capital (depuis 2006)",
+      "to": "CAPITAL",
+      "op": "EMPLOIS-CAPITAL",
+      "label": "Emplois du compte de capital",
+      "derivation": "widened"
+    }
+  ],
+  "benefitRows": [
+    "Prestations sociales en espèces",
+    "Prestations sociales en nature"
+  ],
+  "usesTotal": "TOTAL DES EMPLOIS HORS TRANSFERTS *",
+  "classes": {
+    "EMPLOYEURS": {
+      "label": "Employeurs (entreprises, administrations, associations, particuliers employeurs)",
+      "short": "Employeurs",
+      "role": "payer"
+    },
+    "CONTRIBUABLES": {
+      "label": "Contribuables : impôts et taxes affectés à la protection sociale",
+      "short": "Contribuables",
+      "role": "payer"
+    },
+    "BUDGETS.PUBLICS": {
+      "label": "Budgets de l'État et des collectivités (contributions publiques)",
+      "short": "Budgets publics",
+      "role": "payer"
+    },
+    "CPS.GESTION": {
+      "label": "Gestion des régimes (personnel et fonctionnement des caisses et organismes)",
+      "short": "Gestion des régimes",
+      "role": "beneficiary"
+    },
+    "CPS.SOLDE": {
+      "label": "Solde de la protection sociale : ressources moins emplois (calculé)",
+      "short": "Solde",
+      "role": "both"
+    }
+  }
+}
