@@ -41,6 +41,20 @@ const SOURCES = {
     licence: 'PARL',
     note: 'Document budgétaire déposé avec le projet de loi de finances ; les chiffres sont lus dans le texte du PDF (pdftotext), page et ligne citées.',
   },
+  'eurostat-cofog': {
+    org: 'Eurostat',
+    title: 'General government expenditure by function (COFOG, gov_10a_exp), France',
+    url: 'https://ec.europa.eu/eurostat/databrowser/view/gov_10a_exp/default/table',
+    licence: 'CCBY4',
+    note: "Dépense totale (TE) par fonction (classification COFOG à deux niveaux) et par sous-secteur, millions d'euros.",
+  },
+  'drees-cps': {
+    org: 'DREES (ministère chargé de la santé et des solidarités)',
+    title: 'Les comptes de la protection sociale – prestations par risque et par régime',
+    url: 'https://data.drees.solidarites-sante.gouv.fr/explore/dataset/305_les-comptes-de-la-protection-sociale/',
+    licence: 'LO2',
+    note: "Compte satellite des comptes nationaux : prestations de protection sociale par risque (santé, vieillesse-survie, famille, emploi, logement, pauvreté) et par régime ou sous-secteur, millions d'euros. Comprend les prestations en nature produites par les administrations elles-mêmes (soins des hôpitaux publics), que la dépense des comptes nationaux porte en rémunérations et achats.",
+  },
   'eurostat-gov': {
     org: 'Eurostat',
     title: 'Government revenue, expenditure and main aggregates (gov_10a_main), France',

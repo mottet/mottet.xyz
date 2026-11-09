@@ -47,11 +47,17 @@ async function main() {
       tee[y] = teeParser.parse(fs.readFileSync(got.file), y);
     } catch (error) { console.error(`TEE ${y}: ${error.message}`); }
   }
+  const cofogTable = await Euro.table('eurostat', 'gov_10a_exp', { geo: 'FR', unit: 'MIO_EUR', sector: ['S13', 'S1311', 'S1313', 'S1314'], na_item: 'TE', time: years.map(String) }, { offline });
+  const cofog = euroParser.parse(JSON.parse(fs.readFileSync(cofogTable.file, 'utf8')));
+  const drees = odsClient('https://data.drees.solidarites-sante.gouv.fr', 'drees');
+  const cps = await drees.exportJson('305_les-comptes-de-la-protection-sociale', { select: 'annee,ps_niveau,ps_code,ps_lib,si_code,si_nom,sum(val) as val', where: `ps_niveau in ('0','1') and si_niveau='1' and annee in (${years.map(y => `'${y}'`).join(',')})`, group_by: 'annee,ps_niveau,ps_code,ps_lib,si_code,si_nom' }, { offline });
   const euroTable = await Euro.table('eurostat', 'gov_10a_main', { geo: 'FR', unit: 'MIO_EUR', sector: ['S13', 'S1311', 'S1313', 'S1314', 'S212'], time: years.map(String) }, { offline });
   const euro = euroParser.parse(JSON.parse(fs.readFileSync(euroTable.file, 'utf8')));
   const vintages = [
     { source: 'insee-apu', retrieved: apu[3201].retrieved, sha256: apu[3201].sha256 },
     { source: 'eurostat-gov', updated: euro.updated, retrieved: euroTable.retrieved, years: euro.years },
+    { source: 'eurostat-cofog', updated: cofog.updated, retrieved: cofogTable.retrieved },
+    { source: 'drees-cps', retrieved: cps.retrieved, sha256: cps.sha256 },
   ];
   const yearsBuilt = years.filter(y => tee[y] && apu[3201].items.TE[y]);
   // Control totals the data check compares the shards with.
@@ -74,7 +80,7 @@ async function main() {
 
   // Build.
   const graph = new Graph({ registry });
-  buildMacro({ graph, registry, apu, tee, euro, years: yearsBuilt });
+  buildMacro({ graph, registry, apu, tee, euro, years: yearsBuilt, cofog, cps: cps.rows });
   const budget = buildBudget({ graph, registry, year: 2025, rows: nature.rows, vm: vm2025, source: 'plf25-nature', vmSource: 'vm-2025' });
   controls['2025/budget-plf'] = { in: budget.totalIn, out: budget.totalOut, solde: budget.solde, missions: budget.missions, rows: budget.rows, unit: 'KEUR' };
   console.error(`budget 2025: ${budget.missions} missions, ${budget.rows} lines, out ${(budget.totalOut / 1e6).toFixed(1)} Md€, in ${(budget.totalIn / 1e6).toFixed(1)} Md€, solde ${(budget.solde / 1e6).toFixed(1)} Md€`);

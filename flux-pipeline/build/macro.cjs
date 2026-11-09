@@ -79,7 +79,44 @@ const OPS = {
   GF1002: 'Vieillesse', GF1003: 'Survie', GF1005: 'Chômage',
 };
 
-function buildMacro({ graph, registry, apu, tee, euro, years }) {
+const COFOG_FR = { GF01: 'Services publics généraux', GF0101: 'Organes exécutifs et législatifs, affaires financières et fiscales', GF0102: 'Aide économique extérieure', GF0103: 'Services généraux', GF0104: 'Recherche fondamentale', GF0105: 'R&D services publics généraux', GF0106: 'Services publics généraux n.c.a.', GF0107: 'Opérations concernant la dette publique', GF0108: 'Transferts entre administrations', GF02: 'Défense', GF0201: 'Défense militaire', GF0202: 'Défense civile', GF0203: 'Aide militaire extérieure', GF0204: 'R&D défense', GF0205: 'Défense n.c.a.', GF03: 'Ordre et sécurité publics', GF0301: 'Services de police', GF0302: 'Services de protection civile (incendie)', GF0303: 'Tribunaux', GF0304: 'Administration pénitentiaire', GF0305: 'R&D ordre et sécurité', GF0306: 'Ordre et sécurité n.c.a.', GF04: 'Affaires économiques', GF0401: 'Tutelle de l’économie générale, du commerce et de l’emploi', GF0402: 'Agriculture, sylviculture, pêche et chasse', GF0403: 'Combustibles et énergie', GF0404: 'Industries extractives et manufacturières, construction', GF0405: 'Transports', GF0406: 'Communications', GF0407: 'Autres branches d’activité', GF0408: 'R&D affaires économiques', GF0409: 'Affaires économiques n.c.a.', GF05: 'Protection de l’environnement', GF0501: 'Gestion des déchets', GF0502: 'Gestion des eaux usées', GF0503: 'Lutte contre la pollution', GF0504: 'Protection de la biodiversité et des paysages', GF0505: 'R&D environnement', GF0506: 'Environnement n.c.a.', GF06: 'Logement et équipements collectifs', GF0601: 'Logement', GF0602: 'Équipements collectifs', GF0603: 'Alimentation en eau', GF0604: 'Éclairage public', GF0605: 'R&D logement', GF0606: 'Logement n.c.a.', GF07: 'Santé', GF0701: 'Produits, appareils et matériels médicaux', GF0702: 'Services ambulatoires', GF0703: 'Services hospitaliers', GF0704: 'Services de santé publique', GF0705: 'R&D santé', GF0706: 'Santé n.c.a.', GF08: 'Loisirs, culture et culte', GF0801: 'Services récréatifs et sportifs', GF0802: 'Services culturels', GF0803: 'Services de radiodiffusion, de télévision et d’édition', GF0804: 'Cultes et autres services communautaires', GF0805: 'R&D loisirs et culture', GF0806: 'Loisirs et culture n.c.a.', GF09: 'Enseignement', GF0901: 'Enseignement préélémentaire et primaire', GF0902: 'Enseignement secondaire', GF0903: 'Enseignement postsecondaire non supérieur', GF0904: 'Enseignement supérieur', GF0905: 'Enseignement non défini par niveau', GF0906: 'Services annexes à l’enseignement', GF0907: 'R&D enseignement', GF0908: 'Enseignement n.c.a.', GF10: 'Protection sociale', GF1001: 'Maladie et invalidité', GF1002: 'Vieillesse', GF1003: 'Survie', GF1004: 'Famille et enfants', GF1005: 'Chômage', GF1006: 'Logement', GF1007: 'Exclusion sociale n.c.a.', GF1008: 'R&D protection sociale', GF1009: 'Protection sociale n.c.a.' };
+
+// What the spending is for (Eurostat COFOG) and what the benefits are for
+// (DREES risks), kept on each sub-sector node as details of its own.
+function annotate({ graph, registry, cofog, cps, years }) {
+  const src = (s, item, year, gf) => registry.prov('eurostat-cofog', { table: 'gov_10a_exp', geo: 'FR', unit: 'MIO_EUR', sector: s, na_item: item, cofog99: gf, time: String(year) }, { unitIn: 'MEUR' });
+  const sectors = ['S13', 'S1311', 'S1313', 'S1314'];
+  for (const s of sectors) {
+    const node = graph.nodes.get(s); if (!node) continue;
+    node.functions = {};
+    for (const y of years) {
+      const list = [];
+      for (const r of (cofog.records || [])) {
+        if (r.dims.sector !== s || r.dims.time !== String(y) || !r.dims.cofog99 || r.dims.cofog99 === 'TOTAL') continue;
+        if (r.value === null || r.value === undefined) continue;
+        list.push({ code: r.dims.cofog99, label: COFOG_FR[r.dims.cofog99] || r.labels.cofog99, keur: toKeur(r.value, 'MEUR'), prov: src(s, 'TE', y, r.dims.cofog99), level: r.dims.cofog99.length === 4 ? 1 : 2 });
+      }
+      const total = (cofog.records || []).find(r => r.dims.sector === s && r.dims.time === String(y) && r.dims.cofog99 === 'TOTAL');
+      if (list.length) node.functions[`${y}/sna`] = { total: total ? toKeur(total.value, 'MEUR') : null, totalProv: total ? src(s, 'TE', y, 'TOTAL') : null, items: list.sort((a, b) => (a.code < b.code ? -1 : 1)) };
+    }
+  }
+  // DREES: benefits by risk for the État, ODAC, APUL, régime général (S13141) and other social bodies (S13142).
+  const dsrc = (year, ps, si) => registry.prov('drees-cps', { dataset: '305_les-comptes-de-la-protection-sociale', query: "group_by annee,ps_code,si_code (si_niveau 1, ps_niveau 0-1)", key: { annee: String(year), ps_code: ps, si_code: si }, field: 'val' }, { unitIn: 'MEUR' });
+  const byNode = new Map();
+  for (const r of cps || []) {
+    const node = graph.nodes.get(r.si_code); if (!node) continue;
+    const y = Number(r.annee); if (!years.includes(y)) continue;
+    if (!byNode.has(r.si_code)) byNode.set(r.si_code, {});
+    const bucket = byNode.get(r.si_code);
+    const key = `${y}/sna`;
+    if (!bucket[key]) bucket[key] = { total: null, items: [] };
+    if (r.ps_niveau === '0') { bucket[key].total = toKeur(r.val, 'MEUR'); bucket[key].totalProv = dsrc(y, r.ps_code, r.si_code); }
+    else bucket[key].items.push({ code: r.ps_code, label: r.ps_lib, keur: toKeur(r.val, 'MEUR'), prov: dsrc(y, r.ps_code, r.si_code) });
+  }
+  for (const [id, b] of byNode) { const node = graph.nodes.get(id); node.benefits = b; for (const v of Object.values(b)) v.items.sort((a, b2) => (a.code < b2.code ? -1 : 1)); }
+}
+
+function buildMacro({ graph, registry, apu, tee, euro, years, cofog, cps }) {
   const sourceCell = (table, item, year) => registry.prov('insee-apu', { table, sheet: apu[table].sheet, cell: apu[table].items[item][year].cell, row: apu[table].items[item].label, year }, { unitIn: 'MDEUR' });
   const sourceTee = (year, op, side, col) => registry.prov('insee-tee', { file: `TEE_${year}_fr.xlsx`, sheet: 'TEE_COMPLET', cell: tee[year].ops[op][side][col].cell, op, side, sector: col }, { unitIn: 'MDEUR' });
   const sourceEuro = (sector, item, year) => registry.prov('eurostat-gov', { table: 'gov_10a_main', geo: 'FR', unit: 'MIO_EUR', sector, na_item: item, time: String(year) }, { unitIn: 'MEUR' });
@@ -144,6 +181,7 @@ function buildMacro({ graph, registry, apu, tee, euro, years }) {
     const sum = (...xs) => xs.reduce((s, x) => s + x.keur, 0);
     const provs = (...xs) => xs.map(x => x.prov);
 
+    void 0;
     // ---- Expenses of S13 (out-edges) ----
     const out = (op, to, item, { consolidated = false, note, flags = [] } = {}) => {
       const f = F('S13', item); if (!f) return null;
@@ -319,6 +357,7 @@ function buildMacro({ graph, registry, apu, tee, euro, years }) {
       rec(e, 'S13');
     }
   }
+  if (cofog || cps) annotate({ graph, registry, cofog, cps, years });
 }
 
 module.exports = { buildMacro, SUB, SECTOR_NODES, CLASS_NODES, OPS };

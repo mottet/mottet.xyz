@@ -9,13 +9,14 @@ function parse(json) {
   const map = new Map();
   const items = new Set(), sectors = new Set(), years = new Set();
   for (const r of records) {
-    map.set(`${r.dims.sector}|${r.dims.na_item}|${r.dims.time}`, { value: r.value, status: r.status, dims: r.dims, label: r.labels.na_item });
+    const extra = r.dims.cofog99 ? `|${r.dims.cofog99}` : '';
+    map.set(`${r.dims.sector}|${r.dims.na_item}|${r.dims.time}${extra}`, { value: r.value, status: r.status, dims: r.dims, label: r.labels.na_item, cofogLabel: r.labels.cofog99 });
     items.add(r.dims.na_item); sectors.add(r.dims.sector); years.add(Number(r.dims.time));
   }
   return {
-    updated,
+    updated, records,
     items: Array.from(items).sort(), sectors: Array.from(sectors).sort(), years: Array.from(years).sort(),
-    get: (sector, item, year) => map.get(`${sector}|${item}|${year}`) || null,
+    get: (sector, item, year, cofog) => map.get(`${sector}|${item}|${year}${cofog ? `|${cofog}` : ''}`) || null,
   };
 }
 

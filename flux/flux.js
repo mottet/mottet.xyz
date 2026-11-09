@@ -115,6 +115,7 @@ async function main() {
     if (needView) {
       if (changed.has('basis')) fillLevels(s.basis);
       view = buildView(model, s, { root: rootOf(s.basis) });
+      if (view) view.prov = prov;
       if (view) {
         scene.show(view, { animate: changed.has('expanded') || changed.has('hubLevel') || changed.has('ops') || changed.has('year') });
         headline(s, view);

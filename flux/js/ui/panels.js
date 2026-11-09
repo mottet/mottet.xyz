@@ -39,6 +39,8 @@ export function detailsPanel(el, { model, prov, onClose, onExpand, onFocus }) {
           n.canExpand ? h('button.action', { type: 'button', onclick: () => onExpand(n) }, state.expanded.includes(base) ? T.collapse : T.expand) : null,
           flowsList('Ce qu’il reçoit', inR, model, 'from'), flowsList('Ce qu’il verse', outR, model, 'to'),
           intraList(model, view, base),
+          lens(model, node, 'functions', view, 'À quoi sert la dépense', 'Dépense totale par fonction (classification COFOG, Eurostat). Le total COFOG peut différer de quelques centaines de millions du total des comptes nationaux.', 1),
+          lens(model, node, 'benefits', view, 'Prestations par risque', 'Prestations de protection sociale par risque (DREES), y compris les soins produits par les hôpitaux publics, que les comptes nationaux portent en rémunérations et achats.', null),
           sourcesList(prov, new Set(inR.concat(outR).concat(intraOf(model, view, base)).flatMap(r => (r.edges || [r.edge]).flatMap(e => e.prov || []))))]);
       } else if (sel.ribbon) {
         const r = sel.ribbon.ribbon || sel.ribbon;
@@ -61,6 +63,16 @@ function intraList(model, view, base) {
   if (!items.length) return null;
   const line = p => { const e = p.edge; const other = e.from === base ? e.to : e.from; const n = model.node(other); return h('li', h('span.name', `${e.from === base ? 'Vers' : 'De'} ${n ? n.short.toLowerCase() : other} (${e.opLabel})`), h('span.amt', formatEuros(e.keur))); };
   return h('section.flows', h('h3', T.intra), h('p.note', 'Hors du total consolidé : versés ou reçus d’autres administrations publiques.'), h('ul', items.sort((a, b) => b.edge.keur - a.edge.keur).map(line)));
+}
+
+// A breakdown kept on a node (functions, benefits) for the current year and basis.
+function lens(model, node, field, view, title, note, level) {
+  const data = node && node[field] && node[field][view.key];
+  if (!data) return null;
+  const items = data.items.filter(i => level === null || i.level === level);
+  const total = data.total || items.reduce((s, i) => s + i.keur, 0);
+  const prov = view.prov;
+  return h('section.flows.lens', h('h3', title), h('p.note', note), h('ul', items.slice().sort((a, b) => b.keur - a.keur).map(i => h('li', h('span.name', i.label), h('span.amt', formatEuros(i.keur)), h('span.share', formatShare(i.keur / total))))), data.total ? h('p.note', `Total : ${formatEuros(data.total)}.`) : null, prov ? sourcesList(prov, new Set(items.map(i => i.prov).concat(data.totalProv ? [data.totalProv] : []))) : null);
 }
 
 function flowsList(title, ribbons, model, end) {
