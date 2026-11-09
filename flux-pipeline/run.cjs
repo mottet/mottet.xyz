@@ -56,7 +56,10 @@ async function main() {
     const g = (s, i) => { const r = euro.get(s, i, y); return r ? r.value : null; };
     controls[`${y}/sna`] = { TE: g('S13', 'TE'), TR: g('S13', 'TR'), B9: g('S13', 'B9'), insee: { TE: apu[3201].items.TE[y].value, TR: apu[3201].items.TR[y].value, B9: apu[3201].items.B9[y].value }, unit: { eurostat: 'MEUR', insee: 'MDEUR' } };
   }
-  console.error(`years ${yearsBuilt.join(', ')} (Eurostat has ${euro.years.join(', ')})`);
+  // The site opens on the last year whose accounts are not provisional (Insee publishes year N as provisional in May N+1).
+  const provisional = y => y >= new Date().getFullYear() - 1;
+  const defaultYear = yearsBuilt.filter(y => !provisional(y)).pop() || yearsBuilt[yearsBuilt.length - 1];
+  console.error(`years ${yearsBuilt.join(', ')} (Eurostat has ${euro.years.join(', ')}), default ${defaultYear}`);
 
   // Build.
   const graph = new Graph({ registry });
@@ -68,7 +71,7 @@ async function main() {
 
   // Emit.
   const release = opt('release', new Date().toISOString().slice(0, 10).replace(/-/g, '') + 'a');
-  const index = graph.emit(out, { release, built: new Date().toISOString().slice(0, 10), years: yearsBuilt, bases: ['sna'], vintages, controls });
+  const index = graph.emit(out, { release, built: new Date().toISOString().slice(0, 10), years: yearsBuilt, bases: ['sna'], vintages, controls, defaultYear, provisional: yearsBuilt.filter(provisional) });
   console.error(`emitted ${index.counts.nodes} nodes and ${index.counts.edges} edges to ${out} (release ${release})`);
 }
 

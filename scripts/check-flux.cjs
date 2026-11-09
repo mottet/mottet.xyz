@@ -145,7 +145,79 @@ async function unit() {
   res = await get('/bench/', 'flux.localhost'); assert.equal(res.status, 404);
   res = await get('/nothing', 'flux.localhost'); assert.equal(res.status, 404); assert.equal(res.body, 'Pas ici.');
   srv.close(); fs.rmSync(site, { recursive: true, force: true });
-  console.log('PASS unit: xlsx, csv, JSON-stat, pdf rows, units, provenance, the graph rules, the parsers and the server');
+  await front();
+  console.log('PASS unit: xlsx, csv, JSON-stat, pdf rows, units, provenance, the graph rules, the parsers, the server and the site modules');
+}
+
+// The site's own modules (ES modules): numbers, the address bar, the model's cuts, the layout.
+async function front() {
+  const fr = await import(path.join(ROOT, 'flux', 'js', 'fr.js'));
+  assert.equal(fr.formatEuros(1234567890), '1\u202f235\u00a0Md€'); assert.equal(fr.formatEuros(845000), '845\u00a0M€'); assert.equal(fr.formatEuros(12400), '12,4\u00a0M€'); assert.equal(fr.formatEuros(320), '320\u00a0k€'); assert.equal(fr.formatEuros(0.85), '850\u00a0€'); assert.equal(fr.formatEuros(-3200000), '\u22123,2\u00a0Md€'); assert.equal(fr.formatEuros(0), '0\u00a0€');
+  assert.equal(fr.formatShare(0.1234), '12,3\u00a0%'); assert.equal(fr.formatDate('2026-11-09'), '9 novembre 2026'); assert.equal(fr.formatDate('2026-01-01'), '1er janvier 2026');
+  const url = await import(path.join(ROOT, 'flux', 'js', 'url-state.js'));
+  const st = { year: 2023, basis: 'sna', hubLevel: 2, expanded: ['S1313', 'S14'], ops: true, selected: 'apu:S13111', theme: 'sombre' };
+  const q = url.encode(st, { year: 2024, basis: 'sna' });
+  assert.equal(q, '?a=2023&h=2&x=S1313%2CS14&o=1&n=apu%3AS13111&t=sombre');
+  const back = url.decode(q, { years: [2021, 2022, 2023, 2024], bases: ['sna'], defaults: { year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' } });
+  assert.deepEqual(back, { ...st, expanded: ['S1313', 'S14'] });
+  assert.equal(url.encode({ year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' }, { year: 2024, basis: 'sna' }), '', 'defaults are left out');
+  assert.equal(url.decode('?a=1999&h=9&x=bad id&t=x', { years: [2024], bases: ['sna'], defaults: { year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' } }).year, 2024, 'a bad year falls back');
+  // The model on the committed release: every cut balances with the stored totals.
+  const dir = path.join(ROOT, 'flux', 'graph');
+  if (fs.existsSync(path.join(dir, 'index.json'))) {
+    const { Model, HUB } = await import(path.join(ROOT, 'flux', 'js', 'model.js'));
+    const { buildView } = await import(path.join(ROOT, 'flux', 'js', 'view.js'));
+    const { layout } = await import(path.join(ROOT, 'flux', 'js', 'layout.js'));
+    const { interpolate } = await import(path.join(ROOT, 'flux', 'js', 'interpolate.js'));
+    const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'));
+    const model = new Model(JSON.parse(fs.readFileSync(path.join(dir, index.shards.nodes), 'utf8')));
+    const year = index.defaultYear, key = `${year}/sna`;
+    model.addEdges(key, JSON.parse(fs.readFileSync(path.join(dir, index.shards.edges[key]), 'utf8')));
+    const base = { year, basis: 'sna', hubLevel: 0, expanded: [], ops: false };
+    const sum = (v, side) => v.ribbons.filter(r => r.side === side).reduce((s, r) => s + r.keur, 0);
+    const v0 = buildView(model, base);
+    assert.equal(v0.nodes.filter(n => n.column === 1).length, 1, 'the hub is one node at level 0');
+    const hub = model.node(HUB).totals[key];
+    assert.equal(sum(v0, 'payeurs'), hub.in, 'payer ribbons equal the hub receipts');
+    assert.equal(sum(v0, 'benef'), hub.out, 'beneficiary ribbons equal the hub expenses');
+    assert.equal(v0.intra.length, 0, 'nothing is left undrawn');
+    for (const hubLevel of [1, 2, 3]) {
+      const v = buildView(model, { ...base, hubLevel });
+      const hubNodes = v.nodes.filter(n => n.column === 1 && !n.unsplit);
+      assert.ok(hubNodes.length > 1 + hubLevel, `level ${hubLevel} shows ${hubNodes.length} hub nodes`);
+      for (const n of hubNodes) {
+        const t = model.node(n.base).totals[key]; if (!t) continue;
+        const inR = v.ribbons.filter(r => r.to === n.id).reduce((s, r) => s + r.keur, 0);
+        const outR = v.ribbons.filter(r => r.from === n.id).reduce((s, r) => s + r.keur, 0);
+        const ownIn = 0, ownOut = 0;
+        const unsplitIn = v.ribbons.filter(r => r.to === `apu:${n.base}.*`).reduce((s, r) => s + r.keur, 0);
+        const unsplitOut = v.ribbons.filter(r => r.from === `apu:${n.base}.*`).reduce((s, r) => s + r.keur, 0);
+        assert.ok(inR + ownIn + unsplitIn <= t.in + 1 && inR + ownIn + unsplitIn >= t.in - 1 || n.synthetic, `${n.base} level ${hubLevel}: in ${inR + ownIn + unsplitIn} vs total ${t.in}`);
+        assert.ok(outR + ownOut + unsplitOut <= t.out + 1 && outR + ownOut + unsplitOut >= t.out - 1 || n.synthetic, `${n.base} level ${hubLevel}: out ${outR + ownOut + unsplitOut} vs total ${t.out}`);
+      }
+    }
+    const vx = buildView(model, { ...base, expanded: ['S13', 'S1313'] });
+    assert.ok(vx.nodes.some(n => n.id === 'apu:S13131') && vx.nodes.some(n => n.id === 'apu:S1311'), 'expanding one branch leaves the others whole');
+    const vo = buildView(model, { ...base, ops: true });
+    assert.ok(vo.ribbons.some(r => r.ops.some(o => o.op === 'D611')), 'operations split the contributions');
+    // Layout: deterministic, inside the box, ribbon widths add up to the node, vertical is a transpose.
+    const L1 = layout({ nodes: v0.nodes.map(n => ({ ...n })), ribbons: v0.ribbons.map(r => ({ ...r })), columns: 3, width: 1200, height: 600 });
+    const L2 = layout({ nodes: v0.nodes.map(n => ({ ...n })), ribbons: v0.ribbons.map(r => ({ ...r })), columns: 3, width: 1200, height: 600 });
+    assert.equal(JSON.stringify(L1.nodes.map(n => [n.id, n.x, n.y, n.height])), JSON.stringify(L2.nodes.map(n => [n.id, n.x, n.y, n.height])), 'deterministic');
+    for (const n of L1.nodes) { assert.ok(n.y >= 0 && n.y + n.height <= 600.5 && n.x >= 0 && n.x + n.width <= 1200, `${n.id} inside`); }
+    const hubL = L1.nodes.find(n => n.id === 'apu:S13');
+    const widths = L1.ribbons.filter(r => r.to === hubL.id).reduce((s, r) => s + r.w, 0);
+    assert.ok(Math.abs(widths - hubL.height) < 1.5, `ribbon widths ${widths} vs node height ${hubL.height}`);
+    for (const r of L1.ribbons) { const a = L1.nodes.find(n => n.id === r.from), b = L1.nodes.find(n => n.id === r.to); assert.ok(r.y0 >= a.y - 0.01 && r.y0 + r.w <= a.y + a.height + 0.6, `ribbon ${r.key} leaves its source`); assert.ok(r.y1 >= b.y - 0.01 && r.y1 + r.w <= b.y + b.height + 0.6, `ribbon ${r.key} reaches its target`); }
+    const LV = layout({ nodes: v0.nodes.map(n => ({ ...n })), ribbons: v0.ribbons.map(r => ({ ...r })), columns: 3, width: 600, height: 1200, orientation: 'vertical' });
+    const hv = LV.nodes.find(n => n.id === 'apu:S13');
+    assert.ok(hv.width > hv.height && Math.abs(hv.width - hubL.height) < 1.5, 'vertical swaps the axes');
+    const Lx = layout({ nodes: vx.nodes.map(n => ({ ...n })), ribbons: vx.ribbons.map(r => ({ ...r })), columns: 3, width: 1200, height: 600 });
+    const mid = interpolate(L1, Lx, 0.5, id => { const [side, node] = [id.split(':')[0], id.split(':').slice(1).join(':')]; return model.ancestors(node.replace(/\.\*$/, '')).map(a => `${side}:${a}`); });
+    assert.equal(interpolate(L1, Lx, 1).nodes.length, Lx.nodes.length); assert.ok(mid.nodes.some(n => n.appearing), 'new nodes appear out of their parent');
+    const appearing = mid.nodes.find(n => n.id === 'apu:S1311');
+    assert.ok(appearing && appearing.height > 0 && appearing.height < Lx.nodes.find(n => n.id === 'apu:S1311').height, 'half-way, a new node is half-grown');
+  }
 }
 
 // Every figure in flux/graph: integers, provenance, splits, identities.
@@ -203,6 +275,89 @@ async function main() {
   const only = args.find(a => a.startsWith('--')) || null;
   if (!only || only === '--unit') await unit();
   if (!only || only === '--data') data(args.includes('--dir') ? args[args.indexOf('--dir') + 1] : undefined);
-  if (only === '--browser') console.log('browser check: not yet written');
+  if (only === '--browser') await browser();
+}
+
+// The site in Chromium: the landing, a drill-down with its address, the
+// details and their sources, the keyboard, the phone layout, the theme.
+async function browser() {
+  const TOOLS = process.env.HOUSE_TEST_TOOLS || process.env.UR_BUILD_TOOLS;
+  if (!TOOLS) throw new Error('set HOUSE_TEST_TOOLS to a node_modules holding playwright');
+  const { chromium } = require(path.join(TOOLS, 'playwright'));
+  const { spawn } = require('node:child_process');
+  const PORT = 8098;
+  const server = spawn('node', ['server.js'], { cwd: ROOT, env: { ...process.env, PORT: String(PORT) }, stdio: ['ignore', 'ignore', 'inherit'] });
+  process.on('exit', () => server.kill());
+  await new Promise(r => setTimeout(r, 1200));
+  const browserApp = await chromium.launch();
+  const errors = [];
+  const open = async (ctx, url) => { const page = await ctx.newPage(); page.on('pageerror', e => errors.push(`pageerror: ${e.message}`)); page.on('console', m => { if (m.type() === 'error') errors.push(`console: ${m.text()}`); }); await page.goto(url, { waitUntil: 'networkidle' }); await page.waitForFunction(() => performance.getEntriesByName('flux-ready').length > 0, null, { timeout: 30000 }); return page; };
+  try {
+    const base = `http://flux.localhost:${PORT}/`;
+    const desktop = await browserApp.newContext({ viewport: { width: 1440, height: 900 }, locale: 'fr-FR' });
+    let page = await open(desktop, base);
+    // The house is not here, and this is not on the house.
+    const other = await desktop.newPage(); await other.goto(`http://127.0.0.1:${PORT}/`); assert.ok(!(await other.content()).includes('Qui paie quoi'), 'the house host does not show Flux'); await other.close();
+    assert.match(await page.textContent('#headline'), /En 20\d\d, [\d\u202f]+\u00a0milliards/);
+    assert.equal(await page.locator('.chart .node[data-id="apu:S13"]').count(), 1, 'one hub node on the landing');
+    assert.ok((await page.locator('.chart .node').count()) >= 15, 'payers and beneficiaries around it');
+    assert.match(await page.textContent('#footer-sources'), /Insee/);
+    // Drill into the administrations: the address follows, Back undoes.
+    await page.locator('.chart .node[data-id="apu:S13"] .bar').click();
+    await page.waitForTimeout(600);
+    assert.equal(await page.locator('.chart .node[data-id="apu:S1314"]').count(), 1, 'social security appears');
+    assert.ok(page.url().includes('x=S13'), `the address carries the expansion: ${page.url()}`);
+    assert.equal(await page.locator('#chips .chip').count(), 1, 'a chip names what is expanded');
+    await page.goBack(); await page.waitForTimeout(600);
+    assert.equal(await page.locator('.chart .node[data-id="apu:S1314"]').count(), 0, 'Back collapses it');
+    // Level select and operations.
+    await page.selectOption('#hub-level', '2'); await page.waitForTimeout(600);
+    assert.equal(await page.locator('.chart .node[data-id="apu:S13111"]').count(), 1, 'the State at level 2');
+    await page.check('#ops'); await page.waitForTimeout(600);
+    assert.ok(page.url().includes('o=1'));
+    await page.uncheck('#ops'); await page.selectOption('#hub-level', '0'); await page.waitForTimeout(600);
+    // A leaf opens its details, with official sources behind the figures.
+    await page.locator('.chart .node[data-id="payeurs:FINANCEMENT"] .bar').click(); await page.waitForTimeout(300);
+    assert.equal(await page.locator('#details').isVisible(), true);
+    assert.match(await page.textContent('#details h2'), /Créanciers/);
+    const href = await page.locator('#details .sources a').first().getAttribute('href');
+    assert.match(href, /^https:\/\//, 'a source links to the official page');
+    assert.ok(!(await page.textContent('#details')).includes('null'), 'no stray null in the panel');
+    // Year change keeps the view, the sources panel lists the datasets, the table lists the flows.
+    await page.selectOption('#year', String((await page.$$eval('#year option', o => o.map(x => x.value)))[0])); await page.waitForTimeout(700);
+    assert.match(await page.textContent('#headline'), /En 202[0-9]/);
+    await page.click('#btn-sources'); await page.waitForTimeout(200);
+    assert.ok((await page.locator('#sources .sources li').count()) >= 2, 'the sources panel lists the datasets');
+    await page.click('#btn-sources');
+    await page.click('#btn-table'); await page.waitForTimeout(200);
+    assert.ok((await page.locator('#table tbody tr').count()) >= 10, 'the table lists the visible flows');
+    await page.click('#btn-table');
+    // Keyboard: Tab reaches a node, Enter expands, Escape collapses.
+    await page.locator('.chart .node[data-id="apu:S13"]').focus(); await page.keyboard.press('Enter'); await page.waitForTimeout(600);
+    assert.equal(await page.locator('.chart .node[data-id="apu:S1311"]').count(), 1, 'Enter expands');
+    await page.keyboard.press('Escape'); await page.waitForTimeout(600);
+    assert.equal(await page.locator('.chart .node[data-id="apu:S1311"]').count(), 0, 'Escape collapses');
+    // Theme.
+    await page.selectOption('#theme', 'sombre'); await page.waitForTimeout(200);
+    assert.equal(await page.getAttribute('html', 'data-theme'), 'dark');
+    assert.ok(page.url().includes('t=sombre'));
+    // A shared link opens the same view.
+    const link = `${base}?x=S13%2CS1313&n=apu%3AS13131`;
+    page = await open(desktop, link);
+    assert.equal(await page.locator('.chart .node[data-id="apu:S13131"]').count(), 1, 'the link restores the expansion');
+    assert.match(await page.textContent('#details h2'), /Collectivités/);
+    await desktop.close();
+    // The phone: vertical, a sheet for the details.
+    const phone = await browserApp.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'fr-FR' });
+    page = await open(phone, base);
+    const hubBox = await page.locator('.chart .node[data-id="apu:S13"] .bar').boundingBox();
+    assert.ok(hubBox.width > hubBox.height, 'on a phone the hub is a horizontal band');
+    await page.locator('.chart .node[data-id="payeurs:S14"] .bar').tap(); await page.waitForTimeout(300);
+    const box = await page.locator('#details').boundingBox();
+    assert.ok(box && box.y > 300, 'the details come up as a bottom sheet');
+    await phone.close();
+    assert.deepEqual(errors, [], 'no page errors');
+    console.log('PASS browser: the landing, the drill-down and its address, the levels, the details and their sources, the panels, the keyboard, the theme, a shared link and the phone');
+  } finally { await browserApp.close(); server.kill(); }
 }
 main().catch(error => { console.error(error); process.exit(1); });

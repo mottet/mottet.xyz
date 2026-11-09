@@ -43,7 +43,7 @@ const SECTOR_NODES = [
 ];
 // Counterparts the accounts do not name as an institutional sector.
 const CLASS_NODES = [
-  ['PAYEURS', null, 'Ensemble des payeurs (ventilés par le TEE)', 'Payeurs', 'payer', { aggregate: true }],
+  ['PAYEURS', null, 'Payeurs non ventilés par la source (sociétés, ménages, administrations)', 'Payeurs non ventilés', 'payer', { aggregate: true }],
   ['PRODUITS', null, 'Acheteurs de biens et services (impôts sur les produits : TVA, accises…)', 'Acheteurs (TVA, accises…)', 'payer'],
   ['CONTRIB.D91', null, 'Ménages et entreprises redevables des impôts en capital (successions, donations)', 'Successions, donations', 'payer'],
   ['ACHETEURS', null, 'Acheteurs des productions des administrations (ventes, redevances, participations des usagers)', 'Usagers et acheteurs', 'payer'],
@@ -51,7 +51,7 @@ const CLASS_NODES = [
   ['DIVERS.IN', null, 'Autres transferts reçus (indemnités, dons, amendes, transferts divers)', 'Transferts divers reçus', 'payer'],
   ['FINANCEMENT', null, "Créanciers : emprunt net (besoin de financement) ou placement de l'excédent", 'Emprunt net', 'both'],
   ['IMPUTE', null, 'Écritures imputées sans flux monétaire (cotisations sociales imputées, production pour compte propre)', 'Écritures imputées', 'both'],
-  ['POOL', 'S13', 'Transferts entre administrations publiques (non ventilés par bénéficiaire)', 'Transferts entre APU', 'both'],
+  ['POOL', 'S13', 'Autres administrations publiques (transferts entre administrations, non ventilés)', 'Autres administrations', 'both'],
   ['S14.AGENTS', 'S14', 'Agents publics (rémunérations)', 'Agents publics', 'beneficiary'],
   ['FOURNISSEURS', null, "Fournisseurs de biens et services (achats courants et investissements)", 'Fournisseurs', 'beneficiary'],
   ['CREANCIERS', null, 'Créanciers (intérêts de la dette)', 'Créanciers', 'beneficiary'],

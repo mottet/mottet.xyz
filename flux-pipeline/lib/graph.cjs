@@ -195,7 +195,7 @@ class Graph {
   }
 
   // emit(dir, { release, built }) writes the shards the site reads.
-  emit(dir, { release, built, years, bases, vintages = [], controls = {} }) {
+  emit(dir, { release, built, years, bases, vintages = [], controls = {}, defaultYear, provisional = [] }) {
     const { nodes, edges } = this.toJSON();
     const rel = path.join(dir, 'r', release);
     fs.rmSync(path.join(dir, 'r'), { recursive: true, force: true });
@@ -207,7 +207,7 @@ class Graph {
     for (const e of edges) { const k = `${e.year}-${e.basis}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
     const shards = { nodes: `r/${release}/nodes.json`, provenance: `r/${release}/provenance.json`, edges: {} };
     for (const [k, list] of groups) { write(`edges/${k}.json`, list); shards.edges[k.replace('-', '/')] = `r/${release}/edges/${k}.json`; }
-    const index = { release, built, years, bases, vintages, controls, counts: { nodes: nodes.length, edges: edges.length }, shards, log: this.log };
+    const index = { release, built, years, defaultYear: defaultYear || years[years.length - 1], provisional, bases, vintages, controls, counts: { nodes: nodes.length, edges: edges.length }, shards, log: this.log };
     fs.writeFileSync(path.join(dir, 'index.json'), stable(index) + '\n');
     return index;
   }

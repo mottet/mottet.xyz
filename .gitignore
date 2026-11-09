@@ -77,3 +77,4 @@ flux/bench/vendor/
 .next
 # Claude Code worktrees
 .claude/worktrees/
+scripts/flux-bench-report.json

@@ -423,16 +423,59 @@ administrations, each level with its own figure); `imputed` edges are
 accounting entries with no money behind them. `index.json` names the
 release, the years, the shards and the control totals.
 
+The site (`flux/`, plain ES modules, no build step, no dependency) draws
+the graph as a sankey of its own: `js/model.js` turns a view (year, basis,
+which nodes are open, how fine the administrations column is, whether
+operations are shown) into ribbons by walking the splits of every root
+edge, the hub end first, then the counterpart, then the operation, and
+drawing what the source cannot split as a "non ventilé" block; `js/view.js`
+orders the three columns (payers, administrations, beneficiaries) in their
+canonical order, so a node keeps its place across years and levels;
+`js/layout.js` stacks the columns with one shared scale and slots the
+ribbons (horizontal on a desktop, vertical under 700 px); `js/interpolate.js`
+morphs one layout into the next, new nodes growing out of their parent;
+`js/render-ribbons.js` paints the ribbons on a canvas with a hidden picking
+canvas for hover, `js/render-nodes.js` draws the nodes as focusable SVG with
+labels that hide under 11 px; `js/scene.js` ties them; `js/ui/panels.js`
+holds the details (figures, operations, notes and the official sources of
+every number), the sources panel, the table and the tooltip; the address
+bar carries the view (`?a=2024&h=2&x=S1313&o=1&n=apu:S13111&t=sombre`,
+`js/url-state.js`) with a history entry per drill-down. The tagged css and
+js carry `?v=flux-N`; bump it together with `TAG` in `sw.js` on every
+change (the unit check compares the three).
+
+Benchmark (`flux/bench/`, `scripts/bench-flux-setup.sh` fetches d3-sankey
+and ECharts into the gitignored `flux/bench/vendor/`, `npm run bench:flux`
+runs every candidate and scenario in Chromium, desktop and a 4× throttled
+phone, and writes `scripts/flux-bench-report.json`). On 2026-11-09, with the
+real shards, the site's own renderer laid out and painted level 2 (27
+nodes, 115 ribbons) in 0.8 + 1.6 ms on the desktop and 3.6 + 8 ms on the
+throttled phone, d3-sankey on SVG in 1.6 + 1.9 ms and 4.3 + 6.5 ms, ECharts
+in 0.1 + 24 ms and 0.2 + 91 ms. Frames while relaying out every frame were
+at the 16.7 ms budget on the desktop for all three up to level 1, ECharts
+falling behind from level 2; on the throttled phone none holds 16.7 ms
+(d3 33–50 ms, the site 50–117 ms, ECharts 83 ms to 2.8 s). The site's own
+engine stays because the drill-down needs what the libraries lack (stable
+ordering, splits that sum, "non ventilé" blocks, a vertical layout) and
+because its transitions interpolate precomputed layouts, so a frame costs
+the paint only (4–8 ms on the throttled phone); the picking canvas is
+drawn once the motion settles.
+
 ```sh
 npm run flux:build              # fetch, build, validate, emit (node --no-warnings flux-pipeline/run.cjs)
 node scripts/check-flux.cjs --unit
 node scripts/check-flux.cjs --data
 HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:flux
+HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run bench:flux
 ```
 
 The data check reads `flux/graph` and fails on any non-integer, unsourced
 or unbalanced figure, and when the S13 expenses or receipts stray from
-Eurostat's totals by more than 0.1 %. Deployment is in `../deploy/README.md`.
+Eurostat's totals by more than 0.1 %. The browser check starts its own
+server on port 8098 and drives the landing, a drill-down and its address,
+the levels, the details and their sources, the panels, the keyboard, the
+theme, a shared link and the phone layout. Deployment is in
+`../deploy/README.md`.
 
 # Royal Game of Ur artwork and performance
 

@@ -1,21 +1,64 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-tag="flux-1">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Flux — qui paie quoi, qui reçoit quoi</title>
-<style>body{font:16px/1.5 system-ui,sans-serif;margin:2rem auto;max-width:40rem;padding:0 1rem;color:#222;background:#fafaf7}code{font-size:.9em}</style>
+<meta name="description" content="Les flux d'argent des administrations publiques françaises, de ceux qui paient à ceux qui reçoivent, chaque chiffre avec sa source officielle.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141a22" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;1,400&family=Public+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="flux.css?v=flux-1">
+<script>try{var t=localStorage.getItem('flux-theme');var q=new URLSearchParams(location.search).get('t');t=q==='clair'||q==='sombre'?q:t;if(t==='clair')document.documentElement.dataset.theme='light';else if(t==='sombre')document.documentElement.dataset.theme='dark';}catch(e){}</script>
+<link rel="modulepreload" href="flux.js?v=flux-1">
+<link rel="modulepreload" href="js/model.js">
+<link rel="modulepreload" href="js/layout.js">
+<link rel="modulepreload" href="js/scene.js">
 </head>
-<body>
-<h1>Flux</h1>
-<p>Les flux d'argent des administrations publiques françaises : qui paie quoi, qui reçoit quoi. Le site est en construction ; les données sont déjà là.</p>
-<ul id="shards"><li>Chargement de <code>graph/index.json</code>…</li></ul>
-<script type="module">
-const r = await fetch('graph/index.json'); const index = await r.json();
-const ul = document.getElementById('shards'); ul.innerHTML = '';
-const li = t => { const e = document.createElement('li'); e.textContent = t; ul.appendChild(e); };
-li(`Édition ${index.release}, construite le ${index.built} : ${index.counts.nodes} nœuds, ${index.counts.edges} flux, années ${index.years.join(', ')}.`);
-for (const [k, f] of Object.entries(index.shards.edges)) li(`${k} → ${f}`);
-</script>
+<body class="is-loading">
+<a class="skip" href="#chart">Aller au graphique</a>
+<header class="masthead">
+  <div class="brand">
+    <h1>Flux</h1>
+    <p class="tagline">Qui paie quoi, qui reçoit quoi : l’argent des administrations publiques françaises.</p>
+  </div>
+  <p id="headline" class="headline">Chargement des comptes…</p>
+  <p id="headline-sub" class="headline-sub"></p>
+</header>
+<nav class="toolbar" aria-label="Réglages de la vue">
+  <label>Année <select id="year" name="year"></select></label>
+  <label hidden>Base <select id="basis" name="basis"></select></label>
+  <label>Administrations <select id="hub-level" name="hub-level"></select></label>
+  <label class="check"><input type="checkbox" id="ops" name="ops"> Par opération</label>
+  <span id="chips" class="chips" hidden></span>
+  <span class="spacer"></span>
+  <button type="button" id="btn-sources" aria-expanded="false" aria-controls="sources">Sources</button>
+  <button type="button" id="btn-table" aria-expanded="false" aria-controls="table-wrap">Tableau</button>
+  <button type="button" id="btn-link">Copier le lien</button>
+  <label class="theme">Thème <select id="theme" name="theme"><option value="auto">Automatique</option><option value="clair">Clair</option><option value="sombre">Sombre</option></select></label>
+</nav>
+<main class="stage">
+  <div class="column-heads" aria-hidden="true"><span>Qui paie</span><span>Administrations publiques</span><span>Qui reçoit</span></div>
+  <div id="chart" class="chart" role="group" aria-label="Diagramme des flux ; Tab pour parcourir les nœuds, Entrée pour développer, Échap pour replier"></div>
+  <aside id="details" class="panel details" hidden aria-live="polite"></aside>
+  <aside id="sources" class="panel sources" hidden></aside>
+</main>
+<section id="table-wrap" class="table-wrap" hidden>
+  <h2>Tableau des flux affichés</h2>
+  <div id="table"></div>
+</section>
+<footer class="colophon">
+  <p id="footer-sources" class="footer-sources">Sources officielles : chargement…</p>
+  <p class="about">Comptes nationaux de l’Insee et transmission à Eurostat, en milliards d’euros courants. Un flux « non ventilé » ou « non détaillé » est une part que la source ne découpe pas : rien ici n’est estimé. Les transferts entre administrations sont consolidés dans le total. Code et méthode : <a href="https://github.com/">mottet.xyz</a>.</p>
+</footer>
+<div id="tooltip" class="tooltip" role="tooltip" hidden></div>
+<div id="toast" class="toast" role="status" hidden></div>
+<div id="live" class="visually-hidden" aria-live="polite"></div>
+<script type="module" src="flux.js?v=flux-1"></script>
 </body>
 </html>

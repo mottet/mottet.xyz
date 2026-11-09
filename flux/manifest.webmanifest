@@ -1,0 +1,11 @@
+{
+  "name": "Flux — qui paie quoi, qui reçoit quoi",
+  "short_name": "Flux",
+  "description": "Les flux d'argent des administrations publiques françaises, chaque chiffre avec sa source officielle.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f4f1",
+  "theme_color": "#27499a",
+  "lang": "fr",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
