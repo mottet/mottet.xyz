@@ -32,6 +32,7 @@ export class Data {
     if (!file) return Promise.resolve(null);
     return this.json(file);
   }
+  search() { return this.index.shards.search ? this.json(this.index.shards.search) : Promise.resolve({ rows: [] }); }
   has(year, basis) { return Boolean(this.index && this.index.shards.edges[`${year}/${basis}`]); }
   focusFile(year, basis, id) { const f = this.index && this.index.shards.focus && this.index.shards.focus[`${year}/${basis}`]; return f ? f[id] || null : null; }
   focus(year, basis, id) { const file = this.focusFile(year, basis, id); return file ? this.json(file) : Promise.resolve(null); }

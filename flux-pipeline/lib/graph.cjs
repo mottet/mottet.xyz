@@ -258,6 +258,26 @@ class Graph {
       write(file, { nodes: g.nodes, ...compactFocus(g, this), prov, ops });
       const key = g.key.replace('-', '/'); if (!shards.focus[key]) shards.focus[key] = {}; shards.focus[key][g.focus] = `r/${release}/${file}`;
     }
+    // The search index: every node of a hub tree, the communes included, as rows
+    // [id, label, where it sits, year of its latest figures in its own basis, amount, focus shard or ''].
+    // The basis is the tree the node belongs to: local accounts, State budget, else national accounts.
+    const byId = new Map(nodes.map(n => [n.id, n]));
+    const rows = [];
+    for (const n of nodes) {
+      if (n.role !== 'hub' || n.pool) continue;
+      const basis = n.id.startsWith('OFGL') ? 'local-ofgl' : n.id.includes('.M.') ? 'budget-plf' : 'sna';
+      const wanted = basis === 'sna' && defaultYear ? `${defaultYear}/sna` : null;
+      const keys = Object.keys(n.totals || {}).filter(k => k.endsWith(`/${basis}`)).sort().reverse();
+      const key = wanted && keys.includes(wanted) ? wanted : keys[0];
+      if (!key) continue;
+      const t = n.totals[key];
+      const parent = n.parent ? byId.get(n.parent) : null;
+      const code = n.codes && (n.codes.insee || n.codes.dep_code);
+      rows.push([n.id, n.label, [parent ? parent.short || parent.label : '', code || ''].filter(Boolean).join(', '), Number(key.split('/')[0]), Math.max(t.in || 0, t.out || 0), n.focus || '']);
+    }
+    rows.sort((a, b) => (b[4] - a[4]) || a[0].localeCompare(b[0]));
+    write('search.json', { columns: ['id', 'label', 'context', 'year', 'keur', 'focus'], rows });
+    shards.search = `r/${release}/search.json`;
     const index = { release, built, years, defaultYear: defaultYear || years[years.length - 1], provisional, bases, vintages, controls, counts: { nodes: nodes.length, edges: edges.length }, shards, log: this.log };
     fs.writeFileSync(path.join(dir, 'index.json'), stable(index) + '\n');
     return index;

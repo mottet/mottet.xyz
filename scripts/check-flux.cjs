@@ -176,6 +176,13 @@ async function front() {
   assert.ok(url.encode({ ...st, focus: 'S1313' }, { year: 2024, basis: 'sna' }).includes('f=S1313'));
   assert.equal(url.encode({ year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' }, { year: 2024, basis: 'sna' }), '', 'defaults are left out');
   assert.equal(url.decode('?a=1999&h=9&x=bad id&t=x', { years: [2024], bases: ['sna'], defaults: { year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' } }).year, 2024, 'a bad year falls back');
+  // Search: accents and hyphens folded, exact names first, the biggest first within a rank.
+  const { SearchIndex, fold, basisOf } = await import(path.join(ROOT, 'flux', 'js', 'search.js'));
+  assert.equal(fold('Saint-Étienne-du-Rouvray'), 'saint etienne du rouvray'); assert.equal(fold('L’Haÿ-les-Roses'), 'l hay les roses');
+  const six = new SearchIndex({ rows: [['OFGL.COM.D75.E1', 'Commune : Paris', 'Paris, 75056', 2024, 9000, 'OFGL.COM.D75'], ['S13111.M.EA', 'Mission Écologie, développement et mobilité durables', 'État', 2025, 800, ''], ['OFGL.COM.D62.E2', 'Commune : Le Touquet-Paris-Plage', 'Pas-de-Calais, 62826', 2024, 70, 'OFGL.COM.D62'], ['OFGL.COM.D95.E3', 'Commune : Cormeilles-en-Parisis', "Val-d'Oise, 95176", 2024, 30, 'OFGL.COM.D95'], ['OFGL.COM.D03.E4', 'Commune : Paray-sous-Briailles', 'Allier, 03204', 2024, 1, 'OFGL.COM.D03']] });
+  assert.deepEqual(six.find('paris').map(r => r.id), ['OFGL.COM.D75.E1', 'OFGL.COM.D62.E2', 'OFGL.COM.D95.E3'], 'the exact name first, then the others by amount');
+  assert.equal(six.find('ecologie mobilite')[0].id, 'S13111.M.EA'); assert.equal(six.find('62826')[0].id, 'OFGL.COM.D62.E2', 'an INSEE code finds its commune'); assert.deepEqual(six.find('p'), []); assert.deepEqual(six.find('zzz'), []);
+  assert.equal(basisOf('OFGL.COM.D29'), 'local-ofgl'); assert.equal(basisOf('S13111.M.EA.P203'), 'budget-plf'); assert.equal(basisOf('S13111'), 'sna');
   // The model on the committed release: every cut balances with the stored totals.
   const dir = path.join(ROOT, 'flux', 'graph');
   if (fs.existsSync(path.join(dir, 'index.json'))) {
@@ -295,6 +302,20 @@ async function data(dir = path.join(ROOT, 'flux', 'graph')) {
     const s13 = byId.get(hub).totals[key];
     if (!s13 || Math.abs(s13.in - hubIn) > slack || Math.abs(s13.out - hubOut) > slack) problems.push(`${key}: ${hub} totals ${JSON.stringify(s13)} vs roots ${hubIn}/${hubOut}`);
   }
+  // The search index: every row names a node of the main shard or of the focus shard it gives, with that node's amount.
+  const readJson = f => JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+  const search = readJson(index.shards.search);
+  const focusFiles = Object.assign({}, ...Object.values(index.shards.focus || {}));
+  const focusNodes = new Map();
+  for (const [id, label, , year, keur, focus] of search.rows) {
+    let n = byId.get(id);
+    if (!n && focus) { if (!focusNodes.has(focus)) focusNodes.set(focus, new Map(readJson(focusFiles[focus]).nodes.map(x => [x.id, x]))); n = focusNodes.get(focus).get(id); }
+    if (!n) { problems.push(`search: ${id} is not a node`); continue; }
+    const basis = id.startsWith('OFGL') ? 'local-ofgl' : id.includes('.M.') ? 'budget-plf' : 'sna';
+    const t = n.totals[`${year}/${basis}`];
+    if (!t || Math.max(t.in, t.out) !== keur || n.label !== label) problems.push(`search: ${id} ${label} ${keur} does not match its node`);
+  }
+  if (search.rows.length < 30000) problems.push(`search: only ${search.rows.length} rows`);
   if (problems.length) { console.error(problems.slice(0, 40).join('\n')); throw new Error(`${problems.length} data problems`); }
   console.log(`PASS data: ${nodes.length} nodes, ${edgesTotal} edges over ${Object.keys(index.shards.edges).length} shards and ${focusTotal} edges in ${Object.values(index.shards.focus || {}).reduce((s, m) => s + Object.keys(m).length, 0)} focus shards, every figure sourced and every split summing (release ${index.release})`);
 }
@@ -409,6 +430,19 @@ async function browser() {
       assert.ok((await page.locator('.chart .node[data-id^="apu:OFGL.COM.D29.E"]').count()) >= 30, 'the focused group opens into its communes');
       await page.keyboard.press('Escape'); await page.waitForTimeout(300); await page.keyboard.press('Escape'); await page.waitForTimeout(700);
       assert.equal(await page.locator('.chart .node[data-id="apu:OFGL"]').count(), 1, 'Escape twice returns to the overview');
+      // Search: a commune by name, from another basis, ends isolated with its own figures.
+      await page.selectOption('#basis', 'sna'); await page.waitForTimeout(600);
+      await page.fill('#search', 'douarnenez'); await page.waitForSelector('#search-results li[id="hit-0"]');
+      assert.match(await page.textContent('#hit-0'), /Commune : Douarnenez.*Finistère/);
+      await page.keyboard.press('ArrowDown'); await page.keyboard.press('Enter'); await page.waitForTimeout(1500);
+      assert.match(await page.textContent('#headline'), /Commune : Douarnenez\. En 2024, [\d,]+\u00a0M€ reçus/);
+      assert.match(page.url(), /b=local-ofgl.*f=OFGL\.COM\.D29\.E/);
+      await page.fill('#search', 'programme 203'); await page.waitForSelector('#search-results li[id="hit-0"]');
+      assert.match(await page.textContent('#hit-0'), /203.*Infrastructures/);
+      await page.locator('#hit-0').dispatchEvent('pointerdown'); await page.waitForTimeout(1200);
+      assert.match(page.url(), /b=budget-plf.*f=S13111\.M\.[A-Z]+\.P203/);
+      await page.fill('#search', 'qqqq'); await page.waitForSelector('#search-results .none'); await page.keyboard.press('Escape');
+      await page.goto(base, { waitUntil: 'networkidle' }); await page.waitForTimeout(500);
       await page.selectOption('#basis', 'sna'); await page.waitForTimeout(800);
     }
     // Theme.

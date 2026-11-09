@@ -488,7 +488,12 @@ tree, which becomes the hub with its own scale (a commune, a mission; in
 the State budget its payer is then "budget général : financement non
 affecté"), the chips leading back up; the address
 bar carries the view (`?a=2024&b=local-ofgl&f=OFGL.COM.D29&h=2&x=S1313&o=1&n=apu:S13111&t=sombre`,
-`js/url-state.js`) with a history entry per drill-down. Zoom (`?z=`, 1 to 8)
+`js/url-state.js`) with a history entry per drill-down. The search box
+(`js/search.js`, `/` to reach it) reads `search.json`, a shard of every
+hub-tree node (administrations, missions, programmes, actions, and the
+36 000 communes and intercommunalités) emitted by the pipeline and loaded
+on the first keystroke; a result switches to the node's basis, loads its
+focus shard and isolates it. Zoom (`?z=`, 1 to 8)
 makes the chart taller rather than scaling it: the page scrolls through it,
 the text keeps its size, thin flows get room and a label, and labels of
 tall bars follow the part that is on screen. It is driven by the − / % / +

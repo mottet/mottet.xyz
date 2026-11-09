@@ -12,6 +12,7 @@ import { formatEuros, formatNumber, T, BASES, NBSP } from './js/fr.js';
 import { h, clear } from './js/ui/h.js';
 import { detailsPanel, sourcesPanel, tableView, tooltip, toast } from './js/ui/panels.js';
 import { expandFocus } from './js/compact.js';
+import { SearchIndex, basisOf } from './js/search.js';
 
 const TAG = document.documentElement.dataset.tag || 'flux-1';
 const $ = sel => document.querySelector(sel);
@@ -107,11 +108,50 @@ async function main() {
   $('#btn-link').addEventListener('click', async () => { try { await navigator.clipboard.writeText(location.href); toasts.show(T.copied); } catch { toasts.show(location.href); } });
   $('#theme').addEventListener('change', e => { store.set({ theme: e.target.value }); applyTheme(e.target.value); scene.theme(); });
   $('#theme').value = initial.theme;
+  // Search: the index comes with the first keystroke; a result opens its basis and isolates the node.
+  const searchBox = $('#search'), searchList = $('#search-results');
+  let searchIndex = null, searchHits = [], searchAt = -1;
+  const openHit = async hit => {
+    closeSearch(); searchBox.value = ''; searchBox.blur();
+    const basis = basisOf(hit.id), s = store.get();
+    const year = basis === s.basis && data.has(s.year, basis) ? s.year : data.has(hit.year, basis) ? hit.year : yearsOf(basis)[yearsOf(basis).length - 1];
+    document.body.classList.add('is-busy');
+    try {
+      await ensureEdges(year, basis);
+      store.set({ year, basis, expanded: [], hubLevel: 0, selected: null, ribbonSel: null, focus: null });
+      if (hit.focus) await ensureFocus(year, basis, [hit.focus]);
+      await setFocus(hit.id === rootOf(basis) ? null : hit.id);
+      chartEl.scrollIntoView({ block: 'nearest' });
+    } finally { document.body.classList.remove('is-busy'); }
+  };
+  const closeSearch = () => { searchList.hidden = true; searchBox.setAttribute('aria-expanded', 'false'); searchBox.removeAttribute('aria-activedescendant'); searchAt = -1; };
+  const markHit = i => { searchAt = i; Array.from(searchList.children).forEach((li, j) => li.setAttribute('aria-selected', String(i === j))); if (i >= 0) { searchBox.setAttribute('aria-activedescendant', `hit-${i}`); searchList.children[i].scrollIntoView({ block: 'nearest' }); } };
+  const runSearch = async () => {
+    const q = searchBox.value;
+    if (q.trim().length < 2) { closeSearch(); return; }
+    if (!searchIndex) { searchIndex = data.search().then(shard => new SearchIndex(shard)); }
+    const ix = await searchIndex;
+    if (searchBox.value !== q) return;
+    searchHits = ix.find(q, 12);
+    clear(searchList);
+    if (!searchHits.length) searchList.append(h('li.none', { role: 'option', 'aria-disabled': 'true' }, `Rien ne correspond à « ${q.trim()} » parmi les administrations, missions, programmes et collectivités.`));
+    searchHits.forEach((hit, i) => searchList.append(h('li', { role: 'option', id: `hit-${i}`, 'aria-selected': 'false', onpointerdown: e => { e.preventDefault(); openHit(hit); } }, h('span.name', hit.label), h('span.amt', formatEuros(hit.keur)), h('span.ctx', [hit.context, BASES[basisOf(hit.id)]?.short, String(hit.year)].filter(Boolean).join(', ')))));
+    searchList.hidden = false; searchBox.setAttribute('aria-expanded', 'true'); searchAt = -1;
+  };
+  searchBox.addEventListener('input', runSearch);
+  searchBox.addEventListener('focus', () => { if (searchBox.value.trim().length >= 2) runSearch(); });
+  searchBox.addEventListener('blur', () => setTimeout(closeSearch, 120));
+  searchBox.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { if (searchList.hidden || !searchHits.length) return; e.preventDefault(); markHit((searchAt + (e.key === 'ArrowDown' ? 1 : -1) + searchHits.length) % searchHits.length); }
+    else if (e.key === 'Enter') { const hit = searchHits[Math.max(0, searchAt)]; if (!searchList.hidden && hit) { e.preventDefault(); openHit(hit); } }
+    else if (e.key === 'Escape') { e.stopPropagation(); if (searchList.hidden) searchBox.blur(); else closeSearch(); }
+  });
   $('#zoom-in').addEventListener('click', () => scene.zoomBy(ZOOM_STEP));
   $('#zoom-out').addEventListener('click', () => scene.zoomBy(1 / ZOOM_STEP));
   $('#zoom-reset').addEventListener('click', () => scene.setZoom(1));
   document.addEventListener('keydown', e => {
     if (!e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName || '')) {
+      if (e.key === '/') { e.preventDefault(); searchBox.focus(); return; }
       if (e.key === '+' || e.key === '=') scene.zoomBy(ZOOM_STEP); else if (e.key === '-') scene.zoomBy(1 / ZOOM_STEP); else if (e.key === '0') scene.setZoom(1);
     }
     if (e.key === 'Escape') { const s = store.get(); if (s.selected || s.ribbonSel || s.sourcesOpen) store.set({ selected: null, ribbonSel: null, sourcesOpen: false }); else if (s.expanded.length) store.set({ expanded: s.expanded.slice(0, -1) }); else if (s.focus) setFocus(null); }
