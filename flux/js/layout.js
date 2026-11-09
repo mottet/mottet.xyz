@@ -120,7 +120,7 @@ export function layout({ nodes, ribbons, columns, width, height, orientation = '
     const p0 = toXY(r.u0, r.v0), p1 = toXY(r.u1, r.v1);
     return { ...r, x0: p0.x, y0: p0.y, x1: p1.x, y1: p1.y, horizontal };
   });
-  return { nodes: lnodes, ribbons: lribbons, k, orientation, width, height, nodeWidth, gutter: horizontal ? gutter : 0 };
+  return { nodes: lnodes, ribbons: lribbons, k, orientation, width, height, nodeWidth, columns, colU: Array.from({ length: columns }, (_, c) => uOf(c)), gutter: horizontal ? gutter : 0 };
 }
 
 /** The path of a ribbon as SVG path data (also fed to Path2D). */

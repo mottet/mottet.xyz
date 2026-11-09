@@ -5,6 +5,8 @@
 
 import { ribbonPath } from './layout.js';
 
+const MAX_PIXELS = 12e6, MAX_SIDE = 16000;
+
 export class RibbonRenderer {
   constructor(canvas) {
     this.canvas = canvas;
@@ -25,8 +27,11 @@ export class RibbonRenderer {
     this.alpha = Number(get('--ribbon-alpha')) || 0.55;
   }
   resize(width, height) {
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    for (const c of [this.canvas, this.pick]) { c.width = Math.round(width * this.dpr); c.height = Math.round(height * this.dpr); }
+    // A zoomed chart is tall: keep the backing store under what phones allow.
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2, Math.sqrt(MAX_PIXELS / (width * height)), MAX_SIDE / Math.max(width, height));
+    this.pickScale = Math.min(1, this.dpr);
+    this.canvas.width = Math.round(width * this.dpr); this.canvas.height = Math.round(height * this.dpr);
+    this.pickStale = true;
     this.canvas.style.width = `${width}px`; this.canvas.style.height = `${height}px`;
     this.width = width; this.height = height;
   }
@@ -35,7 +40,10 @@ export class RibbonRenderer {
     const { ctx, pickCtx, dpr } = this;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, this.width, this.height);
-    if (pick) { pickCtx.setTransform(dpr, 0, 0, dpr, 0, 0); pickCtx.clearRect(0, 0, this.width, this.height); this.paths = []; }
+    if (pick) {
+      if (this.pickStale) { this.pick.width = Math.round(this.width * this.pickScale); this.pick.height = Math.round(this.height * this.pickScale); this.pickStale = false; }
+      pickCtx.setTransform(this.pickScale, 0, 0, this.pickScale, 0, 0); pickCtx.clearRect(0, 0, this.width, this.height); this.paths = [];
+    } else this.paths = [];
     const dim = lit && lit.size > 0;
     let i = 0;
     for (const r of layout.ribbons) {
@@ -56,7 +64,7 @@ export class RibbonRenderer {
   /** The ribbon under a CSS pixel position, or null. */
   at(x, y) {
     if (!this.paths.length) return null;
-    const px = Math.round(x * this.dpr), py = Math.round(y * this.dpr);
+    const px = Math.round(x * this.pickScale), py = Math.round(y * this.pickScale);
     if (px < 0 || py < 0 || px >= this.pick.width || py >= this.pick.height) return null;
     const d = this.pickCtx.getImageData(px, py, 1, 1).data;
     if (d[3] === 0) return null;

@@ -2,7 +2,7 @@
 // &h=1&x=S1313,S14&o=1&n=S13111&t=sombre. Defaults are left out; unknown
 // keys are ignored; bad values fall back.
 
-export const DEFAULTS = { year: null, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto', focus: null };
+export const DEFAULTS = { year: null, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto', focus: null, zoom: 1 };
 
 export function encode(state, defaults = DEFAULTS) {
   const q = new URLSearchParams();
@@ -13,6 +13,7 @@ export function encode(state, defaults = DEFAULTS) {
   if (x.length) q.set('x', x.join(','));
   if (state.focus) q.set('f', state.focus);
   if (state.ops) q.set('o', '1');
+  if (state.zoom > 1) q.set('z', String(Math.round(state.zoom * 10) / 10));
   if (state.selected) q.set('n', state.selected);
   if (state.theme && state.theme !== 'auto') q.set('t', state.theme);
   const s = q.toString();
@@ -34,6 +35,8 @@ export function decode(query, { years = [], bases = ['sna'], defaults = DEFAULTS
   state.ops = q.get('o') === '1';
   const f = q.get('f');
   state.focus = f && /^[A-Za-z0-9_.:-]+$/.test(f) ? f : null;
+  const z = Number(q.get('z'));
+  state.zoom = z >= 1 && z <= 8 ? Math.round(z * 10) / 10 : 1;
   const n = q.get('n');
   if (n && /^[A-Za-z0-9_.:*-]+$/.test(n)) state.selected = n;
   const t = q.get('t');

@@ -5,7 +5,7 @@
 import { Data } from './js/data.js';
 import { Model, HUB } from './js/model.js';
 import { buildView } from './js/view.js';
-import { Scene } from './js/scene.js';
+import { Scene, ZOOM_STEP, ZOOM_MAX } from './js/scene.js';
 import { createStore } from './js/store.js';
 import { encode, decode } from './js/url-state.js';
 import { formatEuros, formatNumber, T, BASES, NBSP } from './js/fr.js';
@@ -75,6 +75,7 @@ async function main() {
       } else tip.hide();
     },
     onHoverMove: (x, y) => tip.move(x, y),
+    onZoom: z => store.set({ zoom: z }),
     relatives: id => { const [side, node] = [id.split(':')[0], id.split(':').slice(1).join(':')]; const base = node.endsWith('.*') ? node.slice(0, -2) : node; return [`${side}:${base}`, ...model.ancestors(base).map(a => `${side}:${a}`)]; },
   });
 
@@ -106,7 +107,13 @@ async function main() {
   $('#btn-link').addEventListener('click', async () => { try { await navigator.clipboard.writeText(location.href); toasts.show(T.copied); } catch { toasts.show(location.href); } });
   $('#theme').addEventListener('change', e => { store.set({ theme: e.target.value }); applyTheme(e.target.value); scene.theme(); });
   $('#theme').value = initial.theme;
+  $('#zoom-in').addEventListener('click', () => scene.zoomBy(ZOOM_STEP));
+  $('#zoom-out').addEventListener('click', () => scene.zoomBy(1 / ZOOM_STEP));
+  $('#zoom-reset').addEventListener('click', () => scene.setZoom(1));
   document.addEventListener('keydown', e => {
+    if (!e.ctrlKey && !e.metaKey && !e.altKey && !/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName || '')) {
+      if (e.key === '+' || e.key === '=') scene.zoomBy(ZOOM_STEP); else if (e.key === '-') scene.zoomBy(1 / ZOOM_STEP); else if (e.key === '0') scene.setZoom(1);
+    }
     if (e.key === 'Escape') { const s = store.get(); if (s.selected || s.ribbonSel || s.sourcesOpen) store.set({ selected: null, ribbonSel: null, sourcesOpen: false }); else if (s.expanded.length) store.set({ expanded: s.expanded.slice(0, -1) }); else if (s.focus) setFocus(null); }
     if (e.key === '[' || e.key === ']') { const i = years.indexOf(store.get().year); const y = years[i + (e.key === ']' ? 1 : -1)]; if (y) { ensureEdges(y, store.get().basis).then(() => store.set({ year: y })); } }
   });
@@ -154,13 +161,18 @@ async function main() {
     }
     if (changed.has('expanded') || changed.has('focus') || lastKey === null) renderChips(s);
     if (changed.has('sourcesOpen')) { sources.render(s.sourcesOpen ? view : null); document.body.classList.toggle('has-sources', s.sourcesOpen); $('#btn-sources').setAttribute('aria-expanded', String(s.sourcesOpen)); }
+    if (changed.has('zoom') || lastKey === null) {
+      scene.setZoom(s.zoom || 1, undefined, { quiet: true });
+      $('#zoom-level').textContent = `${formatNumber(Math.round((s.zoom || 1) * 100))}${NBSP}%`;
+      $('#zoom-out').disabled = (s.zoom || 1) <= 1; $('#zoom-in').disabled = (s.zoom || 1) >= ZOOM_MAX;
+    }
     if (changed.has('tableOpen')) { $('#table-wrap').hidden = !s.tableOpen; $('#btn-table').setAttribute('aria-expanded', String(s.tableOpen)); }
     yearSel.value = String(s.year); hubSel.value = String(s.hubLevel); opsBox.checked = s.ops; basisSel.value = s.basis;
     // The address bar.
-    const q = encode({ year: s.year, basis: s.basis, hubLevel: s.hubLevel, expanded: s.expanded, ops: s.ops, selected: s.selected, theme: s.theme, focus: s.focus }, { year: defaultYear, basis: 'sna' });
+    const q = encode({ year: s.year, basis: s.basis, hubLevel: s.hubLevel, expanded: s.expanded, ops: s.ops, selected: s.selected, theme: s.theme, focus: s.focus, zoom: s.zoom }, { year: defaultYear, basis: 'sna' });
     if (q !== lastKey) { const push = lastKey !== null && (changed.has('expanded') || changed.has('hubLevel') || changed.has('year') || changed.has('focus')); history[push ? 'pushState' : 'replaceState'](null, '', location.pathname + q); lastKey = q; }
   });
-  window.addEventListener('popstate', async () => { const st = decode(location.search, { years, bases, defaults: { ...initial, expanded: [] } }); await ensureEdges(st.year, st.basis, st.expanded.concat(st.focus ? [st.focus, ...model.ancestors(st.focus)] : [])); store.set({ year: st.year, basis: st.basis, hubLevel: st.hubLevel, expanded: st.expanded, ops: st.ops, selected: st.selected, focus: st.focus }); });
+  window.addEventListener('popstate', async () => { const st = decode(location.search, { years, bases, defaults: { ...initial, expanded: [] } }); await ensureEdges(st.year, st.basis, st.expanded.concat(st.focus ? [st.focus, ...model.ancestors(st.focus)] : [])); store.set({ year: st.year, basis: st.basis, hubLevel: st.hubLevel, expanded: st.expanded, ops: st.ops, selected: st.selected, focus: st.focus, zoom: st.zoom }); });
 
   function headline(s, v) {
     const root = rootOf(s.basis);

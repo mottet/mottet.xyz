@@ -475,7 +475,8 @@ drawing what the source cannot split as a "non ventilé" block; `js/view.js`
 orders the three columns (payers, administrations, beneficiaries) in their
 canonical order, so a node keeps its place across years and levels;
 `js/layout.js` stacks the columns with one shared scale and slots the
-ribbons (horizontal on a desktop, vertical under 700 px); `js/interpolate.js`
+ribbons (left to right everywhere; under 700 px the label gutters go and
+the labels sit beside the bars, over the ribbons); `js/interpolate.js`
 morphs one layout into the next, new nodes growing out of their parent;
 `js/render-ribbons.js` paints the ribbons on a canvas with a hidden picking
 canvas for hover, `js/render-nodes.js` draws the nodes as focusable SVG with
@@ -487,7 +488,12 @@ tree, which becomes the hub with its own scale (a commune, a mission; in
 the State budget its payer is then "budget général : financement non
 affecté"), the chips leading back up; the address
 bar carries the view (`?a=2024&b=local-ofgl&f=OFGL.COM.D29&h=2&x=S1313&o=1&n=apu:S13111&t=sombre`,
-`js/url-state.js`) with a history entry per drill-down. The tagged css and
+`js/url-state.js`) with a history entry per drill-down. Zoom (`?z=`, 1 to 8)
+makes the chart taller rather than scaling it: the page scrolls through it,
+the text keeps its size, thin flows get room and a label, and labels of
+tall bars follow the part that is on screen. It is driven by the − / % / +
+cluster stuck to the bottom of the screen, the + − 0 keys, a two-finger
+pinch and ctrl + wheel; the canvas backing store is capped at 12 M pixels. The tagged css and
 js carry `?v=flux-N`; bump it together with `TAG` in `sw.js` on every
 change (the unit check compares the three).
 

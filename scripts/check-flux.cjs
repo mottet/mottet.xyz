@@ -170,7 +170,8 @@ async function front() {
   const q = url.encode(st, { year: 2024, basis: 'sna' });
   assert.equal(q, '?a=2023&h=2&x=S1313%2CS14&o=1&n=apu%3AS13111&t=sombre');
   const back = url.decode(q, { years: [2021, 2022, 2023, 2024], bases: ['sna'], defaults: { year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' } });
-  assert.deepEqual(back, { ...st, expanded: ['S1313', 'S14'], focus: null });
+  assert.deepEqual(back, { ...st, expanded: ['S1313', 'S14'], focus: null, zoom: 1 });
+  assert.ok(url.encode({ ...st, zoom: 2.25 }, { year: 2024, basis: 'sna' }).includes('z=2.3')); assert.equal(url.decode('?z=3.4', { years: [2024] }).zoom, 3.4); assert.equal(url.decode('?z=40', { years: [2024] }).zoom, 1, 'a zoom out of range is ignored');
   assert.equal(url.decode('?f=OFGL.COM.D29', { years: [2024], bases: ['sna'] }).focus, 'OFGL.COM.D29');
   assert.ok(url.encode({ ...st, focus: 'S1313' }, { year: 2024, basis: 'sna' }).includes('f=S1313'));
   assert.equal(url.encode({ year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' }, { year: 2024, basis: 'sna' }), '', 'defaults are left out');
@@ -420,17 +421,39 @@ async function browser() {
     assert.equal(await page.locator('.chart .node[data-id="apu:S13131"]').count(), 1, 'the link restores the expansion');
     assert.match(await page.textContent('#details h2'), /Collectivités/);
     await desktop.close();
-    // The phone: vertical, a sheet for the details.
+    // The phone: left to right without gutters, labels beside the bars, zoom by buttons, keys and pinch, a sheet for the details.
     const phone = await browserApp.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'fr-FR' });
     page = await open(phone, base);
     const hubBox = await page.locator('.chart .node[data-id="apu:S13"] .bar').boundingBox();
-    assert.ok(hubBox.width > hubBox.height, 'on a phone the hub is a horizontal band');
+    assert.ok(hubBox.height > hubBox.width, 'on a phone the diagram still reads left to right');
+    const shown = await page.locator('.chart .node .label').evaluateAll(els => els.filter(e => e.style.display !== 'none' && e.textContent && !e.textContent.includes('…')).length);
+    assert.ok(shown >= 6, `on a phone at least six labels are whole (${shown})`);
+    const h0 = (await page.locator('#chart').boundingBox()).height;
+    await page.locator('#zoom-in').tap(); await page.locator('#zoom-in').tap(); await page.waitForTimeout(200);
+    const h1 = (await page.locator('#chart').boundingBox()).height;
+    assert.ok(Math.abs(h1 / h0 - 2.25) < 0.05, `two taps on + make the chart 2,25 times taller (${h1 / h0})`);
+    assert.match(page.url(), /z=2\.3/, 'the zoom is in the address');
+    assert.match(await page.textContent('#zoom-level'), /225/);
+    const shownZ = await page.locator('.chart .node .label').evaluateAll(els => els.filter(e => e.style.display !== 'none' && e.textContent).length);
+    const all = await page.locator('.chart .node').count();
+    assert.ok(shownZ >= all - 6, `zoomed, nearly every node has its label (${shownZ} of ${all})`);
+    // Pinch: two fingers moving apart on the chart.
+    const pinch = async (from, to) => page.evaluate(([from, to]) => { const el = document.querySelector('#chart'); const r = el.getBoundingClientRect(); const cy = Math.min(window.innerHeight - 100, Math.max(r.top + 100, 300));
+      const fire = (type, d) => { const mk = (id, y) => new Touch({ identifier: id, target: el, clientX: 195, clientY: y }); const ts = type === 'touchend' ? [] : [mk(1, cy - d / 2), mk(2, cy + d / 2)]; el.dispatchEvent(new TouchEvent(type, { touches: ts, targetTouches: ts, changedTouches: [mk(1, cy - d / 2), mk(2, cy + d / 2)], bubbles: true, cancelable: true })); };
+      fire('touchstart', from); return new Promise(res => { fire('touchmove', (from + to) / 2); requestAnimationFrame(() => { fire('touchmove', to); requestAnimationFrame(() => { fire('touchend', to); res(); }); }); }); }, [from, to]);
+    await pinch(100, 200); await page.waitForTimeout(200);
+    const h2 = (await page.locator('#chart').boundingBox()).height;
+    assert.ok(Math.abs(h2 / h1 - 2) < 0.1, `a pinch that doubles the distance doubles the height (${h2 / h1})`);
+    await page.locator('#zoom-reset').tap(); await page.waitForTimeout(200);
+    assert.ok(Math.abs((await page.locator('#chart').boundingBox()).height - h0) < 1, 'the middle button comes back to the original size');
+    assert.ok(await page.locator('#zoom-out').isDisabled(), 'nothing to reduce at 100 %');
+    await page.locator('.chart .node[data-id="payeurs:S14"]').scrollIntoViewIfNeeded();
     await page.locator('.chart .node[data-id="payeurs:S14"] .bar').tap(); await page.waitForTimeout(300);
     const box = await page.locator('#details').boundingBox();
     assert.ok(box && box.y > 300, 'the details come up as a bottom sheet');
     await phone.close();
     assert.deepEqual(errors, [], 'no page errors');
-    console.log('PASS browser: the landing, the drill-down and its address, the levels, the details and their sources, the panels, the keyboard, the theme, a shared link and the phone');
+    console.log('PASS browser: the landing, the drill-down and its address, the levels, the details and their sources, the panels, the keyboard, the theme, a shared link, the phone and its zoom');
   } finally { await browserApp.close(); server.kill(); }
 }
 main().catch(error => { console.error(error); process.exit(1); });

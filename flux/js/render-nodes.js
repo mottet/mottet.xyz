@@ -37,7 +37,17 @@ export class NodeRenderer {
     this.cache.set(key, out);
     return out;
   }
-  draw(layout, { selected = null, hover = null, lit = null, animating = false } = {}) {
+  /** Two lines: the first breaks at the last space that fits, the second is cut if it must be. */
+  wrap(text, max) {
+    this.measure.font = this.font;
+    const words = text.split(' ');
+    let first = words[0], i = 1;
+    while (i < words.length && this.measure.measureText(`${first} ${words[i]}`).width <= max) { first += ` ${words[i]}`; i++; }
+    if (i >= words.length || this.measure.measureText(first).width > max) return null;
+    const second = this.truncate(words.slice(i).join(' '), max);
+    return second ? [first, second] : null;
+  }
+  draw(layout, { selected = null, hover = null, lit = null, animating = false, visible = null } = {}) {
     const horizontal = layout.orientation === 'horizontal';
     if (!this.font) this.readFont();
     const seen = new Set();
@@ -80,17 +90,32 @@ export class NodeRenderer {
       if (show) {
         if (horizontal) {
           const pad = 6;
+          // The label sits in the middle of the part of the bar that is on screen.
+          let cy = n.y + n.height / 2;
+          if (visible) { const top = Math.max(n.y, visible[0]), bot = Math.min(n.y + n.height, visible[1]); if (bot - top >= 44) cy = (top + bot) / 2; }
           let x, anchor, max;
-          if (n.column === 0) { x = n.x - pad; anchor = 'end'; max = n.x - pad - 4; }
+          if (!layout.gutter) {
+            // No gutters (phones): labels sit over the ribbons, first column and hubs to the right of their bar, last column to its left.
+            const cols = layout.columns, step = cols > 1 ? layout.colU[1] - layout.colU[0] : layout.width;
+            const last = n.column === cols - 1 && cols > 1;
+            if (last) { x = n.x - pad; anchor = 'end'; max = step * 0.55 - 2 * pad; }
+            else { x = n.x + n.width + pad; anchor = 'start'; max = (n.column === cols - 2 ? step * 0.45 : step) - n.width - 2 * pad; }
+          }
+          else if (n.column === 0) { x = n.x - pad; anchor = 'end'; max = n.x - pad - 4; }
           else if (n.column === layout.columns - 1 || n.column === 2) { x = n.x + n.width + pad; anchor = 'start'; max = layout.width - x - 4; }
           else { x = n.x + n.width + pad; anchor = 'start'; max = layout.columns > 3 ? 150 : 160; }
           const text = this.truncate(n.short, Math.max(20, max));
           label.setAttribute('x', x); label.setAttribute('text-anchor', anchor);
           const two = n.height >= 2 * LABEL_MIN + 4;
-          label.setAttribute('y', two ? n.y + n.height / 2 - 2 : n.y + n.height / 2 + 4);
-          label.textContent = text;
+          label.setAttribute('y', two ? cy - 2 : cy + 4);
+          // A long name on a tall bar takes two lines before it is cut.
+          const lines = two && text !== n.short && n.height >= 3 * LABEL_MIN + 8 ? this.wrap(n.short, Math.max(20, max)) : null;
+          if (lines) {
+            label.setAttribute('y', cy - 9);
+            label.replaceChildren(s('tspan', { x }, lines[0]), s('tspan', { x, dy: 13 }, lines[1]));
+          } else label.textContent = text;
           amount.setAttribute('x', x); amount.setAttribute('text-anchor', anchor);
-          amount.setAttribute('y', n.y + n.height / 2 + (two ? 12 : 4));
+          amount.setAttribute('y', cy + (lines ? 19 : two ? 12 : 4));
           amount.textContent = two ? value : '';
           if (!two) label.textContent = this.truncate(`${n.short}, ${value}`, Math.max(20, max));
         } else {

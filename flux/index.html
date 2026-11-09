@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="fr" data-tag="flux-2">
+<html lang="fr" data-tag="flux-3">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -13,9 +13,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;1,400&family=Public+Sans:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="flux.css?v=flux-2">
+<link rel="stylesheet" href="flux.css?v=flux-3">
 <script>try{var t=localStorage.getItem('flux-theme');var q=new URLSearchParams(location.search).get('t');t=q==='clair'||q==='sombre'?q:t;if(t==='clair')document.documentElement.dataset.theme='light';else if(t==='sombre')document.documentElement.dataset.theme='dark';}catch(e){}</script>
-<link rel="modulepreload" href="flux.js?v=flux-2">
+<link rel="modulepreload" href="flux.js?v=flux-3">
 <link rel="modulepreload" href="js/model.js">
 <link rel="modulepreload" href="js/layout.js">
 <link rel="modulepreload" href="js/scene.js">
@@ -45,6 +45,11 @@
 <main class="stage">
   <div class="column-heads" aria-hidden="true"><span>Qui paie</span><span>Administrations publiques</span><span>Qui reçoit</span></div>
   <div id="chart" class="chart" role="group" aria-label="Diagramme des flux ; Tab pour parcourir les nœuds, Entrée pour développer, Échap pour replier"></div>
+  <div class="zoom" role="group" aria-label="Zoom du graphique">
+    <button type="button" id="zoom-out" aria-label="Réduire le graphique" title="Réduire (touche −)">−</button>
+    <button type="button" id="zoom-reset" aria-label="Revenir à la taille d’origine" title="Taille d’origine (touche 0)"><output id="zoom-level">100 %</output></button>
+    <button type="button" id="zoom-in" aria-label="Agrandir le graphique" title="Agrandir (touche +, ou pincer)">+</button>
+  </div>
   <aside id="details" class="panel details" hidden aria-live="polite"></aside>
   <aside id="sources" class="panel sources" hidden></aside>
 </main>
@@ -59,6 +64,6 @@
 <div id="tooltip" class="tooltip" role="tooltip" hidden></div>
 <div id="toast" class="toast" role="status" hidden></div>
 <div id="live" class="visually-hidden" aria-live="polite"></div>
-<script type="module" src="flux.js?v=flux-2"></script>
+<script type="module" src="flux.js?v=flux-3"></script>
 </body>
 </html>
