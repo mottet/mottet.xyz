@@ -367,6 +367,73 @@ passwords of its own (`MAIA_DATA`, `MAIA_SECRETS`), so it never touches the
 live records. Deployment (DNS, Nginx, certificate, the systemd write path and
 the secrets file) is in `../deploy/README.md`.
 
+# Flux
+
+`flux.mottet.xyz` shows who pays what into the French public administrations
+and who receives what, with the State at the centre: a big picture first,
+then drill-down at every node. It is served by the same `server.js` for that
+host name only (`flux-server.js`, mounted before the house's static files;
+`flux.localhost` is accepted too). The files are in `flux/`, outside
+`public/`. Nothing is written at run time.
+
+Every figure comes from an official source and carries a provenance record
+(publisher, dataset, the exact cell, query or page, retrieval date, licence).
+Nothing is estimated: where a source gives a total but not its parts, the
+remainder is a "non détaillé" edge; where it names no counterpart, the
+counterpart is a widened node ("acheteurs de biens et services" for VAT,
+"créanciers" for interest). The pipeline in `flux-pipeline/` does the work:
+
+- `run.cjs` fetches the files (cached under `data/flux/raw/<source>/` with a
+  manifest of URL, date and sha256; the root `.gitignore` ignores any `data/`
+  folder, which is why the emitted shards live in `flux/graph/` instead),
+  parses them, builds the graph, validates it and emits the shards.
+  `--offline` uses the cache only, `--years 2021-2024` limits the years,
+  `--out <dir>` writes elsewhere, `--release <id>` names the release.
+- `lib/` holds the readers written for the job: `xlsx.cjs` (the zip and the
+  cells of an .xlsx, no dependency), `csv.cjs` (streaming, quoted newlines),
+  `eurostat.cjs` (JSON-stat), `ods.cjs` (Opendatasoft exports with server
+  side `group_by`), `pdf.cjs` (`pdftotext -layout` rows; poppler must be
+  installed on the build machine), `units.cjs` (every amount is an integer
+  number of thousands of euros, rounded half to even), `provenance.cjs` and
+  `graph.cjs`.
+- `parsers/` turn one official file into facts; `build/macro.cjs` turns the
+  facts into the graph: the sub-sectors of S13 (État, ODAC, communes,
+  départements, régions, syndicats, ODAL, régimes sociaux, hôpitaux) and
+  every flow in and out of them per year, from the Insee tables 3.201–3.214,
+  the Insee TEE (who pays which tax) and Eurostat gov_10a_main (wages vs
+  contributions, VAT, household vs corporate income taxes, old-age vs
+  unemployment benefits, flows with the EU institutions).
+
+The graph model (`flux/graph/r/<release>/`): `nodes.json` (trees of
+sectors and counterpart classes, with per-year totals), `provenance.json`,
+and one `edges/<year>-<basis>.json` per year and accounting basis (`sna`
+for the national accounts; the budget, DREES and local bases come later).
+An edge is one figure (`keur`) between two nodes for one operation (`op`,
+ESA codes: D61 cotisations, D62 prestations, D41 intérêts…). A root edge can
+be refined by children that split its hub end (`split: to` for a receipt,
+`from` for an expense) into the sub-sectors, its counterpart end into the
+payer sectors, or its operation (`split: op`); the children of a split sum
+to the parent, a residual edge to a `<node>.ND` child making up any gap.
+`consolidated` on a parent is what the unconsolidated sub-sector figures
+hold of flows between administrations; a child with `sign: -1` runs the
+other way (a sub-sector in surplus under a deficit); `alt: tee` marks a
+second root for the same flow seen from the TEE, used for the payer split
+only; `intra` edges go through the `POOL` node (transfers between
+administrations, each level with its own figure); `imputed` edges are
+accounting entries with no money behind them. `index.json` names the
+release, the years, the shards and the control totals.
+
+```sh
+npm run flux:build              # fetch, build, validate, emit (node --no-warnings flux-pipeline/run.cjs)
+node scripts/check-flux.cjs --unit
+node scripts/check-flux.cjs --data
+HOUSE_TEST_TOOLS=/tmp/malik-test-tools/node_modules npm run test:flux
+```
+
+The data check reads `flux/graph` and fails on any non-integer, unsourced
+or unbalanced figure, and when the S13 expenses or receipts stray from
+Eurostat's totals by more than 0.1 %. Deployment is in `../deploy/README.md`.
+
 # Royal Game of Ur artwork and performance
 
 The Brussels Art Nouveau interior is drawn in `public/urGarden.js` as three SVG

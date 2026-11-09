@@ -80,6 +80,29 @@ the reminders (push subscriptions and the VAPID key pair) in
 `data/maia/push.json`; all gitignored. Back them up with the secrets file. If
 `push.json` is lost, every phone has to turn its reminders on again.
 
+## flux.mottet.xyz
+
+Flux (the money flows of the public administrations) is served by the same
+Node.js app for that host name only (see `../flux-server.js`); it is static
+and writes nothing, so the systemd unit is unchanged. `deploy-flux.sh` runs
+every step (`sudo sh deploy/deploy-flux.sh`, once DNS points here). It needs:
+
+- a DNS `A` record `flux.mottet.xyz` pointing at this server (and the `AAAA`
+  if `mottet.xyz` has one);
+- the Nginx site `flux.nginx.conf`, then a certificate of its own:
+
+  ```sh
+  sudo install -m 0644 deploy/flux.nginx.conf /etc/nginx/sites-available/flux.mottet.xyz
+  sudo ln -sfn /etc/nginx/sites-available/flux.mottet.xyz /etc/nginx/sites-enabled/flux.mottet.xyz
+  sudo nginx -t && sudo systemctl reload nginx
+  sudo certbot --nginx -d flux.mottet.xyz --redirect
+  sudo systemctl restart mottet
+  ```
+
+The figures are committed under `flux/graph/`; rebuilding them
+(`npm run flux:build`) needs network access to insee.fr, Eurostat and the
+open data portals, and poppler's `pdftotext` for the budget PDFs.
+
 `install-services.sh` and `mottet.nginx.conf` are initial HTTP bootstrap files
 for a fresh Debian server with nginx, nodejs, certbot, and python3-certbot-nginx
 installed. Do not replace the live HTTPS configuration with the HTTP template.

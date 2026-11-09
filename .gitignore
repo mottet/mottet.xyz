@@ -65,9 +65,13 @@ typings/
 # the token the glyphs forge saves with
 .glyphs-edit-token
 
-# Maia's passwords and her records and photos
+# Maia's passwords and her records and photos. The bare data/ rule also
+# ignores any folder named data anywhere, which is why Flux's raw downloads
+# live in data/flux/ (ignored) and its emitted shards in flux/graph/ (kept).
 .maia-secrets.json
 data/
+# Flux benchmark: third-party libraries fetched by scripts/bench-flux-setup.sh
+flux/bench/vendor/
 
 # next.js build output
 .next

@@ -8,6 +8,9 @@ app.set('trust proxy', 'loopback'); // nginx sits in front: req.ip, req.secure a
 // mounted before the house so nothing of the house shows there, nor the reverse.
 const maia = require('./maia-server.js')();
 app.use(maia.middleware);
+// Flux, the money flows of the public administrations, the same way (flux-server.js).
+const flux = require('./flux-server.js')();
+app.use(flux.middleware);
 
 app.use(express.static(__dirname + '/public', {
 	setHeaders: (res, path) => {
