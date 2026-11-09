@@ -170,7 +170,9 @@ async function front() {
   const q = url.encode(st, { year: 2024, basis: 'sna' });
   assert.equal(q, '?a=2023&h=2&x=S1313%2CS14&o=1&n=apu%3AS13111&t=sombre');
   const back = url.decode(q, { years: [2021, 2022, 2023, 2024], bases: ['sna'], defaults: { year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' } });
-  assert.deepEqual(back, { ...st, expanded: ['S1313', 'S14'] });
+  assert.deepEqual(back, { ...st, expanded: ['S1313', 'S14'], focus: null });
+  assert.equal(url.decode('?f=OFGL.COM.D29', { years: [2024], bases: ['sna'] }).focus, 'OFGL.COM.D29');
+  assert.ok(url.encode({ ...st, focus: 'S1313' }, { year: 2024, basis: 'sna' }).includes('f=S1313'));
   assert.equal(url.encode({ year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' }, { year: 2024, basis: 'sna' }), '', 'defaults are left out');
   assert.equal(url.decode('?a=1999&h=9&x=bad id&t=x', { years: [2024], bases: ['sna'], defaults: { year: 2024, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' } }).year, 2024, 'a bad year falls back');
   // The model on the committed release: every cut balances with the stored totals.
@@ -232,7 +234,8 @@ async function front() {
 }
 
 // Every figure in flux/graph: integers, provenance, splits, identities.
-function data(dir = path.join(ROOT, 'flux', 'graph')) {
+async function data(dir = path.join(ROOT, 'flux', 'graph')) {
+  const { expandFocus } = await import(path.join(ROOT, 'flux', 'js', 'compact.js'));
   const index = JSON.parse(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'));
   const nodes = JSON.parse(fs.readFileSync(path.join(dir, index.shards.nodes), 'utf8'));
   const prov = JSON.parse(fs.readFileSync(path.join(dir, index.shards.provenance), 'utf8'));
@@ -242,10 +245,20 @@ function data(dir = path.join(ROOT, 'flux', 'graph')) {
   for (const [id, r] of Object.entries(prov.records)) { if (!prov.sources[r.source]) problems.push(`prov ${id}: source missing`); if (!r.locator) problems.push(`prov ${id}: no locator`); }
   for (const s of Object.values(prov.sources)) for (const k of ['org', 'title', 'url', 'licence']) if (!s[k]) problems.push(`source ${s.id}: ${k} missing`);
   let edgesTotal = 0;
+  let focusTotal = 0;
   for (const [key, file] of Object.entries(index.shards.edges)) {
     const edges = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'));
     const byEdge = new Map(edges.map(e => [e.id, e]));
     edgesTotal += edges.length;
+    // The focus shards of this key: their nodes hang from known nodes, their edges from known edges.
+    for (const [focusId, ffile] of Object.entries((index.shards.focus || {})[key] || {})) {
+      const shard = JSON.parse(fs.readFileSync(path.join(dir, ffile), 'utf8'));
+      if (!byId.has(focusId)) problems.push(`focus ${focusId}: group node missing`);
+      for (const n of shard.nodes || []) { if (n.parent !== focusId && !byId.has(n.parent)) problems.push(`focus ${focusId}: node ${n.id} parent ${n.parent} unknown`); byId.set(n.id, n); }
+      for (const [id, r] of Object.entries(shard.prov || {})) prov.records[id] = r;
+      const [y, b] = key.split('/');
+      for (const e of expandFocus(shard, { year: Number(y), basis: b })) { byEdge.set(e.id, e); edges.push(e); focusTotal++; }
+    }
     const kids = new Map();
     for (const e of edges) {
       if (!Number.isInteger(e.keur) || e.keur < 0) problems.push(`${e.id}: keur ${e.keur}`);
@@ -282,14 +295,14 @@ function data(dir = path.join(ROOT, 'flux', 'graph')) {
     if (!s13 || Math.abs(s13.in - hubIn) > slack || Math.abs(s13.out - hubOut) > slack) problems.push(`${key}: ${hub} totals ${JSON.stringify(s13)} vs roots ${hubIn}/${hubOut}`);
   }
   if (problems.length) { console.error(problems.slice(0, 40).join('\n')); throw new Error(`${problems.length} data problems`); }
-  console.log(`PASS data: ${nodes.length} nodes, ${edgesTotal} edges over ${Object.keys(index.shards.edges).length} shards, every figure sourced and every split summing (release ${index.release})`);
+  console.log(`PASS data: ${nodes.length} nodes, ${edgesTotal} edges over ${Object.keys(index.shards.edges).length} shards and ${focusTotal} edges in ${Object.values(index.shards.focus || {}).reduce((s, m) => s + Object.keys(m).length, 0)} focus shards, every figure sourced and every split summing (release ${index.release})`);
 }
 
 async function main() {
   const args = process.argv.slice(2);
   const only = args.find(a => a.startsWith('--')) || null;
   if (!only || only === '--unit') await unit();
-  if (!only || only === '--data') data(args.includes('--dir') ? args[args.indexOf('--dir') + 1] : undefined);
+  if (!only || only === '--data') await data(args.includes('--dir') ? args[args.indexOf('--dir') + 1] : undefined);
   if (only === '--browser') await browser();
 }
 
@@ -373,7 +386,28 @@ async function browser() {
       assert.equal(await page.locator('.chart .node[data-id="apu:OFGL.COM"]').count(), 1, 'the communes appear');
       assert.equal(await page.locator('.chart .node[data-id="payeurs:S13111"]').count(), 1, 'the State pays the dotations');
       await page.locator('.chart .node[data-id="apu:OFGL.DEP"] .bar').click(); await page.waitForTimeout(800);
-      assert.ok((await page.locator('.chart .node[data-id^="apu:OFGL.DEP.E"]').count()) >= 90, 'the départements open one by one');
+      assert.ok((await page.locator('.chart .node[data-id^="apu:OFGL.DEP.E"]').count()) >= 30, 'the départements open, the smallest folded into Autres');
+      assert.equal(await page.locator('.chart .node[data-id="apu:OFGL.DEP.autres"]').count(), 1, 'a bucket holds the rest');
+      await page.locator('.chart .node[data-id="apu:OFGL.DEP"] .bar').click().catch(() => {});
+      // The communes of one département come from a focus shard fetched when the group opens.
+      await page.goto(`${base}?b=local-ofgl&a=2024&x=OFGL%2COFGL.COM`, { waitUntil: 'networkidle' }); await page.waitForTimeout(800);
+      const dep = await page.locator('.chart .node[data-id^="apu:OFGL.COM.D"] .bar').first();
+      const depId = await dep.evaluate(el => el.parentElement.dataset.id);
+      await dep.click(); await page.waitForTimeout(1500);
+      assert.ok((await page.locator(`.chart .node[data-id^="${depId}.E"]`).count()) >= 20, `the communes of ${depId} appear after their shard loads`);
+      assert.ok(page.url().includes(encodeURIComponent(depId.replace('apu:', ''))) || page.url().includes(depId.replace('apu:', '')), 'the address carries the opened département');
+      const label = await page.locator(`.chart .node[data-id^="${depId}.E"]`).first().getAttribute('aria-label');
+      assert.match(label, /Md€|M€|k€/);
+      // Focus: one node becomes the hub with its own scale; the chips lead back.
+      await page.goto(`${base}?b=local-ofgl&a=2024&f=OFGL.COM.D29`, { waitUntil: 'networkidle' }); await page.waitForTimeout(800);
+      assert.match(await page.textContent('#headline'), /Finistère\. En 2024, [\d,]+\u00a0(Md|M)€ reçus/);
+      assert.equal(await page.locator('.chart .node[data-id="apu:OFGL.COM.D29"]').count(), 1, 'the focused group is the hub');
+      assert.equal(await page.locator('.chart .node[data-id="apu:OFGL.COM"]').count(), 0, 'nothing above it is drawn');
+      assert.ok((await page.locator('#chips .chip.focus').count()) >= 3, 'the chips show the path');
+      await page.locator('.chart .node[data-id="apu:OFGL.COM.D29"] .bar').click(); await page.waitForTimeout(1500);
+      assert.ok((await page.locator('.chart .node[data-id^="apu:OFGL.COM.D29.E"]').count()) >= 30, 'the focused group opens into its communes');
+      await page.keyboard.press('Escape'); await page.waitForTimeout(300); await page.keyboard.press('Escape'); await page.waitForTimeout(700);
+      assert.equal(await page.locator('.chart .node[data-id="apu:OFGL"]').count(), 1, 'Escape twice returns to the overview');
       await page.selectOption('#basis', 'sna'); await page.waitForTimeout(800);
     }
     // Theme.

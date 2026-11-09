@@ -22,6 +22,7 @@ export class Scene {
       onSelect: n => handlers.onSelect(n),
       onToggle: n => handlers.onToggle(n),
       onCollapse: base => handlers.onCollapse && handlers.onCollapse(base),
+      onFocus: n => handlers.onFocus && handlers.onFocus(n),
       onHover: n => { this.hoverNode = n ? n.id : null; this.hoverRibbon = null; handlers.onHover(n ? { node: n } : null); this.paint(); },
     });
     this.handlers = handlers;

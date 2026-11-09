@@ -38,7 +38,7 @@
     "FINANCEURS.PUBLICS": { "label": "Autres financeurs publics (État, régions, départements, communes, intercommunalités, CNSA, Europe)", "short": "Autres financeurs publics", "role": "payer" }
   },
   "types": {
-    "COM": { "dataset": "ofgl-base-communes-consolidee", "label": "Communes", "group": "dep_code", "groupName": "dep_name", "groupLabel": "département" },
+    "COM": { "dataset": "ofgl-base-communes-consolidee", "label": "Communes", "group": "dep_code", "groupName": "dep_name", "groupLabel": "département", "entityName": "com_name", "entityCode": "insee" },
     "GFP": { "dataset": "ofgl-base-gfp-consolidee", "label": "Intercommunalités à fiscalité propre", "groupFromEntities": "reg_code", "groupName": "reg_name", "groupLabel": "région", "entityFields": "siren,lbudg,agregat,montant,ptot,reg_code,reg_name" },
     "DEP": { "dataset": "ofgl-base-departements-consolidee", "label": "Départements", "entity": true },
     "REG": { "dataset": "ofgl-base-regions-consolidee", "label": "Régions", "entity": true }

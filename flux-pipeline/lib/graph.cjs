@@ -214,6 +214,14 @@ class Graph {
     const edges = Array.from(this.edges.values()).sort((a, b) => (a.id < b.id ? -1 : 1));
     return { nodes, edges };
   }
+  // The sanity of the split sums without serialising: used by the checks.
+  splitProblems() {
+    const problems = [];
+    const byParent = new Map();
+    for (const e of this.edges.values()) if (e.parent && e.split !== 'op') { if (!byParent.has(e.parent)) byParent.set(e.parent, []); byParent.get(e.parent).push(e); }
+    for (const [pid, kids] of byParent) { const p = this.edges.get(pid); const sum = kids.reduce((s, e) => s + (e.sign || 1) * e.keur, 0); if (Math.abs(sum - p.keur - (p.consolidated || 0)) > kids.length && !p.flags.includes('over-coverage')) problems.push(`${pid}: ${sum} vs ${p.keur}`); }
+    return problems;
+  }
 
   // emit(dir, { release, built }) writes the shards the site reads.
   emit(dir, { release, built, years, bases, vintages = [], controls = {}, defaultYear, provisional = [] }) {
@@ -221,17 +229,68 @@ class Graph {
     const rel = path.join(dir, 'r', release);
     fs.rmSync(path.join(dir, 'r'), { recursive: true, force: true });
     fs.mkdirSync(path.join(rel, 'edges'), { recursive: true });
-    const write = (file, data) => fs.writeFileSync(path.join(rel, file), stable(data) + '\n');
-    write('nodes.json', nodes);
-    write('provenance.json', this.registry ? this.registry.toJSON() : { sources: {}, records: {} });
+    const write = (file, data) => { fs.mkdirSync(path.dirname(path.join(rel, file)), { recursive: true }); fs.writeFileSync(path.join(rel, file), stable(data) + '\n'); };
+    // Nodes and edges marked `focus` go to a shard of their own, loaded when their group opens.
+    write('nodes.json', nodes.filter(n => !n.focus));
     const groups = new Map();
-    for (const e of edges) { const k = `${e.year}-${e.basis}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e); }
-    const shards = { nodes: `r/${release}/nodes.json`, provenance: `r/${release}/provenance.json`, edges: {} };
+    const focusGroups = new Map();
+    for (const e of edges) {
+      if (e.focus) { const k = `${e.year}-${e.basis}|${e.focus}`; if (!focusGroups.has(k)) focusGroups.set(k, { key: `${e.year}-${e.basis}`, focus: e.focus, edges: [], nodes: [] }); focusGroups.get(k).edges.push(e); continue; }
+      const k = `${e.year}-${e.basis}`; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(e);
+    }
+    const byFocus = new Map(Array.from(focusGroups.values()).map(g => [g.focus, g]));
+    for (const n of nodes) if (n.focus && byFocus.has(n.focus)) byFocus.get(n.focus).nodes.push(n);
+    // Provenance records that only a focus shard refers to travel with it.
+    const allProv = this.registry ? this.registry.toJSON() : { sources: {}, records: {} };
+    const mainRefs = new Set();
+    for (const list of groups.values()) for (const e of list) for (const p of e.prov || []) mainRefs.add(p);
+    for (const n of nodes) { if (n.focus) continue; for (const p of n.prov || []) mainRefs.add(p); for (const f of ['functions', 'benefits']) if (n[f]) for (const v of Object.values(n[f])) { if (v.totalProv) mainRefs.add(v.totalProv); for (const i of v.items) mainRefs.add(i.prov); } }
+    const focusOnly = new Set();
+    for (const g of focusGroups.values()) for (const e of g.edges) for (const p of e.prov || []) if (!mainRefs.has(p)) focusOnly.add(p);
+    const mainRecords = Object.fromEntries(Object.entries(allProv.records).filter(([id]) => !focusOnly.has(id)));
+    write('provenance.json', { sources: allProv.sources, records: mainRecords });
+    const shards = { nodes: `r/${release}/nodes.json`, provenance: `r/${release}/provenance.json`, edges: {}, focus: {} };
     for (const [k, list] of groups) { write(`edges/${k}.json`, list); shards.edges[k.replace('-', '/')] = `r/${release}/edges/${k}.json`; }
+    for (const g of focusGroups.values()) {
+      const file = `focus/${g.key}/${g.focus}.json`;
+      const prov = {}; for (const e of g.edges) for (const p of e.prov || []) if (focusOnly.has(p)) prov[p] = allProv.records[p];
+      const ops = {}; for (const e of g.edges) if (!e.opLabel && this.ops && this.ops[e.op]) ops[e.op] = this.ops[e.op];
+      write(file, { nodes: g.nodes, ...compactFocus(g, this), prov, ops });
+      const key = g.key.replace('-', '/'); if (!shards.focus[key]) shards.focus[key] = {}; shards.focus[key][g.focus] = `r/${release}/${file}`;
+    }
     const index = { release, built, years, defaultYear: defaultYear || years[years.length - 1], provisional, bases, vintages, controls, counts: { nodes: nodes.length, edges: edges.length }, shards, log: this.log };
     fs.writeFileSync(path.join(dir, 'index.json'), stable(index) + '\n');
     return index;
   }
 }
 
-module.exports = { Graph, KINDS, BASES, DERIVATIONS, SPLITS, ND, stable, sortKeys };
+// A focus shard holds the leaf edges of many entities that all follow the
+// same pattern (one edge per operation, hanging from the group's edge of
+// that operation). They are written as a table: one template per
+// operation and one row of values per entity, the site expanding them
+// back into edges (flux/js/compact.js). Values are signed: a negative one
+// runs the other way.
+function compactFocus(g, graph) {
+  const templates = new Map();
+  const rows = new Map();
+  for (const e of g.edges) {
+    const entity = [e.from, e.to].find(x => { const n = graph.nodes.get(x); return n && n.focus === g.focus; });
+    if (!entity) return { edges: g.edges };
+    const hubIsFrom = e.from === entity;
+    const other = hubIsFrom ? e.to : e.from;
+    const parent = graph.edges.get(e.parent);
+    const parentHubIsFrom = parent ? graph.within(entity, parent.from) : hubIsFrom;
+    // The template direction is the parent's; a child the other way carries a negative value.
+    const sameWay = hubIsFrom === parentHubIsFrom;
+    const key = `${e.op}|${other}|${e.parent}`;
+    if (!templates.has(key)) templates.set(key, { op: e.op, other, parent: e.parent, split: e.split, hubIsFrom: parentHubIsFrom, derivation: e.derivation });
+    const t = templates.get(key);
+    if (t.derivation !== e.derivation) t.derivation = 'direct';
+    if (!rows.has(entity)) rows.set(entity, { id: entity, prov: e.prov[0], values: {} });
+    rows.get(entity).values[key] = sameWay ? e.keur : -e.keur;
+  }
+  const keys = Array.from(templates.keys());
+  return { table: { templates: keys.map(k => templates.get(k)), entities: Array.from(rows.values()).map(r => ({ id: r.id, prov: r.prov, values: keys.map(k => r.values[k] ?? null) })) }, edges: [] };
+}
+
+module.exports = { Graph, KINDS, BASES, DERIVATIONS, SPLITS, ND, stable, sortKeys, compactFocus };

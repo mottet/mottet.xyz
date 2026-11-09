@@ -17,7 +17,7 @@ const teeParser = require('./parsers/insee-tee.cjs');
 const euroParser = require('./parsers/eurostat-gov.cjs');
 const { buildMacro } = require('./build/macro.cjs');
 const { buildBudget } = require('./build/budget.cjs');
-const { fetchLocal, buildLocal } = require('./build/local.cjs');
+const { fetchLocal, buildLocal, OPS: LOCAL_OPS } = require('./build/local.cjs');
 const vmParser = require('./parsers/vm-tome1.cjs');
 const { client: odsClient } = require('./lib/ods.cjs');
 const { toText } = require('./lib/pdf.cjs');
@@ -83,6 +83,7 @@ async function main() {
 
   // Build.
   const graph = new Graph({ registry });
+  graph.ops = { ...LOCAL_OPS };
   buildMacro({ graph, registry, apu, tee, euro, years: yearsBuilt, cofog, cps: cps.rows });
   const budget = buildBudget({ graph, registry, year: 2025, rows: nature.rows, vm: vm2025, source: 'plf25-nature', vmSource: 'vm-2025' });
   controls['2025/budget-plf'] = { in: budget.totalIn, out: budget.totalOut, solde: budget.solde, missions: budget.missions, rows: budget.rows, unit: 'KEUR' };

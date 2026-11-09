@@ -18,6 +18,7 @@ function sourceLine(prov, id) {
 
 /** Details of a node or a ribbon, with its official sources. */
 export function detailsPanel(el, { model, prov, onClose, onExpand, onFocus }) {
+  const isHubNode = n => n && n.side === 'apu' && !n.unsplit && !n.synthetic;
   return {
     render(sel, view, state) {
       clear(el);
@@ -36,7 +37,7 @@ export function detailsPanel(el, { model, prov, onClose, onExpand, onFocus }) {
             sumIn ? [h('dt', T.in), h('dd', formatEuros(sumIn))] : null,
             sumOut ? [h('dt', T.out), h('dd', formatEuros(sumOut))] : null,
             sumIn && sumOut ? [h('dt', T.balance), h('dd', formatEuros(sumIn - sumOut))] : null),
-          n.canExpand ? h('button.action', { type: 'button', onclick: () => onExpand(n) }, state.expanded.includes(base) ? T.collapse : T.expand) : null,
+          h('p.actions', n.canExpand ? h('button.action', { type: 'button', onclick: () => onExpand(n) }, state.expanded.includes(base) ? T.collapse : T.expand) : null, isHubNode(n) && onFocus && state.focus !== base ? h('button.action.secondary', { type: 'button', onclick: () => onFocus(n) }, 'Isoler') : null),
           flowsList('Ce qu’il reçoit', inR, model, 'from'), flowsList('Ce qu’il verse', outR, model, 'to'),
           intraList(model, view, base),
           lens(model, node, 'functions', view, 'À quoi sert la dépense', 'Dépense totale par fonction (classification COFOG, Eurostat). Le total COFOG peut différer de quelques centaines de millions du total des comptes nationaux.', 1),

@@ -437,7 +437,13 @@ aux personnes de droit privé…); the fiscal reversals between communes and
 their intercommunalité are a signed counterpart; the year's change in
 working capital closes the balance. An intercommunalité can sit in two
 régions and the portal's group_by counts it twice, so those groups are
-summed from the entity rows by the first région named.
+summed from the entity rows by the first région named. The 35 000 communes
+and 1 300 intercommunalités are entities under their group, emitted as
+focus shards (`focus/<year>-<basis>/<group>.json`, nodes and edges
+together, named in `index.json.shards.focus`) that the site fetches when
+the group opens; a column with more than forty members of one group keeps
+its largest and folds the rest into "Autres (n)", a sum of the same
+figures.
 
 The graph model (`flux/graph/r/<release>/`): `nodes.json` (trees of
 sectors and counterpart classes, with per-year totals), `provenance.json`,
@@ -475,8 +481,12 @@ morphs one layout into the next, new nodes growing out of their parent;
 canvas for hover, `js/render-nodes.js` draws the nodes as focusable SVG with
 labels that hide under 11 px; `js/scene.js` ties them; `js/ui/panels.js`
 holds the details (figures, operations, notes and the official sources of
-every number), the sources panel, the table and the tooltip; the address
-bar carries the view (`?a=2024&h=2&x=S1313&o=1&n=apu:S13111&t=sombre`,
+every number), the sources panel, the table and the tooltip; a double
+click, the "Isoler" button or `?f=<node>` focuses one node of the hub
+tree, which becomes the hub with its own scale (a commune, a mission; in
+the State budget its payer is then "budget général : financement non
+affecté"), the chips leading back up; the address
+bar carries the view (`?a=2024&b=local-ofgl&f=OFGL.COM.D29&h=2&x=S1313&o=1&n=apu:S13111&t=sombre`,
 `js/url-state.js`) with a history entry per drill-down. The tagged css and
 js carry `?v=flux-N`; bump it together with `TAG` in `sw.js` on every
 change (the unit check compares the three).

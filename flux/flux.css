@@ -112,6 +112,7 @@ button, select, input { font: inherit; color: inherit; }
 .chart .node .amount { fill: var(--ink-2); font-family: var(--serif); font-size: 12.5px; paint-order: stroke; stroke: var(--paper); stroke-width: 3px; stroke-linejoin: round; pointer-events: none; }
 .chart .bracket { fill: none; stroke: var(--ink-3); stroke-width: 1; cursor: pointer; pointer-events: stroke; }
 .chart .bracket:hover { stroke: var(--ink); stroke-width: 2; }
+.is-busy .chart { cursor: progress; }
 .is-loading .chart::after { content: 'Chargement des comptes…'; position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-3); font-family: var(--serif); font-size: 1.1rem; }
 
 /* Panels */
@@ -126,7 +127,11 @@ button, select, input { font: inherit; color: inherit; }
 .panel .figures { display: grid; grid-template-columns: auto 1fr; gap: .15rem 1rem; margin: .5rem 0; }
 .panel .figures dt { color: var(--ink-2); }
 .panel .figures dd { margin: 0; font-family: var(--serif); font-size: 1.1rem; }
-.panel .action { background: var(--ink); color: var(--paper); border: 0; border-radius: 3px; padding: .4rem .8rem; cursor: pointer; margin: .4rem 0; }
+.panel .action { background: var(--ink); color: var(--paper); border: 0; border-radius: 3px; padding: .4rem .8rem; cursor: pointer; margin: .4rem .4rem .4rem 0; }
+.panel .action.secondary { background: var(--paper-2); color: var(--ink); border: 1px solid var(--rule); }
+.panel .actions { margin: .25rem 0; }
+.chip.focus { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.chip.focus span { color: var(--paper-2); }
 .panel ul { list-style: none; padding: 0; margin: 0; }
 .panel .flows li, .panel .ops li { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; padding: .25rem 0; border-top: 1px solid var(--rule); font-size: .9rem; }
 .panel .flows .amt, .panel .ops .amt { font-family: var(--serif); white-space: nowrap; }

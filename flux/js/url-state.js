@@ -2,7 +2,7 @@
 // &h=1&x=S1313,S14&o=1&n=S13111&t=sombre. Defaults are left out; unknown
 // keys are ignored; bad values fall back.
 
-export const DEFAULTS = { year: null, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' };
+export const DEFAULTS = { year: null, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto', focus: null };
 
 export function encode(state, defaults = DEFAULTS) {
   const q = new URLSearchParams();
@@ -11,6 +11,7 @@ export function encode(state, defaults = DEFAULTS) {
   if (state.hubLevel) q.set('h', String(state.hubLevel));
   const x = Array.from(state.expanded || []).sort();
   if (x.length) q.set('x', x.join(','));
+  if (state.focus) q.set('f', state.focus);
   if (state.ops) q.set('o', '1');
   if (state.selected) q.set('n', state.selected);
   if (state.theme && state.theme !== 'auto') q.set('t', state.theme);
@@ -31,6 +32,8 @@ export function decode(query, { years = [], bases = ['sna'], defaults = DEFAULTS
   const x = q.get('x');
   if (x) state.expanded = x.split(',').filter(s => /^[A-Za-z0-9_.-]+$/.test(s));
   state.ops = q.get('o') === '1';
+  const f = q.get('f');
+  state.focus = f && /^[A-Za-z0-9_.:-]+$/.test(f) ? f : null;
   const n = q.get('n');
   if (n && /^[A-Za-z0-9_.:*-]+$/.test(n)) state.selected = n;
   const t = q.get('t');

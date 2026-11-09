@@ -49,6 +49,7 @@ export class NodeRenderer {
         g = s('g', { class: 'node', tabindex: n.leaving ? -1 : 0, role: 'button', 'data-id': n.id });
         g.append(s('rect', { class: 'bar', rx: 2 }), s('text', { class: 'label' }), s('text', { class: 'amount' }), s('title'));
         g.addEventListener('click', e => { e.stopPropagation(); if (n.canExpand) this.on.onToggle(n); else this.on.onSelect(n); });
+        g.addEventListener('dblclick', e => { e.stopPropagation(); if (n.side === 'apu' && !n.unsplit && !n.synthetic && this.on.onFocus) this.on.onFocus(n); });
         g.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (n.canExpand) this.on.onToggle(n); else this.on.onSelect(n); } else if (e.key === ' ') { e.preventDefault(); this.on.onSelect(n); } });
         g.addEventListener('pointerenter', () => this.on.onHover(n));
         g.addEventListener('pointerleave', () => this.on.onHover(null));

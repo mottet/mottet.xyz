@@ -11,6 +11,7 @@ import { encode, decode } from './js/url-state.js';
 import { formatEuros, formatNumber, T, BASES, NBSP } from './js/fr.js';
 import { h, clear } from './js/ui/h.js';
 import { detailsPanel, sourcesPanel, tableView, tooltip, toast } from './js/ui/panels.js';
+import { expandFocus } from './js/compact.js';
 
 const TAG = document.documentElement.dataset.tag || 'flux-1';
 const $ = sel => document.querySelector(sel);
@@ -26,12 +27,27 @@ async function main() {
   const defaultYear = index.defaultYear || years[years.length - 1];
   const initial = decode(location.search, { years, bases, defaults: { year: defaultYear, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' } });
   const store = createStore({ ...initial, hover: null, sourcesOpen: false, tableOpen: false, loading: true });
+  const setFocus = async id => {
+    const s = store.get();
+    if (id) { if (data.focusFile(s.year, s.basis, id)) await ensureFocus(s.year, s.basis, [id]); const anc = model.ancestors(id); await ensureFocus(s.year, s.basis, anc); }
+    store.set({ focus: id, expanded: [], hubLevel: 0, selected: null, ribbonSel: null });
+    announce(id ? `${model.node(id)?.short} isolé` : 'Vue d’ensemble');
+  };
   applyTheme(initial.theme);
 
   const [nodes, prov] = await Promise.all([data.nodes(), data.provenance()]);
   const model = new Model(nodes);
-  const ensureEdges = async (year, basis) => { const key = `${year}/${basis}`; if (!model.hasEdges(key)) { const edges = await data.edges(year, basis); if (edges) model.addEdges(key, edges); } };
-  await ensureEdges(initial.year, initial.basis);
+  const loadedFocus = new Set();
+  const ensureFocus = async (year, basis, ids) => {
+    const key = `${year}/${basis}`;
+    await Promise.all(ids.filter(id => data.focusFile(year, basis, id) && !loadedFocus.has(`${key}|${id}`)).map(async id => {
+      const shard = await data.focus(year, basis, id);
+      loadedFocus.add(`${key}|${id}`);
+      if (shard) { model.addNodes(shard.nodes || []); model.addEdges(key, expandFocus(shard, { year, basis })); if (shard.prov) Object.assign(prov.records, shard.prov); }
+    }));
+  };
+  const ensureEdges = async (year, basis, expanded = []) => { const key = `${year}/${basis}`; if (!model.hasEdges(key)) { const edges = await data.edges(year, basis); if (edges) model.addEdges(key, edges); } await ensureFocus(year, basis, expanded); };
+  await ensureEdges(initial.year, initial.basis, initial.expanded.concat(initial.focus ? [initial.focus] : []));
 
   // The chart.
   const chartEl = $('#chart');
@@ -41,6 +57,7 @@ async function main() {
     onSelect: n => store.set({ selected: n ? n.id : null, ribbonSel: null }),
     onToggle: n => toggle(n.base),
     onCollapse: base => toggle(base),
+    onFocus: n => setFocus(n.base),
     onRibbon: r => store.set({ ribbonSel: r, selected: null }),
     onHover: hv => {
       if (!hv) { tip.hide(); return; }
@@ -48,7 +65,7 @@ async function main() {
         const n = hv.node; const node = scene.nodeAt(n.id); if (!node) { tip.hide(); return; }
         const r = chartEl.getBoundingClientRect();
         const inR = view.ribbons.filter(x => x.to === n.id).reduce((a, x) => a + x.keur, 0), outR = view.ribbons.filter(x => x.from === n.id).reduce((a, x) => a + x.keur, 0);
-        tip.show(h('div', h('strong', n.label), inR ? h('div', `${T.in} ${formatEuros(inR)}`) : null, outR ? h('div', `${T.out} ${formatEuros(outR)}`) : null, h('div.hint', n.canExpand ? (n.expanded ? 'Cliquer pour replier' : 'Cliquer pour développer, Espace pour le détail') : 'Cliquer pour le détail')), r.left + node.x + node.width, r.top + node.y);
+        tip.show(h('div', h('strong', n.label), inR ? h('div', `${T.in} ${formatEuros(inR)}`) : null, outR ? h('div', `${T.out} ${formatEuros(outR)}`) : null, h('div.hint', n.canExpand ? (n.expanded ? 'Cliquer pour replier, double-clic pour isoler' : 'Cliquer pour développer, double-clic pour isoler') : (n.side === 'apu' ? 'Cliquer pour le détail, double-clic pour isoler' : 'Cliquer pour le détail'))), r.left + node.x + node.width, r.top + node.y);
         return;
       }
       if (hv.ribbon) {
@@ -61,11 +78,11 @@ async function main() {
     relatives: id => { const [side, node] = [id.split(':')[0], id.split(':').slice(1).join(':')]; const base = node.endsWith('.*') ? node.slice(0, -2) : node; return [`${side}:${base}`, ...model.ancestors(base).map(a => `${side}:${a}`)]; },
   });
 
-  const toggle = base => {
+  const toggle = async base => {
     const s = store.get();
     const set = new Set(s.expanded);
     if (set.has(base)) { set.delete(base); for (const d of descendants(base)) set.delete(d); }
-    else set.add(base);
+    else { set.add(base); if (data.focusFile(s.year, s.basis, base)) { document.body.classList.add('is-busy'); await ensureFocus(s.year, s.basis, [base]); document.body.classList.remove('is-busy'); } }
     store.set({ expanded: Array.from(set), selected: null, ribbonSel: null });
     announce(`${model.node(base)?.short} ${set.has(base) ? 'développé' : 'replié'}`);
   };
@@ -90,11 +107,11 @@ async function main() {
   $('#theme').addEventListener('change', e => { store.set({ theme: e.target.value }); applyTheme(e.target.value); scene.theme(); });
   $('#theme').value = initial.theme;
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { const s = store.get(); if (s.selected || s.ribbonSel || s.sourcesOpen) store.set({ selected: null, ribbonSel: null, sourcesOpen: false }); else if (s.expanded.length) store.set({ expanded: s.expanded.slice(0, -1) }); }
+    if (e.key === 'Escape') { const s = store.get(); if (s.selected || s.ribbonSel || s.sourcesOpen) store.set({ selected: null, ribbonSel: null, sourcesOpen: false }); else if (s.expanded.length) store.set({ expanded: s.expanded.slice(0, -1) }); else if (s.focus) setFocus(null); }
     if (e.key === '[' || e.key === ']') { const i = years.indexOf(store.get().year); const y = years[i + (e.key === ']' ? 1 : -1)]; if (y) { ensureEdges(y, store.get().basis).then(() => store.set({ year: y })); } }
   });
 
-  const details = detailsPanel($('#details'), { model, prov, onClose: () => store.set({ selected: null, ribbonSel: null }), onExpand: n => toggle(n.base) });
+  const details = detailsPanel($('#details'), { model, prov, onClose: () => store.set({ selected: null, ribbonSel: null }), onExpand: n => toggle(n.base), onFocus: n => setFocus(n.base) });
   const sources = sourcesPanel($('#sources'), { prov, onClose: () => store.set({ sourcesOpen: false }) });
   const table = tableView($('#table'), { model });
   const toasts = toast($('#toast'));
@@ -102,15 +119,20 @@ async function main() {
   const chips = $('#chips');
   const renderChips = s => {
     clear(chips);
+    if (s.focus) {
+      const path = [...model.ancestors(s.focus).reverse().filter(a => model.isHub(a, rootOf(s.basis))), s.focus];
+      chips.append(h('button.chip.focus', { type: 'button', onclick: () => setFocus(null), 'aria-label': 'Revenir à la vue d’ensemble' }, 'Vue d’ensemble'));
+      for (const id of path) chips.append(h('button.chip.focus', { type: 'button', onclick: () => setFocus(id === s.focus ? null : id), 'aria-label': `Isoler ${model.node(id)?.short || id}` }, model.node(id)?.short || id, id === s.focus ? h('span', '×') : null));
+    }
     for (const id of s.expanded) chips.append(h('button.chip', { type: 'button', onclick: () => toggle(id), 'aria-label': `Replier ${model.node(id)?.short || id}` }, model.node(id)?.short || id, h('span', '×')));
-    chips.hidden = !s.expanded.length;
+    chips.hidden = !s.expanded.length && !s.focus;
   };
   const announce = text => { live.textContent = ''; setTimeout(() => { live.textContent = text; }, 30); };
 
   // Render on change.
   let lastKey = null;
   store.subscribe((s, changed) => {
-    const viewKeys = ['year', 'basis', 'hubLevel', 'expanded', 'ops'];
+    const viewKeys = ['year', 'basis', 'hubLevel', 'expanded', 'ops', 'focus'];
     const needView = viewKeys.some(k => changed.has(k)) || !view;
     if (needView) {
       if (changed.has('basis')) fillLevels(s.basis);
@@ -130,18 +152,25 @@ async function main() {
       details.render(node ? { node } : (s.ribbonSel ? { ribbon: s.ribbonSel } : null), view, s);
       document.body.classList.toggle('has-details', Boolean(node || s.ribbonSel));
     }
-    if (changed.has('expanded') || lastKey === null) renderChips(s);
+    if (changed.has('expanded') || changed.has('focus') || lastKey === null) renderChips(s);
     if (changed.has('sourcesOpen')) { sources.render(s.sourcesOpen ? view : null); document.body.classList.toggle('has-sources', s.sourcesOpen); $('#btn-sources').setAttribute('aria-expanded', String(s.sourcesOpen)); }
     if (changed.has('tableOpen')) { $('#table-wrap').hidden = !s.tableOpen; $('#btn-table').setAttribute('aria-expanded', String(s.tableOpen)); }
     yearSel.value = String(s.year); hubSel.value = String(s.hubLevel); opsBox.checked = s.ops; basisSel.value = s.basis;
     // The address bar.
-    const q = encode({ year: s.year, basis: s.basis, hubLevel: s.hubLevel, expanded: s.expanded, ops: s.ops, selected: s.selected, theme: s.theme }, { year: defaultYear, basis: 'sna' });
-    if (q !== lastKey) { const push = lastKey !== null && (changed.has('expanded') || changed.has('hubLevel') || changed.has('year')); history[push ? 'pushState' : 'replaceState'](null, '', location.pathname + q); lastKey = q; }
+    const q = encode({ year: s.year, basis: s.basis, hubLevel: s.hubLevel, expanded: s.expanded, ops: s.ops, selected: s.selected, theme: s.theme, focus: s.focus }, { year: defaultYear, basis: 'sna' });
+    if (q !== lastKey) { const push = lastKey !== null && (changed.has('expanded') || changed.has('hubLevel') || changed.has('year') || changed.has('focus')); history[push ? 'pushState' : 'replaceState'](null, '', location.pathname + q); lastKey = q; }
   });
-  window.addEventListener('popstate', async () => { const st = decode(location.search, { years, bases, defaults: { ...initial, expanded: [] } }); await ensureEdges(st.year, st.basis); store.set({ year: st.year, basis: st.basis, hubLevel: st.hubLevel, expanded: st.expanded, ops: st.ops, selected: st.selected }); });
+  window.addEventListener('popstate', async () => { const st = decode(location.search, { years, bases, defaults: { ...initial, expanded: [] } }); await ensureEdges(st.year, st.basis, st.expanded.concat(st.focus ? [st.focus, ...model.ancestors(st.focus)] : [])); store.set({ year: st.year, basis: st.basis, hubLevel: st.hubLevel, expanded: st.expanded, ops: st.ops, selected: st.selected, focus: st.focus }); });
 
   function headline(s, v) {
     const root = rootOf(s.basis);
+    if (v.focus) {
+      const n = model.node(v.focus);
+      const inR = v.ribbons.filter(r => r.side === 'payeurs').reduce((a, r) => a + r.keur, 0), outR = v.ribbons.filter(r => r.side === 'benef').reduce((a, r) => a + r.keur, 0);
+      $('#headline').textContent = `${n.label}. En ${s.year}, ${formatEuros(inR)} reçus et ${formatEuros(outR)} versés.`;
+      $('#headline-sub').textContent = `${(basesInfo[s.basis] && basesInfo[s.basis].note) || BASES[s.basis]?.note || ''} Échap ou « Vue d’ensemble » pour revenir.`;
+      return;
+    }
     const totals = model.node(root).totals[`${s.year}/${s.basis}`] || { in: 0, out: 0 };
     const total = formatNumber(Math.round(totals.in / 1e6));
     const prov = (index.provisional || []).includes(s.year) && s.basis === 'sna' ? ' (comptes provisoires)' : '';

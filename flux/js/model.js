@@ -33,16 +33,26 @@ export class Model {
     this.edgesByKey = new Map(); // `${year}/${basis}` -> { list, byId, kids }
   }
 
-  /** Adds one shard of edges. */
+  /** Adds one shard of edges, merging into what the key already holds. */
   addEdges(key, edges) {
-    const byId = new Map(edges.map(e => [e.id, e]));
-    const kids = new Map();
-    for (const e of edges) if (e.parent) {
-      const k = `${e.parent}|${e.split}`;
-      if (!kids.has(k)) kids.set(k, []);
-      kids.get(k).push(e);
+    const shard = this.edgesByKey.get(key) || { list: [], byId: new Map(), kids: new Map() };
+    for (const e of edges) {
+      if (shard.byId.has(e.id)) continue;
+      shard.byId.set(e.id, e); shard.list.push(e);
+      if (e.parent) { const k = `${e.parent}|${e.split}`; if (!shard.kids.has(k)) shard.kids.set(k, []); shard.kids.get(k).push(e); }
     }
-    this.edgesByKey.set(key, { list: edges, byId, kids });
+    this.edgesByKey.set(key, shard);
+  }
+  /** Adds nodes that arrive with a focus shard. */
+  addNodes(nodes) {
+    for (const n of nodes) {
+      if (this.nodes.has(n.id)) continue;
+      this.nodes.set(n.id, n);
+      const key = n.parent || '';
+      if (!this.children.has(key)) this.children.set(key, []);
+      this.children.get(key).push(n.id);
+      this.children.get(key).sort((a, b) => this.nodes.get(a).rank - this.nodes.get(b).rank || (a < b ? -1 : 1));
+    }
   }
   hasEdges(key) { return this.edgesByKey.has(key); }
 
@@ -96,8 +106,9 @@ export class Model {
     const key = `${view.year}/${view.basis}`;
     const shard = this.edgesByKey.get(key);
     if (!shard) return null;
-    this.root = view.root || HUB;
-    const hubCut = this.cut([this.root], { level: view.hub.level, expanded: view.hub.expanded, hubOnly: true });
+    const cutRoot = view.root || HUB;
+    const hubCut = this.cut([cutRoot], { level: view.hub.level, expanded: view.hub.expanded, hubOnly: true });
+    this.focusRoot = cutRoot;
     const hubVisible = new Set(hubCut.visible);
     const hubNode = id => this.isHub(id) && !this.isPool(id);
     const hubEnd = e => (hubNode(e.to) && !hubNode(e.from) ? 'to' : (hubNode(e.from) && !hubNode(e.to) ? 'from' : null));
@@ -146,6 +157,20 @@ export class Model {
       // Transfers between administrations exist at every level with that
       // level's own figure: only the ones whose hub end is on screen count.
       if (r.flags.includes('intra')) { const hs = this.isPool(r.from) ? 'to' : 'from'; if (!hubVisible.has(r[hs])) continue; picked.push({ edge: r }); continue; }
+      // Under a focus, only what reaches the focused node or its descendants counts: the walk
+      // refines the hub end until it is inside the focus, dropping branches that lead elsewhere.
+      if (cutRoot !== (this.root || HUB)) {
+        const hs0 = hubEnd(r); if (!hs0) continue;
+        const inside = (e, side) => this.within(e[side], cutRoot);
+        const descend = (e, side) => {
+          if (inside(e, side)) { walk(useAltFor(e) || e, {}); return; }
+          if (!this.within(cutRoot, e[side])) return; // leads elsewhere
+          for (const c of hubKids(e)) { const cs = this.within(c.to, e[side]) ? 'to' : (this.within(c.from, e[side]) ? 'from' : null); if (cs) descend(c, cs); }
+        };
+        const useAltFor = () => null;
+        descend(r, hs0);
+        continue;
+      }
       const alt = altFor.get(`${r.from}>${r.to}:${r.op}`);
       const hs = hubEnd(r);
       const useAlt = alt && hs && !hubCut.open.has(r[hs]) && !view.side.ops;

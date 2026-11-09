@@ -16,7 +16,9 @@ const M = require('../mappings/ofgl.json');
 const ROOT = 'OFGL';
 const POOL = 'OFGL.POOL';
 
-async function fetchLocal({ ods, year, offline, types = Object.keys(M.types) }) {
+const NEEDED = () => Array.from(new Set(M.receipts.concat(M.expenses).flatMap(x => [x.agregat, x.minus]).concat([M.receiptsTotal, M.expensesTotal, M.balance]).filter(Boolean)));
+
+async function fetchLocal({ ods, year, offline, types = Object.keys(M.types), withEntities = true }) {
   const where = `exer=date'${year}'`;
   const out = {};
   for (const t of types) {
@@ -26,6 +28,17 @@ async function fetchLocal({ ods, year, offline, types = Object.keys(M.types) }) 
     let groups = null, entities = null;
     if (def.group) groups = await ods.exportJson(def.dataset, { where, group_by: `${def.group},${def.groupName},agregat`, select: `${def.group} as code,${def.groupName} as name,agregat,sum(montant) as montant,count(*) as n` }, { offline });
     if (def.entity) entities = await ods.exportJson(def.dataset, { where, select: 'siren,lbudg,agregat,montant,ptot' }, { offline });
+    if (def.group && withEntities) {
+      // One query per group (a département's communes), the needed aggregates only.
+      const codes = (await ods.exportJson(def.dataset, { where, group_by: def.group, select: `${def.group} as code,count(*) as n` }, { offline })).rows.map(r => r.code).filter(Boolean).sort();
+      const perGroup = {};
+      const inList = NEEDED().map(a => `'${a.replace(/'/g, "\\'")}'`).join(',');
+      for (const code of codes) {
+        const rows = (await ods.exportJson(def.dataset, { where: `${where} and ${def.group}='${code}' and agregat in (${inList})`, select: `siren,${def.entityName || 'com_name'} as name,${def.entityCode || 'insee'} as code,agregat,montant,ptot` }, { offline })).rows;
+        perGroup[code] = rows;
+      }
+      out[t] = { ...(out[t] || {}), perGroup };
+    }
     if (def.groupFromEntities) {
       // An intercommunalité can sit in two régions and the portal's group_by then counts it twice: group the rows here by the first région named.
       const rows = (await ods.exportJson(def.dataset, { where, select: def.entityFields }, { offline })).rows;
@@ -33,10 +46,10 @@ async function fetchLocal({ ods, year, offline, types = Object.keys(M.types) }) 
       const byGroup = new Map();
       for (const r of rows) { const code = first(r[def.groupFromEntities]) || '00', name = first(r[def.groupName]) || 'Région inconnue'; const k = `${code}|${name}|${r.agregat}`; const o = byGroup.get(k) || { code, name, agregat: r.agregat, montant: 0, n: 0 }; o.montant += Number(r.montant) || 0; o.n++; byGroup.set(k, o); }
       groups = { rows: Array.from(byGroup.values()), url: `${def.dataset} entity rows grouped by first ${def.groupFromEntities}` };
-      out[t] = { total: await ods.exportJson(def.dataset, q, { offline }), groups, entities: null, dataset: def.dataset, entityRows: rows };
+      out[t] = { ...(out[t] || {}), total: await ods.exportJson(def.dataset, q, { offline }), groups, entities: null, dataset: def.dataset, entityRows: rows };
       continue;
     }
-    out[t] = { total, groups, entities, dataset: def.dataset };
+    out[t] = { ...(out[t] || {}), total, groups, entities, dataset: def.dataset };
   }
   return out;
 }
@@ -80,12 +93,12 @@ function buildLocal({ graph, registry, year, data, source = 'ofgl' }) {
   };
 
   // Emit the items of one hub node as root edges or as children of the parent's edges.
-  const emit = (hub, it, parentEdges, provOf, scope, focus) => {
+  const emit = (hub, it, parentEdges, provOf, scope, focus, { compact = false, idFor = null } = {}) => {
     const made = {};
     for (const x of it.out) {
       if (x.keur === 0 && !parentEdges) continue;
       const from = x.side === 'in' ? x.from : hub, to = x.side === 'in' ? hub : x.to;
-      const def = { id: eid(from, to, x.op, scope), from, to, op: x.op, opLabel: x.label, keur: x.keur, derivation: x.minus ? 'sum' : (parentEdges ? 'direct' : x.derivation), prov: [provOf(x), mapProv], note: x.minus ? `${x.agregat} moins ${x.minus}.` : undefined, flags: [] };
+      const def = { id: idFor ? idFor(x.op) : eid(from, to, x.op, scope), from, to, op: x.op, opLabel: compact ? undefined : x.label, keur: x.keur, derivation: x.minus ? 'sum' : (parentEdges ? 'direct' : x.derivation), prov: compact ? [provOf(x)] : [provOf(x), mapProv], note: compact || !x.minus ? undefined : `${x.agregat} moins ${x.minus}.`, flags: [] };
       if (parentEdges && parentEdges[x.op]) { def.parent = parentEdges[x.op].id; def.split = x.side === 'in' ? 'to' : 'from'; }
       if (focus) def.focus = focus;
       if (x.keur === 0 && parentEdges) continue;
@@ -96,7 +109,7 @@ function buildLocal({ graph, registry, year, data, source = 'ofgl' }) {
     const def = bal < 0
       ? { id: eid('FINANCEMENT', hub, 'FDR', scope), from: 'FINANCEMENT', to: hub, keur: -bal }
       : { id: eid(hub, 'FINANCEMENT', 'FDR', scope), from: hub, to: 'FINANCEMENT', keur: bal };
-    const e = { ...def, op: 'FDR', opLabel: 'Variation du fonds de roulement (recettes moins dépenses)', derivation: 'direct', prov: [provOf({ agregat: M.balance })], note: 'Différence entre les recettes et les dépenses réelles de l’année : négative, elle est prise sur les réserves ; positive, elle les augmente.' };
+    const e = { ...def, id: idFor ? idFor('FDR') : def.id, op: 'FDR', opLabel: compact ? undefined : 'Variation du fonds de roulement (recettes moins dépenses)', derivation: 'direct', prov: [provOf({ agregat: M.balance })], note: compact ? undefined : 'Différence entre les recettes et les dépenses réelles de l’année : négative, elle est prise sur les réserves ; positive, elle les augmente.' };
     if (parentEdges && parentEdges.FDR) { e.parent = parentEdges.FDR.id; e.split = parentEdges.FDR.to === 'FINANCEMENT' ? (bal >= 0 ? 'from' : 'from') : 'to'; if (parentEdges.FDR.from === 'FINANCEMENT') e.split = 'to'; }
     if (focus) e.focus = focus;
     made.FDR = edge(e);
@@ -121,10 +134,25 @@ function buildLocal({ graph, registry, year, data, source = 'ofgl' }) {
       let gr = 0;
       for (const [code, g] of Array.from(byGroup.entries()).sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
         const gid = `${hub}.${(def.group || def.groupFromEntities) === 'dep_code' ? 'D' : 'R'}${code}`;
-        nodeOnce({ id: gid, parent: hub, kind: 'localtype', label: `${def.label} : ${g.name}`, short: g.name, role: 'hub', rank: gr++, codes: { [def.group]: code }, focus: gid });
+        nodeOnce({ id: gid, parent: hub, kind: 'localtype', label: `${def.label} : ${g.name}`, short: g.name, role: 'hub', rank: gr++, codes: { [(def.group || def.groupFromEntities)]: code }, hasFocus: true });
         const git = items(g.rows);
         const gk = def.group || def.groupFromEntities;
-        emit(gid, git, typeEdges, x => prov(d.dataset, `exer=date'${year}' and ${gk}='${code}'`, { [gk]: code, agregat: x.agregat, minus: x.minus, note: def.groupFromEntities ? 'première région de rattachement' : undefined }), `${t}-${code}`);
+        const groupEdges = emit(gid, git, typeEdges, x => prov(d.dataset, `exer=date'${year}' and ${gk}='${code}'`, { [gk]: code, agregat: x.agregat, minus: x.minus, note: def.groupFromEntities ? 'première région de rattachement' : undefined }), `${t}-${code}`);
+        // The entities of the group, in a shard of their own.
+        const rows = d.perGroup ? d.perGroup[code] : (d.entityRows ? d.entityRows.filter(r => (Array.isArray(r[gk]) ? r[gk][0] : String(r[gk] || '').split(/[;,]/)[0].trim()) === code) : null);
+        if (!rows) continue;
+        const byEntity = new Map();
+        for (const r of rows) { const key = r.siren; if (!byEntity.has(key)) byEntity.set(key, { name: r.name || r.lbudg, code: r.code, ptot: r.ptot, rows: [] }); byEntity.get(key).rows.push(r); }
+        let er = 0;
+        for (const [siren, en] of Array.from(byEntity.entries()).sort((a, b) => (String(a[1].name) < String(b[1].name) ? -1 : 1))) {
+          const eid2 = `${gid}.E${siren}`;
+          const name = String(en.name || siren).replace(/\b([A-ZÀ-Ü][A-ZÀ-Ü'-]+)\b/g, w => w.charAt(0) + w.slice(1).toLowerCase());
+          nodeOnce({ id: eid2, parent: gid, kind: 'entity', label: `${def.label.replace(/s$/, '').replace(/^Intercommunalité.*$/, 'Intercommunalité')} : ${name}`, short: name, role: 'hub', rank: er++, codes: { siren, insee: en.code || undefined }, population: en.ptot || undefined, focus: gid });
+          const it3 = items(en.rows);
+          // One provenance record per entity (its rows of the dataset, the aggregate named by the edge's operation).
+          const entityProv = registry.prov(source, { dataset: d.dataset, query: `exports/json?where=exer=date'${year}' and siren='${siren}'`, key: { siren, name: en.name }, field: 'montant par agrégat' }, { unitIn: 'EUR' });
+          emit(eid2, it3, groupEdges, () => entityProv, `${t}-${code}-${siren}`, gid, { compact: true, idFor: op => `${gid}|${siren}|${op}` });
+        }
       }
     }
     if (d.entities) {
@@ -143,4 +171,5 @@ function buildLocal({ graph, registry, year, data, source = 'ofgl' }) {
   return { totalIn: rootItems.totalIn, totalOut: rootItems.totalOut, balance: rootItems.balance };
 }
 
-module.exports = { fetchLocal, buildLocal, ROOT, POOL };
+const OPS = Object.fromEntries(M.receipts.concat(M.expenses).map(x => [x.op, x.label]).concat([['FDR', 'Variation du fonds de roulement (recettes moins dépenses)']]));
+module.exports = { fetchLocal, buildLocal, ROOT, POOL, OPS };
