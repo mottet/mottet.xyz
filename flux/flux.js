@@ -158,7 +158,22 @@ async function main() {
     if (e.key === '[' || e.key === ']') { const i = years.indexOf(store.get().year); const y = years[i + (e.key === ']' ? 1 : -1)]; if (y) { ensureEdges(y, store.get().basis).then(() => store.set({ year: y })); } }
   });
 
-  const details = detailsPanel($('#details'), { model, prov, onClose: () => store.set({ selected: null, ribbonSel: null }), onExpand: n => toggle(n.base), onFocus: n => setFocus(n.base) });
+  const details = detailsPanel($('#details'), { model, prov, onClose: () => store.set({ selected: null, ribbonSel: null }), onExpand: n => toggle(n.base), onFocus: n => setFocus(n.base),
+    onYear: async y => { await ensureEdges(y, store.get().basis, store.get().expanded); store.set({ year: y }); },
+    // The selected node or flow in every year of the basis: the same view rebuilt per year.
+    series: async (sel, s) => {
+      const ys = yearsOf(s.basis).filter(y => data.has(y, s.basis));
+      if (ys.length < 2) return null;
+      await Promise.all(ys.map(y => ensureEdges(y, s.basis, s.expanded)));
+      const sum = (list, f) => list.filter(f).reduce((a, r) => a + r.keur, 0);
+      return ys.map(y => {
+        const v = y === s.year ? view : buildView(model, { ...s, year: y }, { root: rootOf(s.basis), pooled: Boolean(basesInfo[s.basis] && basesInfo[s.basis].pooled) });
+        if (!v) return { year: y, in: 0, out: 0 };
+        if (sel.node) return { year: y, in: sum(v.ribbons, r => r.to === sel.node.id), out: sum(v.ribbons, r => r.from === sel.node.id) };
+        const key = (sel.ribbon.ribbon || sel.ribbon).key;
+        return { year: y, in: sum(v.ribbons, r => r.key === key), out: 0 };
+      });
+    } });
   const sources = sourcesPanel($('#sources'), { prov, onClose: () => store.set({ sourcesOpen: false }) });
   const table = tableView($('#table'), { model });
   const toasts = toast($('#toast'));

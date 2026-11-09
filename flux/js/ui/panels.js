@@ -17,11 +17,13 @@ function sourceLine(prov, id) {
 }
 
 /** Details of a node or a ribbon, with its official sources. */
-export function detailsPanel(el, { model, prov, onClose, onExpand, onFocus }) {
+export function detailsPanel(el, { model, prov, onClose, onExpand, onFocus, series, onYear }) {
+  let token = 0;
   const isHubNode = n => n && n.side === 'apu' && !n.unsplit && !n.synthetic;
   return {
     render(sel, view, state) {
       clear(el);
+      const mine = ++token;
       if (!sel) { el.hidden = true; return; }
       el.hidden = false;
       const head = h('header', h('button.close', { type: 'button', 'aria-label': T.close, onclick: onClose }, '×'));
@@ -38,6 +40,7 @@ export function detailsPanel(el, { model, prov, onClose, onExpand, onFocus }) {
             sumOut ? [h('dt', T.out), h('dd', formatEuros(sumOut))] : null,
             sumIn && sumOut ? [h('dt', T.balance), h('dd', formatEuros(sumIn - sumOut))] : null),
           h('p.actions', n.canExpand ? h('button.action', { type: 'button', onclick: () => onExpand(n) }, state.expanded.includes(base) ? T.collapse : T.expand) : null, isHubNode(n) && onFocus && state.focus !== base ? h('button.action.secondary', { type: 'button', onclick: () => onFocus(n) }, 'Isoler') : null),
+          h('section.flows.series', { hidden: true }),
           flowsList('Ce qu’il reçoit', inR, model, 'from'), flowsList('Ce qu’il verse', outR, model, 'to'),
           intraList(model, view, base),
           lens(model, node, 'functions', view, 'À quoi sert la dépense', 'Dépense totale par fonction (classification COFOG, Eurostat). Le total COFOG peut différer de quelques centaines de millions du total des comptes nationaux.', 1),
@@ -48,9 +51,23 @@ export function detailsPanel(el, { model, prov, onClose, onExpand, onFocus }) {
         const from = view.nodes.find(x => x.id === r.from), to = view.nodes.find(x => x.id === r.to);
         append(el, [head, h('h2', `${from ? from.short : r.from} → ${to ? to.short : r.to}`), h('p.big', formatEuros(r.keur)),
           h('ul.ops', (r.ops || []).map(o => h('li', h('span.op', o.label || o.op), h('span.amt', formatEuros(o.keur))))),
+          h('section.flows.series', { hidden: true }),
           notesOf(r.edges || []),
           sourcesList(prov, new Set((r.edges || []).flatMap(e => e.prov || [])))]);
       }
+      // The same node or flow in the other years of the basis, once their shards are in.
+      if (series) series(sel, state).then(rows => {
+        const box = el.querySelector('.series');
+        if (mine !== token || !box || !rows || rows.filter(r => r.in || r.out).length < 2) return;
+        const cols = [['in', sel.ribbon ? 'Montant' : 'Reçu'], ['out', 'Versé']].filter(([k]) => rows.some(r => r[k]));
+        const max = Math.max(...rows.flatMap(r => cols.map(([k]) => r[k] || 0)));
+        const delta = (r, i, k) => { const p = rows[i - 1]; return p && p[k] && r[k] ? (r[k] - p[k]) / p[k] : null; };
+        append(box, [h('h3', 'D’une année à l’autre'), h('table', h('thead', h('tr', h('th', { scope: 'col' }, 'Année'), cols.map(([, label]) => [h('th.num', { scope: 'col' }, label), h('th.num', { scope: 'col' }, 'sur un an')]))),
+          h('tbody', rows.map((r, i) => h('tr', { 'aria-current': r.year === state.year ? 'true' : null },
+            h('th', { scope: 'row' }, onYear && r.year !== state.year ? h('button.linklike', { type: 'button', onclick: () => onYear(r.year), 'aria-label': `Passer à ${r.year}` }, String(r.year)) : String(r.year)),
+            cols.map(([k]) => { const d = delta(r, i, k); return [h('td.num', h('span.bar', { style: { width: `${max ? Math.round((r[k] || 0) / max * 100) : 0}%` } }), h('span', r[k] ? formatEuros(r[k]) : '—')), h('td.num.delta', d === null ? '' : `${d > 0 ? '+' : ''}${formatShare(d)}`)]; })))))]);
+        box.hidden = false;
+      }).catch(() => {});
     },
   };
 }

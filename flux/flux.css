@@ -157,6 +157,15 @@ body.has-details .zoom, body.has-sources .zoom { margin-right: calc(var(--panel-
 .panel .flows li, .panel .ops li { display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; padding: .25rem 0; border-top: 1px solid var(--rule); font-size: .9rem; }
 .panel .flows .amt, .panel .ops .amt { font-family: var(--serif); white-space: nowrap; }
 .panel .flows .share { color: var(--ink-3); min-width: 3.5rem; text-align: right; }
+.panel .series table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+.panel .series th, .panel .series td { padding: .25rem 0 .25rem .5rem; border-top: 1px solid var(--rule); text-align: left; font-weight: 400; }
+.panel .series thead th { color: var(--ink-3); font-size: .8rem; border-top: 0; }
+.panel .series th:first-child { padding-left: 0; }
+.panel .series .num { text-align: right; font-family: var(--serif); white-space: nowrap; position: relative; }
+.panel .series thead .num { font-family: var(--sans); }
+.panel .series .bar { position: absolute; left: .5rem; bottom: 2px; height: 3px; background: var(--c-hub); opacity: .55; border-radius: 1px; }
+.panel .series .delta { color: var(--ink-2); font-size: .85rem; width: 4.5rem; }
+.panel .series tr[aria-current="true"] th, .panel .series tr[aria-current="true"] td { background: var(--paper-2); font-weight: 500; }
 .panel .lens .sources { margin-top: .25rem; }
 .panel .lens .sources h3 { display: none; }
 .panel .ops li { grid-template-columns: 1fr auto; }

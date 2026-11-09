@@ -373,6 +373,11 @@ async function browser() {
     const href = await page.locator('#details .sources a').first().getAttribute('href');
     assert.match(href, /^https:\/\//, 'a source links to the official page');
     assert.ok(!(await page.textContent('#details')).includes('null'), 'no stray null in the panel');
+    // The same node in the other years, with the change over one year.
+    await page.waitForSelector('#details .series tbody tr');
+    assert.equal(await page.locator('#details .series tbody tr').count(), 5, 'five years of national accounts');
+    assert.match(await page.textContent('#details .series tbody tr:nth-child(2) .delta'), /^[+\u2212][\d,]+\u00a0%$/, 'a change over one year');
+    assert.equal(await page.locator('#details .series tr[aria-current="true"]').count(), 1);
     // Year change keeps the view, the sources panel lists the datasets, the table lists the flows.
     await page.selectOption('#year', String((await page.$$eval('#year option', o => o.map(x => x.value)))[0])); await page.waitForTimeout(700);
     assert.match(await page.textContent('#headline'), /En 202[0-9]/);
