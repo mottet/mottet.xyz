@@ -17,6 +17,7 @@ const teeParser = require('./parsers/insee-tee.cjs');
 const euroParser = require('./parsers/eurostat-gov.cjs');
 const { buildMacro } = require('./build/macro.cjs');
 const { buildBudget } = require('./build/budget.cjs');
+const { fetchLocal, buildLocal } = require('./build/local.cjs');
 const vmParser = require('./parsers/vm-tome1.cjs');
 const { client: odsClient } = require('./lib/ods.cjs');
 const { toText } = require('./lib/pdf.cjs');
@@ -76,13 +77,18 @@ async function main() {
   const nature = await eco.exportJson('plf25-depenses-2025-du-bg-et-des-ba-selon-nomenclatures-destination-et-nature', {}, { offline });
   const vmGot = await fetchCached({ source: 'vm', url: SOURCES['vm-2025'].url, name: 'vm-tome1-2025', ext: '.pdf', offline });
   const vm2025 = { ...vmParser.parse(toText(vmGot.file), { edition: 2025 }), file: 'Voies_et_moyens_Tome_1_2025.pdf' };
-  const bases = { sna: { root: 'S13', label: 'Comptes nationaux', years: yearsBuilt }, 'budget-plf': { root: 'S13111', label: 'Projet de loi de finances', years: [2025], note: 'Budget général de l’État tel que présenté dans le PLF 2025 : crédits de paiement par mission, programme, action et sous-action, hors remboursements et dégrèvements (les recettes sont nettes) ; budgets annexes et comptes spéciaux non compris.' } };
+  const bases = { sna: { root: 'S13', label: 'Comptes nationaux', years: yearsBuilt }, 'budget-plf': { root: 'S13111', pooled: true, label: 'Projet de loi de finances', years: [2025], note: 'Budget général de l’État tel que présenté dans le PLF 2025 : crédits de paiement par mission, programme, action et sous-action, hors remboursements et dégrèvements (les recettes sont nettes) ; budgets annexes et comptes spéciaux non compris.' }, 'local-ofgl': { root: 'OFGL', label: 'Collectivités locales (comptes de gestion)', years: [2024], note: 'Comptes de gestion 2024 des communes, intercommunalités à fiscalité propre, départements et régions, consolidés par l’OFGL (budgets principaux et annexes, flux croisés neutralisés) : recettes et dépenses réelles, hors gestion active de la dette.' } };
+  const ofgl = odsClient('https://data.ofgl.fr', 'ofgl');
+  const local = await fetchLocal({ ods: ofgl, year: 2024, offline });
 
   // Build.
   const graph = new Graph({ registry });
   buildMacro({ graph, registry, apu, tee, euro, years: yearsBuilt, cofog, cps: cps.rows });
   const budget = buildBudget({ graph, registry, year: 2025, rows: nature.rows, vm: vm2025, source: 'plf25-nature', vmSource: 'vm-2025' });
   controls['2025/budget-plf'] = { in: budget.totalIn, out: budget.totalOut, solde: budget.solde, missions: budget.missions, rows: budget.rows, unit: 'KEUR' };
+  const loc = buildLocal({ graph, registry, year: 2024, data: local });
+  controls['2024/local-ofgl'] = { in: loc.totalIn, out: loc.totalOut, solde: -loc.balance, unit: 'KEUR' };
+  console.error(`local 2024: in ${(loc.totalIn / 1e6).toFixed(1)} Md€, out ${(loc.totalOut / 1e6).toFixed(1)} Md€, fonds de roulement ${(loc.balance / 1e6).toFixed(2)} Md€`);
   console.error(`budget 2025: ${budget.missions} missions, ${budget.rows} lines, out ${(budget.totalOut / 1e6).toFixed(1)} Md€, in ${(budget.totalIn / 1e6).toFixed(1)} Md€, solde ${(budget.solde / 1e6).toFixed(1)} Md€`);
   graph.finalize();
   const problems = graph.validate();

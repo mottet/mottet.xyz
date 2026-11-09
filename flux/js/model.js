@@ -50,6 +50,8 @@ export class Model {
   kidsOf(id) { return this.children.get(id) || []; }
   ancestors(id) { const out = []; let n = this.nodes.get(id); while (n && n.parent) { out.push(n.parent); n = this.nodes.get(n.parent); } return out; }
   isHub(id, root = this.root || HUB) { return id === root || this.ancestors(id).includes(root); }
+  within(id, ancestor) { return id === ancestor || this.ancestors(id).includes(ancestor); }
+  isPool(id) { const n = this.nodes.get(id); return Boolean(n && n.pool) || id === POOL; }
   depth(id) { return this.nodes.get(id)?.level ?? 0; }
 
   /**
@@ -62,7 +64,7 @@ export class Model {
     const visible = [];
     const open = new Set();
     const walk = (id, depthFromRoot) => {
-      const kids = this.kidsOf(id).filter(k => k !== POOL && (!hubOnly || this.isHub(k)));
+      const kids = this.kidsOf(id).filter(k => !this.isPool(k) && (!hubOnly || this.isHub(k)));
       const wants = kids.length && (depthFromRoot < level || expanded.has(id));
       if (!wants) { visible.push(id); return; }
       open.add(id);
@@ -97,9 +99,11 @@ export class Model {
     this.root = view.root || HUB;
     const hubCut = this.cut([this.root], { level: view.hub.level, expanded: view.hub.expanded, hubOnly: true });
     const hubVisible = new Set(hubCut.visible);
-    const hubNode = id => this.isHub(id) && id !== POOL;
+    const hubNode = id => this.isHub(id) && !this.isPool(id);
     const hubEnd = e => (hubNode(e.to) && !hubNode(e.from) ? 'to' : (hubNode(e.from) && !hubNode(e.to) ? 'from' : null));
-    const kids = (e, split) => shard.kids.get(`${e.id}|${split}`) || [];
+    const kids = (e, split) => (split === 'op' ? (shard.kids.get(`${e.id}|op`) || []) : (shard.kids.get(`${e.id}|${split}`) || []).concat(split === 'to' || split === 'from' ? [] : []));
+    // The hub-side split may be named after the direction the parent had before it was flipped: take both.
+    const hubKids = e => (shard.kids.get(`${e.id}|to`) || []).concat(shard.kids.get(`${e.id}|from`) || []);
     const sideExpanded = view.side.expanded;
     const picked = [];
 
@@ -109,7 +113,7 @@ export class Model {
       if (hs) {
         const end = e[hs];
         if (hubCut.open.has(end)) {
-          const k = kids(e, hs);
+          const k = hubKids(e).filter(c => this.within(c.to, end) || this.within(c.from, end));
           if (k.length) { for (const c of k) walk(c, state); return; }
           picked.push({ edge: e, unsplit: hs }); return;
         }
@@ -141,7 +145,7 @@ export class Model {
       if (r.alt) continue;
       // Transfers between administrations exist at every level with that
       // level's own figure: only the ones whose hub end is on screen count.
-      if (r.flags.includes('intra')) { const hs = r.from === POOL ? 'to' : 'from'; if (!hubVisible.has(r[hs])) continue; picked.push({ edge: r }); continue; }
+      if (r.flags.includes('intra')) { const hs = this.isPool(r.from) ? 'to' : 'from'; if (!hubVisible.has(r[hs])) continue; picked.push({ edge: r }); continue; }
       const alt = altFor.get(`${r.from}>${r.to}:${r.op}`);
       const hs = hubEnd(r);
       const useAlt = alt && hs && !hubCut.open.has(r[hs]) && !view.side.ops;
@@ -160,7 +164,7 @@ export class Model {
     const sideOpen = new Set();
     const sideVisible = new Set();
     // Counterpart nodes are visible as themselves unless expanded.
-    for (const { edge } of picked) for (const end of [edge.from, edge.to]) if (!this.isHub(end) || end === POOL) {
+    for (const { edge } of picked) for (const end of [edge.from, edge.to]) if (!this.isHub(end) || this.isPool(end)) {
       if (sideExpanded.has(end) && this.kidsOf(end).length) { sideOpen.add(end); for (const k of this.kidsOf(end)) sideVisible.add(k); }
       else { let placed = end; for (const a of this.ancestors(end)) if (sideExpanded.has(a)) { placed = end; break; } sideVisible.add(placed); }
     }
@@ -171,10 +175,10 @@ export class Model {
       const e = p.edge;
       // The pool of transfers between administrations is drawn as a
       // counterpart ("autres administrations") on the side facing the hub end.
-      const fromHub = this.isHub(e.from) && e.from !== POOL, toHub = this.isHub(e.to) && e.to !== POOL;
+      const fromHub = this.isHub(e.from) && !this.isPool(e.from), toHub = this.isHub(e.to) && !this.isPool(e.to);
       if (fromHub && toHub) { intra.push(p); continue; }
-      let from = fromHub ? this.place(e.from, hubVisible, hubCut.open) : (e.from === POOL ? POOL : this.placeSide(e.from, sideVisible, sideOpen));
-      let to = toHub ? this.place(e.to, hubVisible, hubCut.open) : (e.to === POOL ? POOL : this.placeSide(e.to, sideVisible, sideOpen));
+      let from = fromHub ? this.place(e.from, hubVisible, hubCut.open) : (this.isPool(e.from) ? e.from : this.placeSide(e.from, sideVisible, sideOpen));
+      let to = toHub ? this.place(e.to, hubVisible, hubCut.open) : (this.isPool(e.to) ? e.to : this.placeSide(e.to, sideVisible, sideOpen));
       if (p.unsplit === 'to') to = `${e.to}.*`;
       if (p.unsplit === 'from') from = `${e.from}.*`;
       const side = fromHub ? 'benef' : 'payeurs';

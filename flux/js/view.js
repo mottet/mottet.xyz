@@ -7,8 +7,8 @@ import { HUB, isUnsplit, unsplitOf } from './model.js';
 import { T } from './fr.js';
 
 // Canonical order of the counterparts on each side; anything else follows by rank.
-const PAYER_ORDER = ['S14', 'S11', 'S12', 'S15', 'PRODUITS', 'PAYEURS', 'CONTRIB.D91', 'S2', 'S2.EU', 'ACHETEURS', 'PLACEMENTS', 'DIVERS.IN', 'CAPITAL', 'POOL', 'IMPUTE', 'FINANCEMENT'];
-const BENEF_ORDER = ['S14', 'S14.AGENTS', 'CHARGES.SOC', 'FOURNISSEURS', 'S13112', 'CREANCIERS', 'PRODUCTEURS', 'PRODUITS', 'S1313', 'AUTRES.COLL', 'DIVERS.OUT', 'CAPITAL', 'INSTITUTIONS', 'S2.EU', 'S2', 'S12', 'S15', 'S11', 'POOL', 'NONRECOUVRE', 'IMPUTE', 'FINANCEMENT'];
+const PAYER_ORDER = ['S14', 'S11', 'S12', 'S15', 'CONTRIB.LOCAUX', 'PRODUITS', 'PAYEURS', 'CONTRIB.D91', 'S13111', 'PEREQ', 'FINANCEURS.PUBLICS', 'S2', 'S2.EU', 'ACHETEURS', 'PLACEMENTS', 'DIVERS.IN', 'CAPITAL', 'POOL', 'OFGL.POOL', 'IMPUTE', 'FINANCEMENT'];
+const BENEF_ORDER = ['S14', 'S14.AGENTS', 'CHARGES.SOC', 'FOURNISSEURS', 'S13112', 'CREANCIERS', 'PRODUCTEURS', 'PRODUITS', 'S1313', 'AUTRES.COLL', 'DIVERS.OUT', 'CAPITAL', 'INSTITUTIONS', 'S2.EU', 'S2', 'S12', 'S15', 'S11', 'POOL', 'OFGL.POOL', 'NONRECOUVRE', 'IMPUTE', 'FINANCEMENT'];
 
 const orderIndex = (list, id) => { const base = id.replace(/\.(ND|\*)$/, ''); const i = list.indexOf(base); return i < 0 ? 100 : i; };
 
@@ -17,8 +17,9 @@ export function sectorOf(model, id) {
   const base = isUnsplit(id) ? unsplitOf(id) : id;
   const n = model.node(base);
   if (!n) return 'other';
-  if (base === 'POOL') return 'hub';
+  if (model.isPool(base)) return 'hub';
   if (n.kind === 'budget') return 'central';
+  if (n.kind === 'localtype' || n.kind === 'entity' || base === 'OFGL') return 'local';
   if (model.isHub(base, 'S13')) {
     const top = [base, ...model.ancestors(base)].find(a => ['S1311', 'S1313', 'S1314'].includes(a));
     return top ? { S1311: 'central', S1313: 'local', S1314: 'social' }[top] : 'hub';
@@ -35,7 +36,7 @@ export function labelOf(model, id, short = false) {
   return short ? n.short : n.label;
 }
 
-export function buildView(model, state, { root = HUB } = {}) {
+export function buildView(model, state, { root = HUB, pooled = false } = {}) {
   model.root = root;
   const view = { year: state.year, basis: state.basis, root, hub: { level: state.hubLevel, expanded: new Set(state.expanded.filter(id => model.isHub(id, root))) }, side: { ops: state.ops, expanded: new Set(state.expanded.filter(id => !model.isHub(id, root))) } };
   const selection = model.select(view);
@@ -52,7 +53,7 @@ export function buildView(model, state, { root = HUB } = {}) {
     const parent = isUnsplit(id) ? base : (n && n.parent && n.parent !== HUB && roll.hubOpen.has(n.parent) ? n.parent : (n && n.parent && roll.sideOpen.has(n.parent) ? n.parent : null));
     const key2 = `${state.year}/${state.basis}`;
     const roleSum = k => { const t = model.node(k)?.totals?.[key2]; return t ? (side === 'payeurs' ? t.out : (side === 'benef' ? t.in : t.in + t.out)) : 0; };
-    const canExpand = Boolean(n) && !isUnsplit(id) && model.kidsOf(base).some(k => k !== 'POOL' && (side === 'apu' ? model.isHub(k, root) : roleSum(k) > 0));
+    const canExpand = Boolean(n) && !isUnsplit(id) && model.kidsOf(base).some(k => !model.isPool(k) && (side === 'apu' ? model.isHub(k, root) : roleSum(k) > 0));
     nodes.push({ id: key, node: id, base, column, side, label: labelOf(model, id), short: labelOf(model, id, true), group: parent ? `${side}:${parent}` : undefined, unsplit: isUnsplit(id), synthetic: Boolean(n && n.synthetic), sector: sectorOf(model, id), level: n ? n.level : 0, canExpand, expanded: state.expanded.includes(base) });
     return key;
   };
@@ -60,13 +61,13 @@ export function buildView(model, state, { root = HUB } = {}) {
   const hubIds = new Set();
   for (const r of roll.ribbons) for (const end of [r.from, r.to]) { const base = isUnsplit(end) ? unsplitOf(end) : end; if (model.isHub(base) && base !== 'POOL') hubIds.add(end); }
   const hubOrdered = [];
-  const walk = id => { if (hubIds.has(id)) hubOrdered.push(id); for (const k of model.kidsOf(id)) if (k !== 'POOL') walk(k); if (hubIds.has(`${id}.*`)) hubOrdered.push(`${id}.*`); };
+  const walk = id => { if (hubIds.has(id)) hubOrdered.push(id); for (const k of model.kidsOf(id)) if (!model.isPool(k)) walk(k); if (hubIds.has(`${id}.*`)) hubOrdered.push(`${id}.*`); };
   walk(root);
   for (const id of hubOrdered) addNode(id, 1, 'apu');
   const sideNodes = (side, column, order) => {
     const ids = new Set();
     for (const r of roll.ribbons) if (r.side === side) ids.add(side === 'payeurs' ? r.from : r.to);
-    for (const r of roll.ribbons) if (r.side === side && (r.from === 'POOL' || r.to === 'POOL')) ids.add('POOL');
+    for (const r of roll.ribbons) if (r.side === side) { if (model.isPool(r.from)) ids.add(r.from); if (model.isPool(r.to)) ids.add(r.to); }
     const sorted = Array.from(ids).sort((a, b) => orderIndex(order, a) - orderIndex(order, b) || (model.node(a)?.rank ?? 0) - (model.node(b)?.rank ?? 0) || (a < b ? -1 : 1));
     for (const id of sorted) addNode(id, column, side);
   };
@@ -82,7 +83,7 @@ export function buildView(model, state, { root = HUB } = {}) {
   // its missions the money first reaches the State as a whole, then each
   // mission gets what it spends (its own official credits), then the
   // beneficiaries. The State's own node sits in a column of its own.
-  if (root !== HUB && roll.hubOpen.has(root)) {
+  if (pooled && roll.hubOpen.has(root)) {
     columns = 4;
     const stateId = `apu:${root}`;
     const n = model.node(root);

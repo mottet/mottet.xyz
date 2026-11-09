@@ -78,10 +78,16 @@ class Graph {
       if (!parent) throw new Error(`edge ${e.id}: parent ${e.parent} unknown`);
       if (!SPLITS.has(e.split)) throw new Error(`edge ${e.id}: split ${e.split}`);
       // A child runs the parent's way (+1) or, when a sub-sector's balance has
-      // the other sign, against it (-1); the signed children sum to the parent.
+      // the other sign, against it (-1); the signed children sum to the
+      // parent. The parent itself may have been flipped, so the test is on
+      // the counterpart end: the child and the parent run the same way when
+      // that end is `to` for both or `from` for both.
+      // Found by containment, whatever the split is called and whether either
+      // edge was flipped: an end of the child under the same end of the parent.
       if (e.split === 'op') e.sign = 1;
-      else if (e.split === 'to') e.sign = e.from === parent.from ? 1 : (e.to === parent.from ? -1 : 1);
-      else e.sign = e.to === parent.to ? 1 : (e.from === parent.to ? -1 : 1);
+      else if (this.within(e.from, parent.from) || this.within(e.to, parent.to)) e.sign = 1;
+      else if (this.within(e.from, parent.to) || this.within(e.to, parent.from)) e.sign = -1;
+      else e.sign = 1;
     }
     if (!e.prov.length && e.derivation !== 'residual') throw new Error(`edge ${e.id}: no provenance`);
     for (const p of e.prov) if (this.registry && !this.registry.records.has(p)) throw new Error(`edge ${e.id}: provenance ${p} unknown`);
@@ -114,6 +120,8 @@ class Graph {
       const gap = parent.keur + (parent.consolidated || 0) - sum;
       const tol = Math.max(this.tolerance.keur, Math.round(parent.keur * this.tolerance.share));
       if (gap === 0) continue;
+      // Each child is rounded to the thousand euros on its own: a gap of that order is rounding, not a missing part.
+      if (Math.abs(gap) <= kids.length) { parent.rounding = gap; continue; }
       if (gap < 0) {
         if (-gap > tol) { parent.flags.push('over-coverage'); this.log.push(`over-coverage ${parentId}/${split}: children ${sum} > parent ${parent.keur}`); }
         else this.log.push(`children of ${parentId}/${split} exceed the parent by ${-gap} k€ (within tolerance)`);
@@ -144,7 +152,11 @@ class Graph {
       if (!t[key]) t[key] = { in: 0, out: 0 };
       t[key][side] += v;
     };
+    // `logical` is the side as the root sees it (which split holds the finer
+    // edges); `side` is the way this edge actually runs, flipped by a child
+    // with the other sign.
     const walk = (e, side) => {
+      const logical = side;
       const end = side === 'in' ? e.to : e.from;
       const key = `${e.year}/${e.basis}`;
       // The edge counts for `end` and every ancestor; finer edges count for
@@ -157,20 +169,29 @@ class Graph {
       const other = side === 'in' ? e.from : e.to;
       const shared = new Set([other, ...this.ancestors(other)]);
       if (!e.flags.includes('intra')) for (const a of this.ancestors(end)) if (!shared.has(a)) add(a, key, side, e.keur);
-      const finer = kidsOf.get(`${e.id}|${side === 'in' ? 'to' : 'from'}`) || [];
-      for (const k of finer) walkFiner(k, side);
+      for (const [k, kside] of hubKids(e, end, other)) walkFiner(k, logical, kside);
     };
     // Below a split, only the finer node (not its ancestors, already counted) takes the amount.
-    const walkFiner = (e, side) => {
-      if ((e.sign || 1) < 0) side = side === 'in' ? 'out' : 'in'; // a sub-sector whose balance runs the other way
+    const walkFiner = (e, logical, side) => {
       const end = side === 'in' ? e.to : e.from;
       const key = `${e.year}/${e.basis}`;
       const parent = this.edges.get(e.parent);
-      const parentEnd = (e.sign || 1) < 0 ? (side === 'in' ? parent.from : parent.to) : (side === 'in' ? parent.to : parent.from);
+      const parentHub = [parent.from, parent.to].find(x => this.within(end, x)) || null;
       add(end, key, side, e.keur);
-      for (const a of this.ancestors(end)) { if (a === parentEnd) break; add(a, key, side, e.keur); }
-      const finer = kidsOf.get(`${e.id}|${side === 'in' ? 'to' : 'from'}`) || [];
-      for (const k of finer) walkFiner(k, side);
+      for (const a of this.ancestors(end)) { if (a === parentHub) break; add(a, key, side, e.keur); }
+      for (const [k, kside] of hubKids(e, end, side === 'in' ? e.from : e.to)) walkFiner(k, logical, kside);
+    };
+    // The children that refine the hub end `hub` of edge `e` (not those that
+    // refine the counterpart), each with the way it runs at its own hub end.
+    // `other` is the parent's counterpart end: a pool under the hub must not
+    // pass for a refinement of it.
+    const hubKids = (e, hub, other) => {
+      const out = [];
+      for (const k of (kidsOf.get(`${e.id}|to`) || []).concat(kidsOf.get(`${e.id}|from`) || [])) {
+        if (k.to !== hub && k.to !== other && this.within(k.to, hub)) out.push([k, 'in']);
+        else if (k.from !== hub && k.from !== other && this.within(k.from, hub)) out.push([k, 'out']);
+      }
+      return out;
     };
     for (const r of roots) { walk(r, 'in'); walk(r, 'out'); }
     return totals;

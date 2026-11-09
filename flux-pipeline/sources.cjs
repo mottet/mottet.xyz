@@ -55,6 +55,13 @@ const SOURCES = {
     licence: 'LO2',
     note: "Compte satellite des comptes nationaux : prestations de protection sociale par risque (santé, vieillesse-survie, famille, emploi, logement, pauvreté) et par régime ou sous-secteur, millions d'euros. Comprend les prestations en nature produites par les administrations elles-mêmes (soins des hôpitaux publics), que la dépense des comptes nationaux porte en rémunérations et achats.",
   },
+  'ofgl': {
+    org: 'Observatoire des finances et de la gestion publique locales (OFGL)',
+    title: 'Comptes consolidés des collectivités locales (data.ofgl.fr)',
+    url: 'https://data.ofgl.fr/pages/accueil/',
+    licence: 'LO2',
+    note: "Agrégats financiers calculés par l'OFGL à partir des balances comptables de la DGFiP (comptes de gestion), budgets principaux et annexes consolidés avec neutralisation des flux croisés, en euros. Jeux : ofgl-base-communes-consolidee, ofgl-base-gfp-consolidee, ofgl-base-departements-consolidee, ofgl-base-regions-consolidee.",
+  },
   'eurostat-gov': {
     org: 'Eurostat',
     title: 'Government revenue, expenditure and main aggregates (gov_10a_main), France',

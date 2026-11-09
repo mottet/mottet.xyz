@@ -1,0 +1,46 @@
+{
+  "note": "Agrégats financiers de l'OFGL (comptes de gestion, budgets principaux et annexes consolidés) rattachés à la contrepartie que leur définition désigne (méthodologie OFGL, jeu 'methodologie-ofgl-definitions-agregats-financiers'). Les agrégats listés forment une partition exacte des recettes totales et des dépenses totales.",
+  "source": "https://data.ofgl.fr/explore/dataset/methodologie-ofgl-definitions-agregats-financiers/",
+  "receipts": [
+    { "agregat": "Impôts locaux", "minus": "Fiscalité reversée", "from": "CONTRIB.LOCAUX", "op": "IMPOTS-LOCAUX", "label": "Impôts locaux (taxes foncières, taxe d'habitation sur les résidences secondaires, CFE, CVAE…)", "derivation": "widened" },
+    { "agregat": "Fiscalité reversée", "from": "REVERSEMENTS", "op": "FISC-REVERSEE", "label": "Fiscalité reversée entre communes et intercommunalités (attributions de compensation, dotations de solidarité) : reçue ou versée", "derivation": "direct" },
+    { "agregat": "Autres impôts et taxes", "from": "PAYEURS", "op": "AUTRES-TAXES", "label": "Autres impôts et taxes (droits de mutation, TEOM, fractions de TVA et de TICPE, versement mobilité, cartes grises…)", "derivation": "widened" },
+    { "agregat": "Dotation globale de fonctionnement", "from": "S13111", "op": "DGF", "label": "Dotation globale de fonctionnement", "derivation": "single-counterpart" },
+    { "agregat": "Autres dotations de fonctionnement", "from": "S13111", "op": "AUTRES-DOT", "label": "Autres dotations de fonctionnement de l'État", "derivation": "single-counterpart" },
+    { "agregat": "Péréquations et compensations fiscales", "from": "PEREQ", "op": "PEREQ", "label": "Péréquations et compensations fiscales", "derivation": "widened" },
+    { "agregat": "Subventions reçues et participations", "from": "FINANCEURS.PUBLICS", "op": "SUBV-RECUES", "label": "Subventions reçues et participations (État, régions, départements, communes, intercommunalités, CNSA…)", "derivation": "widened" },
+    { "agregat": "Ventes de biens et services", "from": "ACHETEURS", "op": "VENTES", "label": "Ventes de biens et services (cantines, eau, transports, droits d'entrée…)", "derivation": "widened" },
+    { "agregat": "Autres recettes de fonctionnement", "from": "DIVERS.IN", "op": "AUTRES-REC-F", "label": "Autres recettes de fonctionnement", "derivation": "widened" },
+    { "agregat": "Emprunts hors GAD", "from": "FINANCEMENT", "op": "EMPRUNTS", "label": "Emprunts mobilisés dans l'année", "derivation": "single-counterpart" },
+    { "agregat": "FCTVA", "from": "S13111", "op": "FCTVA", "label": "Fonds de compensation de la TVA", "derivation": "single-counterpart" },
+    { "agregat": "Autres dotations et subventions", "from": "FINANCEURS.PUBLICS", "op": "SUBV-INVEST", "label": "Dotations et subventions d'investissement reçues (État, régions, départements, bloc communal, Europe)", "derivation": "widened" },
+    { "agregat": "Autres recettes d'investissement", "from": "DIVERS.IN", "op": "AUTRES-REC-I", "label": "Autres recettes d'investissement (cessions, remboursements…)", "derivation": "widened" }
+  ],
+  "receiptsTotal": "Recettes totales",
+  "expenses": [
+    { "agregat": "Frais de personnel", "to": "S14.AGENTS", "op": "PERSONNEL", "label": "Frais de personnel", "derivation": "single-counterpart" },
+    { "agregat": "Achats et charges externes", "to": "FOURNISSEURS", "op": "ACHATS", "label": "Achats et charges externes", "derivation": "single-counterpart" },
+    { "agregat": "Subventions aux personnes de droit privé", "to": "AUTRES.COLL", "op": "SUBV-PRIVE", "label": "Subventions aux associations et personnes de droit privé", "derivation": "widened" },
+    { "agregat": "Dépenses d'intervention", "minus": "Subventions aux personnes de droit privé", "to": "DIVERS.OUT", "op": "INTERVENTION", "label": "Autres dépenses d'intervention (allocations RSA, APA, PCH, contributions aux SDIS et aux transports, participations…)", "derivation": "widened" },
+    { "agregat": "Charges financières", "to": "CREANCIERS", "op": "INTERETS", "label": "Charges financières (intérêts de la dette)", "derivation": "single-counterpart" },
+    { "agregat": "Autres dépenses de fonctionnement", "to": "DIVERS.OUT", "op": "AUTRES-DEP-F", "label": "Autres dépenses de fonctionnement", "derivation": "widened" },
+    { "agregat": "Remboursements d'emprunts hors GAD", "to": "FINANCEMENT", "op": "REMBOURSEMENTS", "label": "Remboursement du capital de la dette", "derivation": "single-counterpart" },
+    { "agregat": "Dépenses d'équipement", "to": "FOURNISSEURS", "op": "EQUIPEMENT", "label": "Dépenses d'équipement (travaux, constructions, matériel)", "derivation": "single-counterpart" },
+    { "agregat": "Subventions d'équipement versées", "to": "CAPITAL", "op": "SUBV-EQUIP", "label": "Subventions d'équipement versées", "derivation": "widened" },
+    { "agregat": "Autres dépenses d'investissement", "to": "CAPITAL", "op": "AUTRES-DEP-I", "label": "Autres dépenses d'investissement", "derivation": "widened" }
+  ],
+  "expensesTotal": "Dépenses totales",
+  "balance": "Variation du fonds de roulement",
+  "classes": {
+    "REVERSEMENTS": { "label": "Reversements de fiscalité entre communes et intercommunalités (reçus d'un côté, versés de l'autre)", "short": "Reversements de fiscalité", "role": "both" },
+    "CONTRIB.LOCAUX": { "label": "Contribuables locaux : ménages et entreprises (fiscalité directe locale)", "short": "Contribuables locaux", "role": "payer" },
+    "PEREQ": { "label": "Péréquations et compensations fiscales (État et fonds de péréquation entre collectivités)", "short": "Péréquation", "role": "payer" },
+    "FINANCEURS.PUBLICS": { "label": "Autres financeurs publics (État, régions, départements, communes, intercommunalités, CNSA, Europe)", "short": "Autres financeurs publics", "role": "payer" }
+  },
+  "types": {
+    "COM": { "dataset": "ofgl-base-communes-consolidee", "label": "Communes", "group": "dep_code", "groupName": "dep_name", "groupLabel": "département" },
+    "GFP": { "dataset": "ofgl-base-gfp-consolidee", "label": "Intercommunalités à fiscalité propre", "groupFromEntities": "reg_code", "groupName": "reg_name", "groupLabel": "région", "entityFields": "siren,lbudg,agregat,montant,ptot,reg_code,reg_name" },
+    "DEP": { "dataset": "ofgl-base-departements-consolidee", "label": "Départements", "entity": true },
+    "REG": { "dataset": "ofgl-base-regions-consolidee", "label": "Régions", "entity": true }
+  }
+}

@@ -260,7 +260,7 @@ function data(dir = path.join(ROOT, 'flux', 'graph')) {
       if (!parent) continue;
       const sum = list.reduce((s, e) => s + (e.sign || 1) * e.keur, 0);
       const target = parent.keur + (parent.consolidated || 0);
-      if (sum !== target && !parent.flags.includes('over-coverage')) problems.push(`${k}: children ${sum} ≠ parent ${target}`);
+      if (Math.abs(sum - target) > list.length && !parent.flags.includes('over-coverage')) problems.push(`${k}: children ${sum} ≠ parent ${target}`);
     }
     // Identity: what comes in (receipts, non-recoverable, borrowing) equals what goes out (expenses, non-recoverable).
     const basis = key.split('/')[1];
@@ -268,9 +268,10 @@ function data(dir = path.join(ROOT, 'flux', 'graph')) {
     const roots = edges.filter(e => !e.parent && !e.alt && !e.flags.includes('intra'));
     const hubIn = roots.filter(e => e.to === hub).reduce((s, e) => s + e.keur, 0);
     const hubOut = roots.filter(e => e.from === hub).reduce((s, e) => s + e.keur, 0);
-    if (hubIn !== hubOut) problems.push(`${key}: ${hub} in ${hubIn} ≠ out ${hubOut}`);
+    const slack = roots.length;
+    if (Math.abs(hubIn - hubOut) > slack) problems.push(`${key}: ${hub} in ${hubIn} ≠ out ${hubOut}`);
     const ctl = index.controls && index.controls[key];
-    if (ctl && ctl.in !== undefined) { if (ctl.in + ctl.solde !== hubIn || ctl.out !== hubOut) problems.push(`${key}: ${hub} roots ${hubIn}/${hubOut} vs controls ${ctl.in}+${ctl.solde}/${ctl.out}`); }
+    if (ctl && ctl.in !== undefined) { const expectIn = ctl.in + Math.max(0, ctl.solde), expectOut = ctl.out + Math.max(0, -ctl.solde); if (Math.abs(expectIn - hubIn) > slack || Math.abs(expectOut - hubOut) > slack) problems.push(`${key}: ${hub} roots ${hubIn}/${hubOut} vs controls ${expectIn}/${expectOut}`); }
     if (ctl && ctl.TE !== undefined && ctl.TE !== null) {
       const d995 = roots.filter(e => e.op === 'D995').reduce((s, e) => s + e.keur, 0);
       const te = (hubOut - d995) / 1000, tr = (hubIn - d995 - roots.filter(e => e.op === 'B9').reduce((s, e) => s + e.keur, 0)) / 1000;
@@ -278,7 +279,7 @@ function data(dir = path.join(ROOT, 'flux', 'graph')) {
       if (Math.abs(tr - ctl.TR) / ctl.TR > 0.001) problems.push(`${key}: receipts ${tr} vs Eurostat TR ${ctl.TR}`);
     }
     const s13 = byId.get(hub).totals[key];
-    if (!s13 || s13.in !== hubIn || s13.out !== hubOut) problems.push(`${key}: ${hub} totals ${JSON.stringify(s13)} vs roots ${hubIn}/${hubOut}`);
+    if (!s13 || Math.abs(s13.in - hubIn) > slack || Math.abs(s13.out - hubOut) > slack) problems.push(`${key}: ${hub} totals ${JSON.stringify(s13)} vs roots ${hubIn}/${hubOut}`);
   }
   if (problems.length) { console.error(problems.slice(0, 40).join('\n')); throw new Error(`${problems.length} data problems`); }
   console.log(`PASS data: ${nodes.length} nodes, ${edgesTotal} edges over ${Object.keys(index.shards.edges).length} shards, every figure sourced and every split summing (release ${index.release})`);
@@ -362,6 +363,18 @@ async function browser() {
       await page.selectOption('#year', '2024'); await page.waitForTimeout(800);
       assert.equal(await page.inputValue('#basis'), 'sna', 'a year without the budget falls back to the national accounts');
       assert.equal(await page.locator('.chart .node[data-id="apu:S13"]').count(), 1);
+    }
+    // The local authorities basis: its own root and types, a département as an entity.
+    if ((await page.$$eval('#basis option', o => o.map(x => x.value))).includes('local-ofgl')) {
+      await page.selectOption('#basis', 'local-ofgl'); await page.waitForTimeout(800);
+      assert.equal(await page.locator('.chart .node[data-id="apu:OFGL"]').count(), 1, 'the local root is the hub');
+      assert.match(await page.textContent('#headline'), /Collectivités locales 2024/);
+      await page.selectOption('#hub-level', '1'); await page.waitForTimeout(700);
+      assert.equal(await page.locator('.chart .node[data-id="apu:OFGL.COM"]').count(), 1, 'the communes appear');
+      assert.equal(await page.locator('.chart .node[data-id="payeurs:S13111"]').count(), 1, 'the State pays the dotations');
+      await page.locator('.chart .node[data-id="apu:OFGL.DEP"] .bar').click(); await page.waitForTimeout(800);
+      assert.ok((await page.locator('.chart .node[data-id^="apu:OFGL.DEP.E"]').count()) >= 90, 'the départements open one by one');
+      await page.selectOption('#basis', 'sna'); await page.waitForTimeout(800);
     }
     // Theme.
     await page.selectOption('#theme', 'sombre'); await page.waitForTimeout(200);

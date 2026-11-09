@@ -76,7 +76,7 @@ async function main() {
   for (const y of years) yearSel.append(h('option', { value: y }, String(y)));
   for (const b of bases) basisSel.append(h('option', { value: b }, BASES[b]?.short || b));
   basisSel.parentElement.hidden = bases.length < 2;
-  const levelLabels = basis => (rootOf(basis) === HUB ? T.hubLevels : T.budgetLevels);
+  const levelLabels = basis => (rootOf(basis) === HUB ? T.hubLevels : (rootOf(basis) === 'OFGL' ? T.localLevels : T.budgetLevels));
   const fillLevels = basis => { clear(hubSel); levelLabels(basis).forEach((label, i) => hubSel.append(h('option', { value: i }, label))); };
   fillLevels(initial.basis);
   // A year without the chosen basis falls back to the national accounts; a basis without the year takes its latest year.
@@ -114,7 +114,7 @@ async function main() {
     const needView = viewKeys.some(k => changed.has(k)) || !view;
     if (needView) {
       if (changed.has('basis')) fillLevels(s.basis);
-      view = buildView(model, s, { root: rootOf(s.basis) });
+      view = buildView(model, s, { root: rootOf(s.basis), pooled: Boolean(basesInfo[s.basis] && basesInfo[s.basis].pooled) });
       if (view) view.prov = prov;
       if (view) {
         scene.show(view, { animate: changed.has('expanded') || changed.has('hubLevel') || changed.has('ops') || changed.has('year') });
@@ -147,10 +147,11 @@ async function main() {
     const prov = (index.provisional || []).includes(s.year) && s.basis === 'sna' ? ' (comptes provisoires)' : '';
     $('#headline').textContent = root === HUB
       ? `En ${s.year}${prov}, ${total}${NBSP}milliards d’euros sont entrés dans les administrations publiques et presque autant en sont sortis.`
+      : root === 'OFGL' ? `Collectivités locales ${s.year} : ${formatNumber(Math.round(totals.out / 1e6))}${NBSP}milliards d’euros de dépenses réelles des communes, intercommunalités, départements et régions, pour ${formatNumber(Math.round((totals.in - (v.ribbons.find(r => r.from === 'payeurs:FINANCEMENT' && r.ops.some(o => o.op === 'FDR'))?.keur || 0)) / 1e6))}${NBSP}milliards de recettes.`
       : `Budget de l’État ${s.year} : ${formatNumber(Math.round(totals.out / 1e6))}${NBSP}milliards d’euros de dépenses du budget général et de prélèvements sur recettes, pour ${formatNumber(Math.round((totals.in - (v.ribbons.find(r => r.from === 'payeurs:FINANCEMENT')?.keur || 0)) / 1e6))}${NBSP}milliards de recettes nettes.`;
     const borrowed = v.ribbons.filter(r => r.from === 'payeurs:FINANCEMENT').reduce((a, r) => a + r.keur, 0) - v.ribbons.filter(r => r.to === 'benef:FINANCEMENT').reduce((a, r) => a + r.keur, 0);
     const note = (basesInfo[s.basis] && basesInfo[s.basis].note) || BASES[s.basis]?.note || '';
-    $('#headline-sub').textContent = borrowed > 0 ? `Dont ${formatEuros(borrowed)} ${root === HUB ? 'empruntés pour couvrir le déficit' : 'de solde à financer par l’emprunt'}. ${note}` : note;
+    $('#headline-sub').textContent = borrowed > 0 && root !== 'OFGL' ? `Dont ${formatEuros(borrowed)} ${root === HUB ? 'empruntés pour couvrir le déficit' : 'de solde à financer par l’emprunt'}. ${note}` : note;
   }
   function footer(v) {
     const ids = new Set(v.ribbons.flatMap(r => r.edges.flatMap(e => e.prov || [])));

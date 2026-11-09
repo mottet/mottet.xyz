@@ -422,6 +422,23 @@ entreprises, aux collectivités…). The balance is a computed residual
 prélèvements less its net receipts. Budgets annexes and comptes spéciaux
 are not in it, and the index says so.
 
+The local authorities are a third basis (`local-ofgl`, 2024):
+`build/local.cjs` reads the OFGL consolidated bases (comptes de gestion of
+the communes, intercommunalités à fiscalité propre, départements and
+régions, main and annex budgets with cross flows neutralised) through the
+portal's server-side sums, and hangs under the OFGL root the four types,
+then the départements and régions as entities and the communes and
+intercommunalités grouped by département and région. The receipts and
+expenses are the OFGL aggregates that partition the totals
+(`mappings/ofgl.json`: impôts locaux from the local taxpayers, DGF and
+FCTVA from the State, frais de personnel to the public employees, achats
+and équipement to the suppliers, intérêts to the creditors, subventions
+aux personnes de droit privé…); the fiscal reversals between communes and
+their intercommunalité are a signed counterpart; the year's change in
+working capital closes the balance. An intercommunalité can sit in two
+régions and the portal's group_by counts it twice, so those groups are
+summed from the entity rows by the first région named.
+
 The graph model (`flux/graph/r/<release>/`): `nodes.json` (trees of
 sectors and counterpart classes, with per-year totals), `provenance.json`,
 and one `edges/<year>-<basis>.json` per year and accounting basis (`sna`

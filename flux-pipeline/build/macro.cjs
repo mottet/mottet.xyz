@@ -51,7 +51,7 @@ const CLASS_NODES = [
   ['DIVERS.IN', null, 'Autres transferts reçus (indemnités, dons, amendes, transferts divers)', 'Transferts divers reçus', 'payer'],
   ['FINANCEMENT', null, "Créanciers : emprunt net (besoin de financement) ou placement de l'excédent", 'Emprunt net', 'both'],
   ['IMPUTE', null, 'Écritures imputées sans flux monétaire (cotisations sociales imputées, production pour compte propre)', 'Écritures imputées', 'both'],
-  ['POOL', 'S13', 'Autres administrations publiques (transferts entre administrations, non ventilés)', 'Autres administrations', 'both'],
+  ['POOL', 'S13', 'Autres administrations publiques (transferts entre administrations, non ventilés)', 'Autres administrations', 'both', { pool: true }],
   ['S14.AGENTS', 'S14', 'Agents publics (rémunérations)', 'Agents publics', 'beneficiary'],
   ['FOURNISSEURS', null, "Fournisseurs de biens et services (achats courants et investissements)", 'Fournisseurs', 'beneficiary'],
   ['CREANCIERS', null, 'Créanciers (intérêts de la dette)', 'Créanciers', 'beneficiary'],
