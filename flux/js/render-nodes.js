@@ -82,7 +82,7 @@ export class NodeRenderer {
           let x, anchor, max;
           if (n.column === 0) { x = n.x - pad; anchor = 'end'; max = n.x - pad - 4; }
           else if (n.column === layout.columns - 1 || n.column === 2) { x = n.x + n.width + pad; anchor = 'start'; max = layout.width - x - 4; }
-          else { x = n.x + n.width + pad; anchor = 'start'; max = 160; }
+          else { x = n.x + n.width + pad; anchor = 'start'; max = layout.columns > 3 ? 150 : 160; }
           const text = this.truncate(n.short, Math.max(20, max));
           label.setAttribute('x', x); label.setAttribute('text-anchor', anchor);
           const two = n.height >= 2 * LABEL_MIN + 4;

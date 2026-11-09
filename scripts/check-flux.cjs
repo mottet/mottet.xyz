@@ -121,6 +121,17 @@ async function unit() {
   const j1 = JSON.stringify(g.toJSON()); g = mk();
   g.edge({ id: 'r', from: 'P', to: 'H', op: 'D5', year: 2024, basis: 'sna', keur: 100, derivation: 'direct', prov: [p1] });
   assert.ok(JSON.stringify(g.toJSON()).length < j1.length && JSON.stringify(mk().toJSON()) === JSON.stringify(mk().toJSON()), 'serialisation is deterministic');
+  // The Voies et moyens summary, as pdftotext lays it out (2026 edition, and the wrapped energy row of 2025).
+  const vm = require(path.join(ROOT, 'flux-pipeline', 'parsers', 'vm-tome1.cjs'));
+  const summary = ['     Recettes fiscales nettes                        325,7          349,6           353,8          +4,2         372,9           +19,1', '     Impôt net sur le revenu                         88,0           94,5            94,9           +0,4         104,0           +9,1', '     Impôt net sur les sociétés                      57,4           53,0            58,2           +5,2         59,0            +0,8', '     Accises sur les énergies nettes                 20,2           24,0            25,6           +1,6         22,9            -2,8', '     Taxe sur la valeur ajoutée nette                96,8           101,4           96,9            -4,5        109,1           +12,2', '     Autres recettes fiscales nettes                 63,3           76,6            78,1           +1,5         77,9           -0,2', '     Recettes non fiscales                           23,2           21,0            23,2           +2,2         28,7            +5,5', '     Recettes totales de l’État                      348,9          370,6           377,0          +6,4         401,6           +24,6'];
+  const psr = ['Prélèvements sur les recettes de l\'État au profit des collectivités territoriales                              45 456 845   45 231 898   46 156 960    49 514 697', '3201 – Prélèvement sur les recettes de l\'État au profit du budget de l\'Union européenne    22 276 394   23 098 098   22 972 980    28 781 025'];
+  const parsed26 = vm.parse(summary.join('\n') + '\f' + psr.join('\n'), { edition: 2026 });
+  assert.deepEqual(parsed26.columns, { exec: 2024, lfi: 2025, revised: 2025, bill: 2026 });
+  assert.equal(parsed26.rows.TVA.bill, 109.1); assert.equal(parsed26.rows.IR.exec, 88); assert.equal(parsed26.rows['PSR-UE'].bill, 28781025); assert.equal(parsed26.rows['PSR-CT'].unit, 'KEUR'); assert.equal(parsed26.rows.TOTAL.page, 1); assert.equal(parsed26.rows['PSR-UE'].page, 2);
+  const summary25 = summary.map(l => l.replace('Accises sur les énergies nettes                 20,2           24,0            25,6           +1,6         22,9            -2,8', 'Taxe intérieure de consommation\n                                                   16,8              15,4             15,5            0,1         16,5                1,0\n     sur les produits énergétiques nette').replace('63,3           76,6            78,1           +1,5         77,9           -0,2', '63,3           76,6            78,1           +1,5         74,2*           -0,2')).map(l => (/Recettes totales/.test(l) ? '     Recettes totales de l’État   345,5   361,9   366,8   +6,4   391,5   +24,6' : l));
+  const parsed25 = vm.parse(summary25.join('\n') + '\f' + psr.join('\n'), { edition: 2025 });
+  assert.equal(parsed25.rows.TICPE.bill, 16.5, 'a label wrapped over three lines'); assert.equal(parsed25.rows.AUTRES.bill, 74.2, 'a footnote star is ignored');
+  assert.throws(() => vm.parse(summary.join('\n').replace('401,6', '300,0') + '\f' + psr.join('\n'), { edition: 2026 }), /parts/, 'a summary that does not add up is refused');
   // The parsers on the cached official files, when the cache is there.
   const { readManifest, RAW } = lib('fetch.cjs');
   const apuDir = path.join(RAW, 'insee-apu-2025');
@@ -252,19 +263,22 @@ function data(dir = path.join(ROOT, 'flux', 'graph')) {
       if (sum !== target && !parent.flags.includes('over-coverage')) problems.push(`${k}: children ${sum} ≠ parent ${target}`);
     }
     // Identity: what comes in (receipts, non-recoverable, borrowing) equals what goes out (expenses, non-recoverable).
+    const basis = key.split('/')[1];
+    const hub = (index.bases && !Array.isArray(index.bases) && index.bases[basis] && index.bases[basis].root) || 'S13';
     const roots = edges.filter(e => !e.parent && !e.alt && !e.flags.includes('intra'));
-    const hubIn = roots.filter(e => e.to === 'S13').reduce((s, e) => s + e.keur, 0);
-    const hubOut = roots.filter(e => e.from === 'S13').reduce((s, e) => s + e.keur, 0);
-    if (hubIn !== hubOut) problems.push(`${key}: S13 in ${hubIn} ≠ out ${hubOut}`);
+    const hubIn = roots.filter(e => e.to === hub).reduce((s, e) => s + e.keur, 0);
+    const hubOut = roots.filter(e => e.from === hub).reduce((s, e) => s + e.keur, 0);
+    if (hubIn !== hubOut) problems.push(`${key}: ${hub} in ${hubIn} ≠ out ${hubOut}`);
     const ctl = index.controls && index.controls[key];
-    if (ctl && ctl.TE !== null) {
+    if (ctl && ctl.in !== undefined) { if (ctl.in + ctl.solde !== hubIn || ctl.out !== hubOut) problems.push(`${key}: ${hub} roots ${hubIn}/${hubOut} vs controls ${ctl.in}+${ctl.solde}/${ctl.out}`); }
+    if (ctl && ctl.TE !== undefined && ctl.TE !== null) {
       const d995 = roots.filter(e => e.op === 'D995').reduce((s, e) => s + e.keur, 0);
       const te = (hubOut - d995) / 1000, tr = (hubIn - d995 - roots.filter(e => e.op === 'B9').reduce((s, e) => s + e.keur, 0)) / 1000;
       if (Math.abs(te - ctl.TE) / ctl.TE > 0.001) problems.push(`${key}: expenses ${te} vs Eurostat TE ${ctl.TE}`);
       if (Math.abs(tr - ctl.TR) / ctl.TR > 0.001) problems.push(`${key}: receipts ${tr} vs Eurostat TR ${ctl.TR}`);
     }
-    const s13 = byId.get('S13').totals[key];
-    if (!s13 || s13.in !== hubIn || s13.out !== hubOut) problems.push(`${key}: S13 totals ${JSON.stringify(s13)} vs roots ${hubIn}/${hubOut}`);
+    const s13 = byId.get(hub).totals[key];
+    if (!s13 || s13.in !== hubIn || s13.out !== hubOut) problems.push(`${key}: ${hub} totals ${JSON.stringify(s13)} vs roots ${hubIn}/${hubOut}`);
   }
   if (problems.length) { console.error(problems.slice(0, 40).join('\n')); throw new Error(`${problems.length} data problems`); }
   console.log(`PASS data: ${nodes.length} nodes, ${edgesTotal} edges over ${Object.keys(index.shards.edges).length} shards, every figure sourced and every split summing (release ${index.release})`);
@@ -337,6 +351,18 @@ async function browser() {
     assert.equal(await page.locator('.chart .node[data-id="apu:S1311"]').count(), 1, 'Enter expands');
     await page.keyboard.press('Escape'); await page.waitForTimeout(600);
     assert.equal(await page.locator('.chart .node[data-id="apu:S1311"]').count(), 0, 'Escape collapses');
+    // The State budget basis: its own root, missions, and back to the national accounts on a year without it.
+    if ((await page.$$eval('#basis option', o => o.map(x => x.value))).includes('budget-plf')) {
+      await page.selectOption('#basis', 'budget-plf'); await page.waitForTimeout(800);
+      assert.equal(await page.locator('.chart .node[data-id="apu:S13111"]').count(), 1, 'the State is the hub of the budget basis');
+      assert.match(await page.textContent('#headline'), /Budget de l’État 2025/);
+      await page.selectOption('#hub-level', '1'); await page.waitForTimeout(700);
+      assert.ok((await page.locator('.chart .node[data-id^="apu:S13111.M."]').count()) >= 30, 'the missions appear');
+      assert.equal(await page.locator('.chart .node[data-id="benef:CREANCIERS"]').count(), 1, 'interest goes to the creditors');
+      await page.selectOption('#year', '2024'); await page.waitForTimeout(800);
+      assert.equal(await page.inputValue('#basis'), 'sna', 'a year without the budget falls back to the national accounts');
+      assert.equal(await page.locator('.chart .node[data-id="apu:S13"]').count(), 1);
+    }
     // Theme.
     await page.selectOption('#theme', 'sombre'); await page.waitForTimeout(200);
     assert.equal(await page.getAttribute('html', 'data-theme'), 'dark');

@@ -19,7 +19,10 @@ async function main() {
   const data = new Data('graph/');
   const index = await data.loadIndex();
   const years = index.years;
-  const bases = index.bases;
+  const basesInfo = Array.isArray(index.bases) ? Object.fromEntries(index.bases.map(b => [b, { root: HUB, years }])) : index.bases;
+  const bases = Object.keys(basesInfo);
+  const rootOf = basis => (basesInfo[basis] && basesInfo[basis].root) || HUB;
+  const yearsOf = basis => (basesInfo[basis] && basesInfo[basis].years) || years;
   const defaultYear = index.defaultYear || years[years.length - 1];
   const initial = decode(location.search, { years, bases, defaults: { year: defaultYear, basis: 'sna', hubLevel: 0, expanded: [], ops: false, selected: null, theme: 'auto' } });
   const store = createStore({ ...initial, hover: null, sourcesOpen: false, tableOpen: false, loading: true });
@@ -73,9 +76,12 @@ async function main() {
   for (const y of years) yearSel.append(h('option', { value: y }, String(y)));
   for (const b of bases) basisSel.append(h('option', { value: b }, BASES[b]?.short || b));
   basisSel.parentElement.hidden = bases.length < 2;
-  T.hubLevels.forEach((label, i) => hubSel.append(h('option', { value: i }, label)));
-  yearSel.addEventListener('change', async () => { await ensureEdges(Number(yearSel.value), store.get().basis); store.set({ year: Number(yearSel.value) }); });
-  basisSel.addEventListener('change', async () => { await ensureEdges(store.get().year, basisSel.value); store.set({ basis: basisSel.value }); });
+  const levelLabels = basis => (rootOf(basis) === HUB ? T.hubLevels : T.budgetLevels);
+  const fillLevels = basis => { clear(hubSel); levelLabels(basis).forEach((label, i) => hubSel.append(h('option', { value: i }, label))); };
+  fillLevels(initial.basis);
+  // A year without the chosen basis falls back to the national accounts; a basis without the year takes its latest year.
+  yearSel.addEventListener('change', async () => { const y = Number(yearSel.value); const basis = data.has(y, store.get().basis) ? store.get().basis : 'sna'; await ensureEdges(y, basis); store.set({ year: y, basis, expanded: basis === store.get().basis ? store.get().expanded : [], hubLevel: basis === store.get().basis ? store.get().hubLevel : 0 }); });
+  basisSel.addEventListener('change', async () => { const basis = basisSel.value; const y = data.has(store.get().year, basis) ? store.get().year : yearsOf(basis)[yearsOf(basis).length - 1]; await ensureEdges(y, basis); store.set({ year: y, basis, expanded: [], hubLevel: 0, selected: null, ribbonSel: null }); });
   hubSel.addEventListener('change', () => store.set({ hubLevel: Number(hubSel.value), expanded: store.get().expanded.filter(id => !model.isHub(id)) }));
   opsBox.addEventListener('change', () => store.set({ ops: opsBox.checked }));
   $('#btn-sources').addEventListener('click', () => store.set({ sourcesOpen: !store.get().sourcesOpen }));
@@ -107,7 +113,8 @@ async function main() {
     const viewKeys = ['year', 'basis', 'hubLevel', 'expanded', 'ops'];
     const needView = viewKeys.some(k => changed.has(k)) || !view;
     if (needView) {
-      view = buildView(model, s);
+      if (changed.has('basis')) fillLevels(s.basis);
+      view = buildView(model, s, { root: rootOf(s.basis) });
       if (view) {
         scene.show(view, { animate: changed.has('expanded') || changed.has('hubLevel') || changed.has('ops') || changed.has('year') });
         headline(s, view);
@@ -133,12 +140,16 @@ async function main() {
   window.addEventListener('popstate', async () => { const st = decode(location.search, { years, bases, defaults: { ...initial, expanded: [] } }); await ensureEdges(st.year, st.basis); store.set({ year: st.year, basis: st.basis, hubLevel: st.hubLevel, expanded: st.expanded, ops: st.ops, selected: st.selected }); });
 
   function headline(s, v) {
-    const totals = model.node(HUB).totals[`${s.year}/${s.basis}`] || { in: 0, out: 0 };
+    const root = rootOf(s.basis);
+    const totals = model.node(root).totals[`${s.year}/${s.basis}`] || { in: 0, out: 0 };
     const total = formatNumber(Math.round(totals.in / 1e6));
-    const prov = (index.provisional || []).includes(s.year) ? ' (comptes provisoires)' : '';
-    $('#headline').textContent = `En ${s.year}${prov}, ${total}${NBSP}milliards d’euros sont entrés dans les administrations publiques et presque autant en sont sortis.`;
+    const prov = (index.provisional || []).includes(s.year) && s.basis === 'sna' ? ' (comptes provisoires)' : '';
+    $('#headline').textContent = root === HUB
+      ? `En ${s.year}${prov}, ${total}${NBSP}milliards d’euros sont entrés dans les administrations publiques et presque autant en sont sortis.`
+      : `Budget de l’État ${s.year} : ${formatNumber(Math.round(totals.out / 1e6))}${NBSP}milliards d’euros de dépenses du budget général et de prélèvements sur recettes, pour ${formatNumber(Math.round((totals.in - (v.ribbons.find(r => r.from === 'payeurs:FINANCEMENT')?.keur || 0)) / 1e6))}${NBSP}milliards de recettes nettes.`;
     const borrowed = v.ribbons.filter(r => r.from === 'payeurs:FINANCEMENT').reduce((a, r) => a + r.keur, 0) - v.ribbons.filter(r => r.to === 'benef:FINANCEMENT').reduce((a, r) => a + r.keur, 0);
-    $('#headline-sub').textContent = borrowed > 0 ? `Dont ${formatEuros(borrowed)} empruntés pour couvrir le déficit. ${BASES[s.basis].note}` : BASES[s.basis].note;
+    const note = (basesInfo[s.basis] && basesInfo[s.basis].note) || BASES[s.basis]?.note || '';
+    $('#headline-sub').textContent = borrowed > 0 ? `Dont ${formatEuros(borrowed)} ${root === HUB ? 'empruntés pour couvrir le déficit' : 'de solde à financer par l’emprunt'}. ${note}` : note;
   }
   function footer(v) {
     const ids = new Set(v.ribbons.flatMap(r => r.edges.flatMap(e => e.prov || [])));

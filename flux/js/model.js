@@ -49,7 +49,7 @@ export class Model {
   node(id) { return this.nodes.get(id); }
   kidsOf(id) { return this.children.get(id) || []; }
   ancestors(id) { const out = []; let n = this.nodes.get(id); while (n && n.parent) { out.push(n.parent); n = this.nodes.get(n.parent); } return out; }
-  isHub(id) { return id === HUB || this.ancestors(id).includes(HUB); }
+  isHub(id, root = this.root || HUB) { return id === root || this.ancestors(id).includes(root); }
   depth(id) { return this.nodes.get(id)?.level ?? 0; }
 
   /**
@@ -94,7 +94,8 @@ export class Model {
     const key = `${view.year}/${view.basis}`;
     const shard = this.edgesByKey.get(key);
     if (!shard) return null;
-    const hubCut = this.cut([HUB], { level: view.hub.level, expanded: view.hub.expanded, hubOnly: true });
+    this.root = view.root || HUB;
+    const hubCut = this.cut([this.root], { level: view.hub.level, expanded: view.hub.expanded, hubOnly: true });
     const hubVisible = new Set(hubCut.visible);
     const hubNode = id => this.isHub(id) && id !== POOL;
     const hubEnd = e => (hubNode(e.to) && !hubNode(e.from) ? 'to' : (hubNode(e.from) && !hubNode(e.to) ? 'from' : null));

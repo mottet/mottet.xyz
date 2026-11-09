@@ -27,7 +27,7 @@ export function decode(query, { years = [], bases = ['sna'], defaults = DEFAULTS
   const b = q.get('b');
   if (b && bases.includes(b)) state.basis = b;
   const h = Number(q.get('h'));
-  if (Number.isInteger(h) && h >= 0 && h <= 3) state.hubLevel = h;
+  if (Number.isInteger(h) && h >= 0 && h <= 4) state.hubLevel = h;
   const x = q.get('x');
   if (x) state.expanded = x.split(',').filter(s => /^[A-Za-z0-9_.-]+$/.test(s));
   state.ops = q.get('o') === '1';

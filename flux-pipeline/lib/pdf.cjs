@@ -25,7 +25,7 @@ function pages(text, first = 1) {
 // A French figure in a budget table: "1 234,5", "-4,5", "+12,2", "n.s.", "-", "nd".
 const FIG = /^[+-]?\d{1,3}(?:[   ]\d{3})*(?:,\d+)?$|^[+-]?\d+(?:,\d+)?$/;
 function figure(token) {
-  const t = token.replace(/\s+/g, ' ').trim();
+  const t = token.replace(/\s+/g, ' ').replace(/\*+$/, '').trim();
   if (/^(-|–|—|n\.?s\.?|n\.?d\.?|nc|ε)$/i.test(t)) return null;
   if (!FIG.test(t)) return undefined;
   return Number(t.replace(/[   ]/g, '').replace(',', '.').replace(/^\+/, ''));
@@ -35,7 +35,8 @@ function figure(token) {
 function splitRow(line) {
   const parts = line.trim().split(/\s{2,}/);
   const figures = [];
-  while (parts.length > 1) {
+  // Figures are read from the right; a line of figures alone (a wrapped label) has no label left.
+  while (parts.length > 0) {
     const f = figure(parts[parts.length - 1]);
     if (f === undefined) break;
     figures.unshift(f);

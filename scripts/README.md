@@ -404,10 +404,30 @@ counterpart is a widened node ("acheteurs de biens et services" for VAT,
   contributions, VAT, household vs corporate income taxes, old-age vs
   unemployment benefits, flows with the EU institutions).
 
+The State budget is a second basis (`budget-plf`, 2025): `parsers/vm-tome1.cjs`
+reads the summary of net receipts (income tax, corporate tax, energy excise,
+VAT, other taxes, non-tax receipts) and the two prélèvements sur recettes
+(local authorities, EU budget) from the text of the Voies et moyens tome I
+annex, page and line cited, and refuses a summary that does not add up;
+`build/budget.cjs` takes the PLF 2025 dataset by destination and nature
+(`plf25-depenses-2025-du-bg-et-des-ba-selon-nomenclatures-destination-et-nature`,
+general budget only, without the mission Remboursements et dégrèvements
+since receipts are net of it) and hangs every line under the State:
+missions, programmes, actions, sous-actions, each line going to the class
+of beneficiary its catégorie names (`mappings/titres.json`: rémunérations
+to the public employees, subventions pour charges de service public to the
+opérateurs, intérêts to the creditors, transferts aux ménages, aux
+entreprises, aux collectivités…). The balance is a computed residual
+(`SOLDE`, flagged `computed`): the general budget's spending and
+prélèvements less its net receipts. Budgets annexes and comptes spéciaux
+are not in it, and the index says so.
+
 The graph model (`flux/graph/r/<release>/`): `nodes.json` (trees of
 sectors and counterpart classes, with per-year totals), `provenance.json`,
 and one `edges/<year>-<basis>.json` per year and accounting basis (`sna`
-for the national accounts; the budget, DREES and local bases come later).
+for the national accounts with S13 as the hub, `budget-plf` for the State
+budget with S13111 as the hub; `index.json.bases` names each basis's root,
+years and perimeter).
 An edge is one figure (`keur`) between two nodes for one operation (`op`,
 ESA codes: D61 cotisations, D62 prestations, D41 intérêts…). A root edge can
 be refined by children that split its hub end (`split: to` for a receipt,

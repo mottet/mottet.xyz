@@ -1,0 +1,48 @@
+{
+  "note": "Nomenclature par nature des dépenses de l'État (LOLF, art. 5 ; catégories de l'arrêté du 11 décembre 2012 relatif au cadre de la gestion budgétaire). Chaque catégorie est rattachée à la classe de bénéficiaires que son intitulé désigne ; quand l'intitulé ne nomme pas un bénéficiaire précis, la classe est élargie et dite telle.",
+  "source": "https://www.legifrance.gouv.fr/loda/id/JORFTEXT000000394028",
+  "titres": {
+    "1": "Dotations des pouvoirs publics",
+    "2": "Dépenses de personnel",
+    "3": "Dépenses de fonctionnement",
+    "4": "Charges de la dette de l'État",
+    "5": "Dépenses d'investissement",
+    "6": "Dépenses d'intervention",
+    "7": "Dépenses d'opérations financières"
+  },
+  "categories": {
+    "10": { "label": "Dotations des pouvoirs publics", "to": "INSTITUTIONS" },
+    "21": { "label": "Rémunérations d'activité", "to": "S14.AGENTS" },
+    "22": { "label": "Cotisations et contributions sociales", "to": "CHARGES.SOC" },
+    "23": { "label": "Prestations sociales et allocations diverses", "to": "S14" },
+    "31": { "label": "Dépenses de fonctionnement autres que celles de personnel", "to": "FOURNISSEURS" },
+    "32": { "label": "Subventions pour charges de service public", "to": "S13112" },
+    "41": { "label": "Intérêts de la dette financière négociable", "to": "CREANCIERS" },
+    "42": { "label": "Intérêts des dettes financières non négociables", "to": "CREANCIERS" },
+    "43": { "label": "Charges financières diverses", "to": "CREANCIERS" },
+    "51": { "label": "Dépenses pour immobilisations corporelles de l'État", "to": "FOURNISSEURS" },
+    "52": { "label": "Dépenses pour immobilisations incorporelles de l'État", "to": "FOURNISSEURS" },
+    "53": { "label": "Dépenses pour immobilisations financières", "to": "CAPITAL" },
+    "61": { "label": "Transferts aux ménages", "to": "S14" },
+    "62": { "label": "Transferts aux entreprises", "to": "S11" },
+    "63": { "label": "Transferts aux collectivités territoriales", "to": "S1313" },
+    "64": { "label": "Transferts aux autres collectivités", "to": "AUTRES.COLL" },
+    "65": { "label": "Appels en garantie", "to": "CREANCIERS" },
+    "71": { "label": "Prêts et avances", "to": "CAPITAL" },
+    "72": { "label": "Dotations en fonds propres", "to": "CAPITAL" },
+    "73": { "label": "Dépenses de participations financières", "to": "CAPITAL" }
+  },
+  "classes": {
+    "INSTITUTIONS": { "label": "Pouvoirs publics (Présidence, assemblées, Conseil constitutionnel, Cour de justice de la République)", "short": "Pouvoirs publics" },
+    "CHARGES.SOC": { "label": "Cotisations et contributions sociales de l'État employeur (dont la contribution au compte des pensions des fonctionnaires)", "short": "Cotisations employeur" },
+    "AUTRES.COLL": { "label": "Autres collectivités (associations, organismes internationaux, établissements divers)", "short": "Autres collectivités" }
+  },
+  "receipts": {
+    "IR": { "from": "S14", "op": "IR", "label": "Impôt sur le revenu (net)", "derivation": "single-counterpart" },
+    "IS": { "from": "S11", "op": "IS", "label": "Impôt sur les sociétés (net)", "derivation": "widened", "note": "Payé par les sociétés, financières et non financières." },
+    "TICPE": { "from": "PRODUITS", "op": "TICPE", "label": "Accises sur les énergies (ex-TICPE), nettes", "derivation": "single-counterpart" },
+    "TVA": { "from": "PRODUITS", "op": "TVA", "label": "Taxe sur la valeur ajoutée (part État, nette)", "derivation": "single-counterpart" },
+    "AUTRES": { "from": "PAYEURS", "op": "AUTRES-RF", "label": "Autres recettes fiscales nettes", "derivation": "widened" },
+    "NONFISC": { "from": "DIVERS.IN", "op": "NONFISC", "label": "Recettes non fiscales (dividendes, amendes, produits du domaine, intérêts…)", "derivation": "widened" }
+  }
+}
