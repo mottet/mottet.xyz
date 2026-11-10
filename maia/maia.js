@@ -122,14 +122,15 @@
       ${masthead(L)}${langSwitch()}
       <p class="note" style="text-align:center">${esc(I.t(L, 'familyWelcome'))}</p>
       <h2>${esc(I.t(L, 'news'))}</h2>
-      ${posts.length ? posts.map(p => newsPost(p, L)).join('') : `${A.nest()}<p class="empty">${esc(I.t(L, 'noNews'))}</p>`}`;
+      ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card" lang="${L === 'zh' ? 'zh-Hant' : L}"><div class="date">${esc(I.dateLong(L, new Date(on + 'T12:00:00')))}</div>${list.map(p => newsPost(p, L)).join('')}</section>`).join('') : `${A.nest()}<p class="empty">${esc(I.t(L, 'noNews'))}</p>`}`;
   }
-  const newsPost = (p, L) => `<article class="card entry" lang="${L === 'zh' ? 'zh-Hant' : L}">
-    <div class="date">${esc(I.dateLong(L, new Date(p.on + 'T12:00:00')))}</div>
+  const newsPost = (p, L) => `<article class="entry">
     <h3>${esc(I.pick(p.title, L) || I.t(L, 'untitled'))}</h3>
     <div class="text">${esc(I.pick(p.text, L))}</div>
     ${photoGrid(photosOf(p), I.t(L, 'photoAlt'))}
   </article>`;
+  // Entries of the same day share one card: the date once, then each entry in the order it was written.
+  const byDay = list => { const days = new Map(); for (const r of list) { if (!days.has(r.on)) days.set(r.on, []); days.get(r.on).push(r); } for (const l of days.values()) l.sort((a, b) => a.rev - b.rev); return [...days]; };
   const photoGrid = (photos, alt) => photos.length ? `<div class="photos${photos.length === 1 ? ' single' : ''}">${photos.map(p => `<a href="/photos/${p.id}" target="_blank" rel="noopener"><img src="/photos/${p.id}" alt="${esc(alt)}" loading="lazy" width="${p.w || ''}" height="${p.h || ''}"></a>`).join('')}</div>` : '';
 
   function parentsPage() {
@@ -288,10 +289,10 @@
   function journalView() {
     const entries = journal();
     return `<h2>Journal</h2><div class="row"><button class="btn btn-primary" type="button" data-action="add-journal">${A.icon('pen')}Write today</button></div>
-      ${entries.length ? entries.map(e => `<article class="card entry"><div class="date">${fmtDay(e.on)}</div>${e.title ? `<h3>${esc(e.title)}</h3>` : ''}
+      ${entries.length ? byDay(entries).map(([on, list]) => `<section class="card day-card"><div class="date">${fmtDay(on)}</div>${list.map(e => `<article class="entry">${e.title ? `<h3>${esc(e.title)}</h3>` : ''}
         ${(e.weight || e.height || e.head) ? `<div class="measures">${e.weight ? `<span>${I.number('en', e.weight / 1000, 3)} kg</span>` : ''}${e.height ? `<span>${e.height} cm</span>` : ''}${e.head ? `<span>head ${e.head} cm</span>` : ''}</div>` : ''}
         <div class="text">${esc(e.text)}</div>${photoGrid(photosOf(e), NAME)}
-        <div class="entry-actions"><button class="btn" type="button" data-action="edit-journal" data-id="${e.id}">${A.icon('pen')}Edit</button><button class="btn" type="button" data-action="share-journal" data-id="${e.id}">${A.icon('news')}Tell the family</button></div></article>`).join('')
+        <div class="entry-actions"><button class="btn" type="button" data-action="edit-journal" data-id="${e.id}">${A.icon('pen')}Edit</button><button class="btn" type="button" data-action="share-journal" data-id="${e.id}">${A.icon('news')}Tell the family</button></div></article>`).join('')}</section>`).join('')
       : `${A.nest()}<p class="empty">The first page is still blank.</p>`}`;
   }
 
@@ -308,8 +309,8 @@
     const posts = news();
     return `<h2>News for the family</h2><p class="note">What you write here is read by the family in French, English or Chinese; a missing translation shows another language.</p>
       <div class="row"><button class="btn btn-primary" type="button" data-action="add-news">${A.icon('news')}Write some news</button></div>
-      ${posts.length ? posts.map(p => `<article class="card entry"><div class="date">${fmtDay(p.on)} · ${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), NAME)}
-        <div class="entry-actions"><button class="btn" type="button" data-action="edit-news" data-id="${p.id}">${A.icon('pen')}Edit</button></div></article>`).join('') : `${A.nest()}<p class="empty">Nothing told yet.</p>`}`;
+      ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card"><div class="date">${fmtDay(on)}</div>${list.map(p => `<article class="entry"><div class="langs">${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), NAME)}
+        <div class="entry-actions"><button class="btn" type="button" data-action="edit-news" data-id="${p.id}">${A.icon('pen')}Edit</button></div></article>`).join('')}</section>`).join('') : `${A.nest()}<p class="empty">Nothing told yet.</p>`}`;
   }
 
   // ---- the clock on a running feed -------------------------------------------

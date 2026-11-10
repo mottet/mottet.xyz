@@ -164,8 +164,10 @@ html[data-theme="night"] .segment button[aria-pressed="true"] { color: #0f1512; 
 .note { color: var(--ink-2); font-style: italic; }
 
 /* Journal and news */
-.entry { margin: 0 0 18px; }
-.entry .date { font-family: Federo, serif; color: var(--bark); font-size: 16px; letter-spacing: .04em; }
+.day-card { margin: 0 0 18px; }
+.day-card > .date { font-family: Federo, serif; color: var(--bark); font-size: 16px; letter-spacing: .04em; margin-bottom: 4px; }
+.entry + .entry { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
+.entry .langs { font-size: 14px; color: var(--ink-3); letter-spacing: .06em; }
 .entry h3 { margin: 2px 0 6px; }
 .entry .text { white-space: pre-wrap; }
 .entry .measures { display: flex; gap: 14px; color: var(--moss); font-variant-numeric: tabular-nums; margin: 6px 0; flex-wrap: wrap; }

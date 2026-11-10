@@ -283,7 +283,7 @@ async function browser() {
     await page.fill('dialog input[name=title_zh]', '頭幾天');
     await page.click('dialog button[type=submit]'); await page.waitForSelector('dialog[open]', { state: 'detached' });
     await page.click('a[href="#news"]'); await page.waitForSelector('#view-news .entry');
-    assert.match(await page.locator('#view-news .entry .date').textContent(), /FR EN ZH/);
+    assert.match(await page.locator('#view-news .entry .langs').textContent(), /FR EN ZH/);
 
     const family = await phone({ locale: 'zh-TW' });
     await login(family, secrets.family);
@@ -302,6 +302,17 @@ async function browser() {
     await page.click('[data-action=add-news]'); await page.waitForSelector('dialog[open]');
     await page.fill('dialog input[name=title_en]', 'A smile'); await page.click('dialog button[type=submit]');
     await family.waitForFunction(() => document.querySelectorAll('.entry').length === 2, null, { timeout: 5000 });
+    // The same day is one section: one card, its date once, the two posts in the order they were written.
+    assert.equal(await family.locator('.day-card').count(), 1, 'one card for the day, for the family');
+    assert.deepEqual(await family.locator('.day-card .entry h3').allTextContents(), ['First days', 'A smile']);
+    await page.waitForFunction(() => document.querySelectorAll('#view-news .entry').length === 2);
+    assert.equal(await page.locator('#view-news .day-card').count(), 1, 'one card for the day, for the parents');
+    await page.click('a[href="#journal"]'); await page.waitForSelector('#view-journal');
+    await page.click('[data-action=add-journal]'); await page.waitForSelector('dialog[open]');
+    await page.fill('dialog input[name=title]', 'Bath'); await page.click('dialog button[type=submit]');
+    await page.waitForFunction(() => document.querySelectorAll('#view-journal .entry').length === 2);
+    assert.equal(await page.locator('#view-journal .day-card').count(), 1, 'two journal pages of one day share a card');
+    assert.equal(await page.locator('#view-journal .day-card > .date').count(), 1, 'the date is written once');
 
     // Care: an appointment shows on Today and can be ticked done.
     await page.click('a[href="#care"]'); await page.waitForSelector('#view-care');
