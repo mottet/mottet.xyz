@@ -10,7 +10,7 @@ self.addEventListener('push', event => {
   try { note = event.data ? event.data.json() : {}; } catch { note = { body: event.data ? event.data.text() : '' }; }
   event.waitUntil(self.registration.showNotification(note.title || 'Maïa', {
     body: note.body || '', tag: note.tag || undefined, renotify: Boolean(note.tag),
-    icon: '/icon-192.png', badge: '/icon-192.png', data: { url: note.url || '/' },
+    icon: '/icon-192.png?v=2', badge: '/icon-192.png?v=2', data: { url: note.url || '/' },
   }));
 });
 
