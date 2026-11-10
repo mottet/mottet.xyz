@@ -309,6 +309,8 @@
     const posts = news();
     return `<h2>News for the family</h2><p class="note">What you write here is read by the family in French, English or Chinese; a missing translation shows another language.</p>
       <div class="row"><button class="btn btn-primary" type="button" data-action="add-news">${A.icon('news')}Write some news</button></div>
+      <div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="family-link">${A.icon('share')}Share the family link</button></div>
+      <p class="note" style="margin:6px 0 0;font-size:16px">The link carries the family password and opens the news in one tap. Anyone who has it can read the news.</p>
       ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card"><div class="date">${fmtDay(on)}</div>${list.map(p => `<article class="entry"><div class="langs">${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), NAME)}
         <div class="entry-actions"><button class="btn" type="button" data-action="edit-news" data-id="${p.id}">${A.icon('pen')}Edit</button></div></article>`).join('')}</section>`).join('') : `${A.nest()}<p class="empty">Nothing told yet.</p>`}`;
   }
@@ -470,6 +472,12 @@
     'share-journal': b => { const e = state.records.get(b.dataset.id); if (e) newsDialog(null, { on: e.on, title: { en: e.title }, text: { en: e.text }, photos: [...(e.photos || [])] }); },
     'add-news': () => newsDialog(null),
     'edit-news': b => newsDialog(state.records.get(b.dataset.id)),
+    async 'family-link'() {
+      let url;
+      try { ({ url } = await api('/api/family-link')); } catch (error) { toast(error.message); return; }
+      if (navigator.share) { try { await navigator.share({ title: NAME, text: `News of ${NAME}`, url }); return; } catch (error) { if (error.name === 'AbortError') return; } }
+      try { await navigator.clipboard.writeText(url); toast('The family link is copied.'); } catch { window.prompt('Copy the family link:', url); }
+    },
     async 'push-on'() {
       if (push.busy) return;
       push.busy = true; push.error = ''; render();

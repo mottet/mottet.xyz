@@ -152,6 +152,29 @@ module.exports = function maia(options = {}) {
     res.set('Set-Cookie', cookieFor(role, req.secrets, secure(req)));
     res.json({ ok: true, role });
   });
+  // A link to share with the family: /?key=<family password> lets the reader in
+  // as family, then sends them on to / so the password leaves the address bar.
+  // Only the family password works this way, and a parent who opens the link
+  // stays a parent. A wrong key counts as a failed try and lands on the gate.
+  router.get('/', (req, res, next) => {
+    if (typeof req.query.key !== 'string') return next();
+    res.set('Cache-Control', 'no-store');
+    if (!req.secrets || req.role === 'parents') return res.redirect(303, '/');
+    const address = req.ip, now = Date.now();
+    const recent = (failures.get(address) || []).filter(t => now - t < LOGIN_WINDOW_MS);
+    const key = str(req.query.key, 200);
+    if (recent.length < LOGIN_TRIES && key && same(key, req.secrets.family)) {
+      failures.delete(address);
+      res.set('Set-Cookie', cookieFor('family', req.secrets, secure(req)));
+    } else if (recent.length < LOGIN_TRIES) failures.set(address, recent.concat(now));
+    res.redirect(303, '/');
+  });
+  // The parents copy that link from the News tab.
+  router.get('/api/family-link', (req, res) => {
+    if (!needParents(req, res)) return;
+    res.set('Cache-Control', 'no-store');
+    res.json({ ok: true, url: `${secure(req) ? 'https' : 'http'}://${req.get('host')}/?key=${encodeURIComponent(req.secrets.family)}` });
+  });
   router.post('/api/logout', (req, res) => { res.set('Set-Cookie', clearCookie(secure(req))); res.json({ ok: true }); });
   router.get('/api/me', (req, res) => {
     if (!req.secrets) return off(res);

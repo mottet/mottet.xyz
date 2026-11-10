@@ -298,6 +298,20 @@ async function browser() {
     assert.equal(await family.evaluate(async url => (await fetch(url)).status, photoUrl), 200, 'the photo went to the family with the news');
     assert.equal(await family.evaluate(async () => (await fetch('/api/records')).json().then(b => b.records.map(r => r.type).sort().join(','))), 'news,photo', 'nothing else leaks');
     assert.equal(await family.evaluate(async () => (await fetch('/api/records', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"type":"feed"}' })).status), 403, 'the family cannot write');
+    // The family link: the family password in the address lets a reader in, then leaves the address bar.
+    const linked = await phone();
+    const shared = (await page.evaluate(() => fetch('/api/family-link').then(r => r.json()))).url;
+    assert.equal(shared, `${base}/?key=${secrets.family}`);
+    await linked.goto(shared); await linked.waitForSelector('.day-card');
+    assert.equal(new URL(linked.url()).search, '', 'the password is gone from the address bar');
+    assert.equal(await linked.locator('.tabs').count(), 0, 'the link gives the family role');
+    const parentsLink = await phone();
+    await parentsLink.goto(`${base}/?key=${secrets.parents}`); await parentsLink.waitForSelector('[data-form=login]');
+    assert.equal(new URL(parentsLink.url()).search, '', 'the parents password never works in a link');
+    await page.goto(shared); await page.waitForSelector('.tabs');
+    assert.equal(await page.locator('.tabs a').count(), 5, 'a parent opening the link stays a parent');
+    await page.click('a[href="#news"]'); await page.waitForSelector('#view-news');
+    assert.equal(await family.evaluate(() => fetch('/api/family-link').then(r => r.status)), 403, 'the family cannot read the link');
     // Live for the family too: a second post appears without a reload.
     await page.click('[data-action=add-news]'); await page.waitForSelector('dialog[open]');
     await page.fill('dialog input[name=title_en]', 'A smile'); await page.click('dialog button[type=submit]');

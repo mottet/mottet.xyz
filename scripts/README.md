@@ -318,7 +318,11 @@ it). The files are in `maia/`, outside `public/`, so nothing of them answers
 on mottet.xyz and nothing of the house answers there.
 
 Two passwords in `.maia-secrets.json` give two roles through a signed cookie:
-`parents` see and write everything, `family` read the news only. Every record
+`parents` see and write everything, `family` read the news only.
+`/?key=<family password>` lets a reader in as family and redirects to `/`, so
+the parents can share one link (the News tab has a share button for it); the
+parents password never works that way, and a parent who opens the link keeps
+their role. Wrong keys count as failed logins. Every record
 is one JSON line appended to `data/maia/records.jsonl` (`id`, `type`, `rev`,
 `at`, `by` and the type's own fields; the latest line per id wins and
 `deleted: true` hides one), loaded into memory at start and broadcast on the
