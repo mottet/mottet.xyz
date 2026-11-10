@@ -86,6 +86,7 @@
 
   // ---- rendering -------------------------------------------------------------
   function render() {
+    if (tipFor) hideTip();
     document.documentElement.lang = state.role === 'parents' ? 'en' : (state.lang === 'zh' ? 'zh-Hant' : state.lang);
     if (!state.role) app.innerHTML = gate();
     else if (state.role === 'family') app.innerHTML = familyPage();
@@ -207,9 +208,78 @@
       <div class="row" style="margin-top:8px"><button class="btn btn-ghost" type="button" data-action="push-off">${A.icon('bell-off')}Turn off on this phone</button></div></section>`;
   }
 
+  // ---- the rhythm of the feeds --------------------------------------------------
+  // Regularity: one 24-hour strip per day for the last week, each feed drawn
+  // where it happened and coloured by side. Quantity: minutes at the breast per
+  // day over two weeks. The list below the card is the table of every value.
+  const DAY_MS = 86400000, H = 3600000;
+  const dayStart = (d, back = 0) => { const x = new Date(d); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - back); return x.getTime(); };
+  const span = f => [Date.parse(f.start), f.end ? Date.parse(f.end) : Date.now()];
+  const inDay = (f, from) => { const [a, b] = span(f); return Math.max(0, Math.min(b, from + DAY_MS) - Math.max(a, from)); };
+  const sideName = s => (s === 'both' ? 'Both sides' : s === 'left' ? 'Left' : 'Right');
+  const niceStep = max => [15, 30, 60, 90, 120, 180, 240].find(s => max / s <= 3) || 300;
+  function rhythmCard() {
+    const list = feeds();
+    if (!list.length) return '';
+    const now = Date.now();
+    // The last 24 hours, in figures.
+    const recent = list.filter(f => span(f)[1] > now - DAY_MS).sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+    const atBreast = recent.reduce((s, f) => s + Math.min(span(f)[1], now) - Math.max(span(f)[0], now - DAY_MS), 0);
+    const starts = list.filter(f => Date.parse(f.start) > now - DAY_MS).map(f => Date.parse(f.start)).sort((a, b) => a - b);
+    const every = starts.length > 1 ? (starts[starts.length - 1] - starts[0]) / (starts.length - 1) : null;
+    const done = list.filter(f => f.end).sort((a, b) => Date.parse(a.start) - Date.parse(b.start));
+    let longest = 0;
+    for (let i = 1; i < done.length; i++) { const gapEnd = Date.parse(done[i].start); if (gapEnd > now - DAY_MS) longest = Math.max(longest, gapEnd - Date.parse(done[i - 1].end)); }
+    const run = running(), last = lastDone();
+    if (!run && last && Date.parse(last.end) > now - DAY_MS) longest = Math.max(longest, now - Date.parse(last.end));
+    const stat = (value, label) => `<div class="stat"><b>${value}</b><span>${label}</span></div>`;
+    const figures = `<div class="stat-row rhythm-stats">${stat(recent.length, 'feeds in 24 h')}${stat(duration(atBreast), 'at the breast')}${stat(every ? duration(every) : '–', 'between starts')}${stat(longest ? duration(longest) : '–', 'longest gap')}</div>`;
+
+    // A week of days, today on top.
+    const strip = back => {
+      const from = dayStart(now, back), day = localDay(from);
+      const marks = list.filter(f => inDay(f, from) > 0).map(f => {
+        const [a, b] = span(f), x = Math.max(a, from), y = Math.min(b, from + DAY_MS);
+        const tip = `${sideName(f.side)}, ${fmtTime(a)}${f.end ? `–${fmtTime(b)}` : ', still going'} · ${duration(b - a)}`;
+        return `<span class="feed-mark side-${f.side}${f.end ? '' : ' running'}" style="left:${((x - from) / DAY_MS * 100).toFixed(2)}%;width:${((y - x) / DAY_MS * 100).toFixed(2)}%" data-tip="${esc(tip)}"></span>`;
+      }).join('');
+      const count = list.filter(f => { const s = Date.parse(f.start); return s >= from && s < from + DAY_MS; }).length;
+      const label = back === 0 ? 'Today' : new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric' }).format(new Date(from));
+      const future = back === 0 ? `<span class="track-future" style="left:${((now - from) / DAY_MS * 100).toFixed(2)}%"></span>` : '';
+      return `<div class="strip" role="img" aria-label="${esc(`${fmtDay(day)}: ${count} feed${count === 1 ? '' : 's'}, ${duration(list.reduce((s, f) => s + inDay(f, from), 0))}`)}"><span class="strip-day">${label}</span><span class="track" aria-hidden="true">${marks}${future}</span></div>`;
+    };
+    // Days start with the first feed logged, so days before the log began never look like days without feeds.
+    const born = dayStart(Math.min(...list.map(f => Date.parse(f.start))));
+    const weekDays = Math.min(7, Math.round((dayStart(now) - born) / DAY_MS) + 1);
+    const legend = `<div class="legend" aria-hidden="true">${['left', 'right', 'both'].map(s => `<span><i class="swatch side-${s}"></i>${sideName(s)}</span>`).join('')}</div>`;
+    const week = `<h3 class="chart-title">When she fed</h3>${legend}
+      <div class="strips">${Array.from({ length: weekDays }, (_, i) => strip(i)).join('')}
+        <div class="strip strip-axis" aria-hidden="true"><span class="strip-day"></span><span class="track-axis">${[0, 6, 12, 18, 24].map(h => `<span style="left:${h / 24 * 100}%">${pad(h)}</span>`).join('')}</span></div></div>`;
+
+    // Two weeks of minutes at the breast.
+    const nDays = Math.min(14, Math.round((dayStart(now) - born) / DAY_MS) + 1);
+    const days = Array.from({ length: nDays }, (_, i) => { const from = dayStart(now, nDays - 1 - i); return { from, ms: list.reduce((s, f) => s + inDay(f, from), 0), n: list.filter(f => { const s = Date.parse(f.start); return s >= from && s < from + DAY_MS; }).length }; });
+    const maxMin = Math.max(30, ...days.map(d => minutes(d.ms)));
+    const step = niceStep(maxMin), top = Math.ceil(maxMin / step) * step;
+    const best = days.reduce((m, d) => (d.ms > m.ms ? d : m), days[0]);
+    const ticks = Array.from({ length: top / step + 1 }, (_, i) => i * step);
+    const bars = days.map((d, i) => {
+      const isToday = i === days.length - 1;
+      const label = (isToday || d === best) && d.ms ? `<span class="bar-value">${duration(d.ms)}</span>` : '';
+      const date = new Date(d.from);
+      const tip = `${new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(date)} · ${d.n} feed${d.n === 1 ? '' : 's'} · ${duration(d.ms)}${isToday ? ' so far' : ''}`;
+      return `<div class="bar-col${isToday ? ' today' : ''}" data-tip="${esc(tip)}"><div class="bar-area"><span class="bar${isToday ? ' partial' : ''}" style="height:${(minutes(d.ms) / top * 100).toFixed(1)}%">${label}</span></div><span class="bar-day">${date.getDate()}</span></div>`;
+    }).join('');
+    const amounts = `<h3 class="chart-title">Minutes at the breast, per day</h3>
+      <div class="bars" role="img" aria-label="${esc(days.map(d => `${new Date(d.from).getDate()}: ${duration(d.ms)}`).join(', '))}">
+        <div class="bars-grid" aria-hidden="true">${ticks.map(t => `<span style="bottom:${t / top * 100}%"><b>${t === 0 ? '0' : t >= 60 ? `${t / 60} h` : `${t} min`}</b></span>`).join('')}</div>
+        <div class="bars-cols" aria-hidden="true">${bars}</div></div>`;
+    return `<section class="card rhythm" aria-labelledby="rhythm-title"><h2 id="rhythm-title" style="margin:0 0 8px">Rhythm</h2>${figures}${week}${amounts}</section>`;
+  }
+
   function feedsView() {
     const groups = groupByDay(feeds(), 'start');
-    return `<h2>Feeds</h2><div class="row"><button class="btn" type="button" data-action="add-feed">${A.icon('plus')}Add a past feed</button></div>
+    return `<h2>Feeds</h2>${rhythmCard()}<div class="row"><button class="btn" type="button" data-action="add-feed">${A.icon('plus')}Add a past feed</button></div>
       ${groups.size ? [...groups].map(([day, list]) => `<div class="day-head"><span>${fmtDay(day)}</span><small>${list.length} feed${list.length > 1 ? 's' : ''}, ${duration(list.reduce((s, f) => s + feedMs(f), 0))}</small></div>
         <ul class="list card" style="padding:4px 16px">${list.map(f => `<li><button class="rowbtn" type="button" data-action="edit-feed" data-id="${f.id}" aria-label="Edit the ${f.side} feed at ${fmtTime(f.start)}">${A.icon(f.side)}<span class="when">${fmtTime(f.start)}</span><span class="what">${f.side}${f.note ? `<small>${esc(f.note)}</small>` : ''}</span><span class="amount" ${f.end ? '' : `data-elapsed="${esc(f.start)}"`}>${f.end ? duration(feedMs(f)) : elapsed(feedMs(f))}</span></button></li>`).join('')}</ul>`).join('')
       : `${A.nest()}<p class="empty">Nothing logged yet.</p>`}`;
@@ -445,6 +515,21 @@
       const input = app.querySelector('input[name=password]'); if (input) input.focus();
     }
   });
+  // A tooltip for chart marks: hover with a mouse, tap on a phone.
+  const tip = document.createElement('div'); tip.className = 'chart-tip'; tip.setAttribute('role', 'tooltip'); tip.hidden = true; document.body.appendChild(tip);
+  let tipFor = null;
+  const showTip = (el, x, y) => {
+    tipFor = el; tip.textContent = el.dataset.tip; tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = `${Math.min(Math.max(8, x - w / 2), innerWidth - w - 8)}px`;
+    tip.style.top = `${y - h - 14 < 8 ? y + 18 : y - h - 14}px`;
+    document.querySelectorAll('.tipped').forEach(m => m.classList.remove('tipped')); el.classList.add('tipped');
+  };
+  const hideTip = () => { tip.hidden = true; tipFor = null; document.querySelectorAll('.tipped').forEach(m => m.classList.remove('tipped')); };
+  app.addEventListener('pointermove', e => { if (e.pointerType !== 'mouse') return; const el = e.target.closest('[data-tip]'); if (el) showTip(el, e.clientX, e.clientY); else if (tipFor) hideTip(); });
+  app.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hideTip(); }); // a finger lifting also leaves
+  app.addEventListener('pointerup', e => { if (e.pointerType === 'mouse') return; const el = e.target.closest('[data-tip]'); if (el && el !== tipFor) showTip(el, e.clientX, e.clientY); else hideTip(); });
+  window.addEventListener('scroll', () => { if (tipFor) hideTip(); }, { passive: true });
   window.addEventListener('hashchange', render);
   window.MaiaApp = { state, render, save, feeds, running, journal, news, cares, appointments, elapsed, duration, ago, push };
   boot();

@@ -247,6 +247,17 @@ async function browser() {
     await page.waitForSelector('[data-action=vitamin][aria-pressed=true]');
     await other.waitForSelector('[data-action=vitamin][aria-pressed=true]', { timeout: 5000 });
     await page.click('a[href="#feeds"]'); await page.waitForSelector('#view-feeds');
+    // The rhythm: a strip for today with the feed on it, the day's bar, a tooltip on tap, and the page still fits the phone.
+    await page.waitForSelector('.rhythm');
+    assert.equal(await page.locator('.rhythm .strip:not(.strip-axis)').count(), 1, 'one strip: the log began today');
+    assert.equal(await page.locator('.rhythm .feed-mark.side-right').count(), 1);
+    assert.equal(await page.locator('.rhythm .bar-col').count(), 1);
+    assert.match(await page.locator('.rhythm .rhythm-stats').textContent(), /1\s*feeds in 24 h/);
+    const markBox = await page.locator('.rhythm .feed-mark').boundingBox();
+    await page.touchscreen.tap(markBox.x + markBox.width / 2, markBox.y + markBox.height / 2);
+    assert.match(await page.locator('.chart-tip').textContent(), /^Right, \d\d:\d\d–\d\d:\d\d · 0 min$/);
+    assert.equal(await page.locator('.chart-tip').isVisible(), true, 'a tap shows the tooltip and it stays');
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth === innerWidth), true, 'the charts fit the phone');
     assert.equal(await page.locator('#view-feeds .list li').count(), 1);
     await page.click('#view-feeds .list [data-action=edit-feed]'); await page.waitForSelector('dialog[open]');
     await page.fill('dialog textarea[name=note]', 'Slept after'); await page.click('dialog button[type=submit]');

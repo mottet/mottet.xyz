@@ -338,7 +338,11 @@ in English, or for the family the news in the chosen language with the first
 written language as fallback. The drawings (`maia-art.js`) are the forest
 side of the house: boughs, leaves, a wren and a blue tit, the sun by day and
 the moon by night (`data-theme`, remembered, from `prefers-color-scheme` at
-first), a nest where a list is empty. The tagged css and js carry
+first), a nest where a list is empty. The Feeds tab opens on a Rhythm card:
+the last 24 hours in figures, a 24-hour strip per day for the last week with
+each feed coloured by side (colours checked for colour blindness in both
+themes), and minutes at the breast per day over two weeks; a tap or a hover
+on a mark shows its details, and the list below is the table of every value. The tagged css and js carry
 `?v=maia-N`; bump it with every change.
 
 Reminders reach the parents' phones by Web Push (`maia-push.js`, the
