@@ -100,7 +100,10 @@ function plan({ records, subscriptions, now = Date.now(), sent = {}, timezone = 
 
 const journalMessage = rec => ({ title: 'A page in the journal', body: rec.title || (rec.text || '').replace(/\s+/g, ' ').slice(0, 120) || 'A new page, with photos.', url: '/#journal', tag: `journal-${rec.id}` });
 
-module.exports = function createPush({ dir, store, timezone = 'Europe/Paris', send, log = () => {} }) {
+// `live` says whether this process may send at all. Only the real service
+// does: a second server started by hand for a check holds a frozen copy of the
+// records and would keep reminding the parents of feeds long since logged.
+module.exports = function createPush({ dir, store, timezone = 'Europe/Paris', send, live = true, log = () => {} }) {
   const file = path.join(dir, 'push.json');
   let data = { keys: null, subscriptions: [], sent: {} };
   try { data = { ...data, ...JSON.parse(fs.readFileSync(file, 'utf8')) }; } catch (error) { if (error.code !== 'ENOENT') log(`push.json unreadable: ${error.message}`); }
@@ -146,6 +149,7 @@ module.exports = function createPush({ dir, store, timezone = 'Europe/Paris', se
 
   // The journal: told as it is written, to every phone but the writer's.
   const journal = (rec, authorId) => {
+    if (!live) return Promise.resolve();
     const to = data.subscriptions.filter(s => s.role === 'parents' && s.settings.journal && s.id !== authorId).map(s => s.id);
     return to.length ? sendTo(to, journalMessage(rec)) : Promise.resolve();
   };
@@ -159,10 +163,10 @@ module.exports = function createPush({ dir, store, timezone = 'Europe/Paris', se
     return due;
   };
   let timer = null;
-  const start = () => { if (!timer) { timer = setInterval(() => { try { tick(); } catch (error) { log(`push tick failed: ${error.message}`); } }, TICK_MS); timer.unref(); } };
+  const start = () => { if (live && !timer) { timer = setInterval(() => { try { tick(); } catch (error) { log(`push tick failed: ${error.message}`); } }, TICK_MS); timer.unref(); } };
   const stop = () => { clearInterval(timer); timer = null; };
 
-  return { publicKey: () => keys().publicKey, find, subscribe, unsubscribe, journal, tick, start, stop, get subscriptions() { return data.subscriptions; }, get sent() { return data.sent; }, flush: () => sending };
+  return { live, publicKey: () => keys().publicKey, find, subscribe, unsubscribe, journal, tick, start, stop, get subscriptions() { return data.subscriptions; }, get sent() { return data.sent; }, flush: () => sending };
 };
 
 module.exports.plan = plan;

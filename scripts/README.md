@@ -354,7 +354,9 @@ page written on the other phone (the writer's phone is named in the
 runs every half minute on the server, in her time zone; what was sent is kept
 by key in `data/maia/push.json` with the subscriptions and the VAPID key pair
 made on first use, so a restart repeats nothing. A phone that answers 404 or
-410 is forgotten. On an iPhone push only works from the home-screen app, and
+410 is forgotten. Only the systemd service sends (it is known by
+`INVOCATION_ID`; `MAIA_PUSH=on` or `off` overrides): a server started by hand
+holds a frozen copy of the records and must stay silent. On an iPhone push only works from the home-screen app, and
 the card says so.
 
 ```sh

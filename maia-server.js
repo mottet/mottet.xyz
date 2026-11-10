@@ -116,7 +116,10 @@ module.exports = function maia(options = {}) {
   const fonts = options.fonts || path.join(__dirname, 'public', 'assets', 'fonts');
   const store = openStore(dir);
   // Reminders by Web Push; a check passes its own `send` to catch what goes out.
-  const push = createPush({ dir, store, timezone: FACTS.timezone, send: options.send, log: options.log || (m => console.error(`[maia] ${m}`)) });
+  // Reminders go out only from the systemd service (which sets INVOCATION_ID), from a
+  // check that catches them itself, or when MAIA_PUSH=on says so: never from a spare server.
+  const live = Boolean(options.send || process.env.INVOCATION_ID || process.env.MAIA_PUSH === 'on') && process.env.MAIA_PUSH !== 'off';
+  const push = createPush({ dir, store, timezone: FACTS.timezone, send: options.send, live, log: options.log || (m => console.error(`[maia] ${m}`)) });
   const router = express.Router();
   const failures = new Map(); // address -> [timestamps]
   let nsp = null;

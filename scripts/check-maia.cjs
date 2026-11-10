@@ -145,6 +145,9 @@ async function reminders() {
   await push.journal({ id: 'j1', title: 'First smile', text: '' }, a.id); await push.flush();
   assert.deepEqual(sent.length, 1, 'the author is skipped and the gone phone is not reached');
   assert.deepEqual(push.subscriptions.map(x => x.id), [a.id], 'a phone that answers 410 is forgotten');
+  const spare = Push({ dir, store, live: false, send: async () => { sent.push('spare'); }, log: () => {} });
+  spare.start(); await spare.journal({ id: 'j9', title: 'x', text: '' }, 'nobody'); await spare.flush();
+  assert.equal(sent.includes('spare'), false, 'a spare server sends nothing');
   fail = null;
   await push.journal({ id: 'j2', title: '', text: 'She slept   through the night' }, 'someone-else'); await push.flush();
   assert.equal(sent[1], `${a.id}:A page in the journal`);
