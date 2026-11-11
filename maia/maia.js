@@ -518,7 +518,10 @@
     async 'family-link'() {
       let url;
       try { ({ url } = await api('/api/family-link')); } catch (error) { toast(error.message); return; }
-      if (navigator.share) { try { await navigator.share({ title: NAME, text: `News of ${NAME}`, url }); return; } catch (error) { if (error.name === 'AbortError') return; } }
+      // Firefox on Android keeps a dismissed share request pending and shows it again
+      // when a date or time picker closes, so there the link is copied instead.
+      const ua = navigator.userAgent, stickyShare = /Android/.test(ua) && /Firefox\//.test(ua);
+      if (navigator.share && !stickyShare) { try { await navigator.share({ title: NAME, text: `News of ${NAME}`, url }); return; } catch (error) { if (error.name === 'AbortError') return; } }
       try { await navigator.clipboard.writeText(url); toast('The family link is copied.'); } catch { window.prompt('Copy the family link:', url); }
     },
     async 'push-on'() {
