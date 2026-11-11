@@ -43,6 +43,7 @@ async function unit() {
   assert.equal(feed.side, 'left'); assert.ok(!Number.isNaN(Date.parse(feed.start))); assert.equal(feed.end, '2026-11-07T10:20:00.000Z'); assert.equal(feed.note.length, 500); assert.equal('junk' in feed, false);
   assert.deepEqual(Maia.SHAPES.news({ on: '2026-11-07', title: { fr: 'A', de: 'B' }, text: 'no', photos: ['cccccccc', 'bad id'] }), { on: '2026-11-07', title: { fr: 'A' }, text: {}, photos: ['cccccccc'] });
   assert.equal(Maia.SHAPES.journal({ on: '7 nov', weight: '3500' }).weight, null, 'numbers must be numbers');
+  assert.deepEqual(Maia.SHAPES.feed({ start: '2026-11-07T10:00:00Z', pauses: [{ start: '2026-11-07T10:05:00Z', end: null }, { start: 'nope' }, 'x'] }).pauses, [{ start: '2026-11-07T10:05:00.000Z', end: null }], 'a feed keeps its pauses, an open one included');
   // The cookie: signed, with a role and an expiry; a changed byte is nobody.
   const secrets = tmp() + '/s.json';
   fs.writeFileSync(secrets, JSON.stringify({ parents: 'parents-word', family: 'family-word', cookieSecret: 'c'.repeat(32) }));
@@ -239,6 +240,19 @@ async function browser() {
     const other = await phone();
     await login(other, secrets.parents);
     await other.waitForSelector('[data-action=stop-feed]', { timeout: 5000 });
+    // A pause on one phone shows on the other, which can resume it; the clock stands still meanwhile.
+    await page.click('[data-action=pause-feed]');
+    await page.waitForSelector('[data-action=resume-feed]');
+    assert.match(await page.locator('#feed-now').textContent(), /Paused, right/);
+    await other.waitForSelector('[data-action=resume-feed]', { timeout: 5000 });
+    const frozen = await other.locator('.timer').evaluate(el => el.firstChild.nodeValue);
+    await other.waitForTimeout(1300);
+    assert.equal(await other.locator('.timer').evaluate(el => el.firstChild.nodeValue), frozen, 'a paused clock stands still');
+    await other.click('[data-action=resume-feed]');
+    await page.waitForSelector('[data-action=pause-feed]', { timeout: 5000 });
+    await page.click('[data-action=pause-feed]'); await other.waitForSelector('[data-action=resume-feed]', { timeout: 5000 });
+    const t0 = Date.parse('2026-11-07T10:00:00Z'), m = 60000;
+    assert.equal(await page.evaluate(f => window.MaiaApp.feedMs(f), { start: new Date(t0).toISOString(), end: new Date(t0 + 30 * m).toISOString(), pauses: [{ start: new Date(t0 + 10 * m).toISOString(), end: new Date(t0 + 15 * m).toISOString() }] }), 25 * m, 'paused minutes do not count'); 
     await other.click('[data-action=stop-feed]');
     await page.waitForSelector('[data-action=start-feed][data-side=left]', { timeout: 5000 });
     assert.match(await page.locator('#view-today .note').first().textContent(), /Last feed just now: right, 0 min\. Next, left\./);
@@ -255,7 +269,8 @@ async function browser() {
     assert.match(await page.locator('.rhythm .rhythm-stats').textContent(), /1\s*feeds in 24 h/);
     const markBox = await page.locator('.rhythm .feed-mark').boundingBox();
     await page.touchscreen.tap(markBox.x + markBox.width / 2, markBox.y + markBox.height / 2);
-    assert.match(await page.locator('.chart-tip').textContent(), /^Right, \d\d:\d\d–\d\d:\d\d · 0 min$/);
+    assert.match(await page.locator('.chart-tip').textContent(), /^Right, \d\d:\d\d–\d\d:\d\d · 0 min \(2 pauses\)$/);
+    assert.equal(await page.evaluate(() => window.MaiaApp.feeds()[0].pauses.every(p => p.end)), true, 'stopping while paused closes the pause');
     assert.equal(await page.locator('.chart-tip').isVisible(), true, 'a tap shows the tooltip and it stays');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth === innerWidth), true, 'the charts fit the phone');
     assert.equal(await page.locator('#view-feeds .list li').count(), 1);

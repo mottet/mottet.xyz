@@ -336,7 +336,8 @@ is one JSON line appended to `data/maia/records.jsonl` (`id`, `type`, `rev`,
 `at`, `by` and the type's own fields; the latest line per id wins and
 `deleted: true` hides one), loaded into memory at start and broadcast on the
 socket.io namespace `/maia` as it is written, so the other phone updates at
-once. Types: `feed` (side, start, end, note), `care` (vitamin or medicine),
+once. Types: `feed` (side, start, end, note, and `pauses` as `{start, end}` with the
+last one open while paused; no duration counts paused time), `care` (vitamin or medicine),
 `appointment`, `journal` (a day, text, measurements, photos), `news` (title
 and text as `{fr, en, zh}`) and `photo` (shrunk to 1600 px as JPEG on the
 phone before upload; `audience` turns to `family` when a news post carries
