@@ -429,11 +429,14 @@
   // The photo strip inside a dialog: attached photos, a picker, and for news the recent journal photos to reuse.
   function photoStrip(dlg, ids, { audience, reuse }) {
     const strip = dlg.querySelector('[data-strip]'), input = dlg.querySelector('input[type=file]');
+    // The recent photos stay folded until asked for, and stay as they were left while photos come and go.
+    let recentOpen = false;
     const draw = () => {
+      const fold = strip.querySelector('details.recent'); if (fold) recentOpen = fold.open;
       const attached = ids.map(id => state.records.get(id)).filter(Boolean);
       const others = reuse ? all('photo').sort((a, b) => b.rev - a.rev).filter(p => !ids.includes(p.id)).slice(0, 12) : [];
       strip.innerHTML = `${attached.length ? `<div class="photos">${attached.map(p => `<button class="thumb" type="button" data-detach="${p.id}" aria-label="Remove this photo" aria-pressed="true"><img src="/photos/${p.id}" alt=""></button>`).join('')}</div>` : '<p class="note">No photo attached.</p>'}
-        ${others.length ? `<p class="note" style="margin-top:8px">Tap a recent photo to attach it:</p><div class="photos">${others.map(p => `<button class="thumb" type="button" data-attach="${p.id}" aria-label="Attach this photo"><img src="/photos/${p.id}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}`;
+        ${others.length ? `<details class="recent"${recentOpen ? ' open' : ''}><summary>Recent photos (${others.length})</summary><p class="note" style="margin-top:8px">Tap a photo to attach it:</p><div class="photos">${others.map(p => `<button class="thumb" type="button" data-attach="${p.id}" aria-label="Attach this photo"><img src="/photos/${p.id}" alt="" loading="lazy"></button>`).join('')}</div></details>` : ''}`;
     };
     strip.addEventListener('click', event => { const b = event.target.closest('[data-detach],[data-attach]'); if (!b) return; if (b.dataset.detach) ids.splice(ids.indexOf(b.dataset.detach), 1); else ids.push(b.dataset.attach); draw(); });
     input.addEventListener('change', async () => {

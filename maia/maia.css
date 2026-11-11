@@ -190,6 +190,11 @@ html[data-theme="night"] .badge-new { color: #0f1512; }
 .photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; margin: 10px 0 4px; }
 .photos img, .photos .thumb { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-2); }
 .photos .thumb { position: relative; padding: 0; cursor: pointer; }
+details.recent { margin-top: 10px; }
+details.recent > summary { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--card); cursor: pointer; color: var(--ink-2); list-style: none; }
+details.recent > summary::-webkit-details-marker { display: none; }
+details.recent > summary::before { content: '▸'; color: var(--moss); }
+details.recent[open] > summary::before { content: '▾'; }
 .photos .thumb img { border: 0; }
 .photos .thumb[aria-pressed="true"]::after { content: ''; position: absolute; inset: 0; border: 4px solid var(--moss); border-radius: 10px; }
 .photos.single { grid-template-columns: 1fr; }

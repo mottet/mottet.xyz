@@ -293,6 +293,7 @@ async function browser() {
 
     // News for the family, from the journal page, in three languages.
     await page.click('[data-action=share-journal]'); await page.waitForSelector('dialog[open]');
+    if (await page.locator('dialog details.recent').count()) assert.equal(await page.locator('dialog details.recent').getAttribute('open'), null, 'recent photos start folded');
     assert.equal(await page.inputValue('dialog input[name=title_en]'), 'First days');
     await page.fill('dialog input[name=title_fr]', 'Premiers jours'); await page.fill('dialog textarea[name=text_fr]', 'Elle dort.');
     await page.fill('dialog input[name=title_zh]', '頭幾天');
@@ -329,6 +330,11 @@ async function browser() {
     assert.equal(await family.evaluate(() => fetch('/api/family-link').then(r => r.status)), 403, 'the family cannot read the link');
     // Live for the family too: a second post appears without a reload.
     await page.click('[data-action=add-news]'); await page.waitForSelector('dialog[open]');
+    assert.equal(await page.locator('dialog details.recent').getAttribute('open'), null, 'recent photos start folded');
+    assert.match(await page.locator('dialog details.recent summary').textContent(), /Recent photos \(1\)/);
+    assert.equal(await page.locator('dialog [data-attach]').isVisible(), false);
+    await page.click('dialog details.recent summary');
+    assert.equal(await page.locator('dialog [data-attach]').isVisible(), true, 'one tap unfolds them');
     await page.fill('dialog input[name=title_en]', 'A smile'); await page.click('dialog button[type=submit]');
     await family.waitForFunction(() => document.querySelectorAll('.entry').length === 2, null, { timeout: 5000 });
     // The same day is one section: one card, its date once, the two posts in the order they were written.
