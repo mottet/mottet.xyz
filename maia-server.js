@@ -15,7 +15,9 @@ const createPush = require('./maia-push.js');
 const FACTS = { born: '2026-11-04T20:44:00+01:00', weight: 3500, height: 49, timezone: 'Europe/Paris' };
 const HOSTS = new Set(['maia.mottet.xyz', 'maia.localhost'].concat((process.env.MAIA_HOSTS || '').split(',').filter(Boolean)));
 const ROLES = ['parents', 'family'];
-const TYPES = ['feed', 'care', 'appointment', 'journal', 'news', 'photo'];
+const TYPES = ['feed', 'care', 'appointment', 'journal', 'news', 'photo', 'reaction'];
+// The reactions a news post can get. A phone gives each at most once.
+const EMOJI = ['❤️', '🥰', '😂', '🥹', '👏', '🎉'];
 const COOKIE = 'maia';
 const COOKIE_DAYS = 365;
 const ID = /^[a-z0-9]{8,32}$/;
@@ -27,8 +29,13 @@ const newId = () => crypto.randomBytes(8).toString('hex');
 const same = (a, b) => a.length === b.length && crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
 const sign = (secret, text) => crypto.createHmac('sha256', secret).update(text).digest('base64url');
 
-// The family sees news and the photos attached to it, nothing else.
-const forFamily = rec => rec.type === 'news' || (rec.type === 'photo' && rec.audience === 'family');
+// The family sees news, the photos attached to it and the reactions to it, nothing else.
+const forFamily = rec => rec.type === 'news' || rec.type === 'reaction' || (rec.type === 'photo' && rec.audience === 'family');
+// A phone is known by a random id it keeps; records only carry a keyed hash of
+// it, so nobody reading the reactions can act as another phone.
+const DEVICE = /^[a-f0-9]{16,64}$/;
+const hashOf = (secret, text) => crypto.createHmac('sha256', secret).update(text).digest('hex');
+const whoOf = (secrets, device) => hashOf(secrets.cookieSecret, `who|${device}`).slice(0, 16);
 
 function openStore(dir) {
   const file = path.join(dir, 'records.jsonl');
@@ -188,7 +195,26 @@ module.exports = function maia(options = {}) {
   router.get('/api/records', (req, res) => {
     if (!needRole(req, res)) return;
     res.set('Cache-Control', 'no-store');
-    res.json({ ok: true, rev: store.rev, records: store.visible(req.role) });
+    const device = str(req.get('x-maia-device'), 64);
+    res.json({ ok: true, rev: store.rev, records: store.visible(req.role), me: DEVICE.test(device) ? whoOf(req.secrets, device) : null });
+  });
+
+  // Reactions: anyone let in may give or take back an emoji on a news post.
+  router.post('/api/react', express.json({ limit: '2kb' }), (req, res) => {
+    if (!needRole(req, res)) return;
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const post = store.records.get(str(body.news, 32));
+    const device = str(body.device, 64);
+    if (!post || post.type !== 'news' || post.deleted) return res.status(404).json({ ok: false, message: 'That news is gone.' });
+    if (!EMOJI.includes(body.emoji)) return res.status(400).json({ ok: false, message: 'Not one of the reactions.' });
+    if (!DEVICE.test(device)) return res.status(400).json({ ok: false, message: 'Bad device.' });
+    const id = hashOf(req.secrets.cookieSecret, `reaction|${post.id}|${device}|${body.emoji}`).slice(0, 24);
+    const existing = store.records.get(id);
+    const on = Boolean(body.on);
+    if (existing && Boolean(!existing.deleted) === on) return res.json({ ok: true, record: existing });
+    const rec = store.put({ id, type: 'reaction', news: post.id, emoji: body.emoji, who: whoOf(req.secrets, device), by: req.role, at: new Date().toISOString(), ...(on ? {} : { deleted: true }) });
+    broadcast(rec);
+    res.json({ ok: true, record: rec });
   });
   router.post('/api/records', express.json({ limit: '64kb' }), (req, res) => {
     if (!needParents(req, res)) return;
@@ -197,7 +223,7 @@ module.exports = function maia(options = {}) {
     if (!ID.test(id)) return res.status(400).json({ ok: false, message: 'Bad id.' });
     const existing = store.records.get(id);
     const type = existing ? existing.type : body.type;
-    if (!TYPES.includes(type) || type === 'photo') return res.status(400).json({ ok: false, message: 'Bad type.' });
+    if (!TYPES.includes(type) || type === 'photo' || type === 'reaction') return res.status(400).json({ ok: false, message: 'Bad type.' });
     const rec = body.deleted
       ? { id, type, deleted: true, at: new Date().toISOString(), by: req.role }
       : { id, type, at: existing ? existing.at : new Date().toISOString(), by: req.role, ...SHAPES[type](body) };
@@ -286,3 +312,4 @@ module.exports.openStore = openStore;
 module.exports.forFamily = forFamily;
 module.exports.SHAPES = SHAPES;
 module.exports.sign = sign;
+module.exports.EMOJI = EMOJI;

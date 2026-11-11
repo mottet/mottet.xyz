@@ -168,6 +168,21 @@ html[data-theme="night"] .segment button[aria-pressed="true"] { color: #0f1512; 
 .day-card > .date { font-family: Federo, serif; color: var(--bark); font-size: 16px; letter-spacing: .04em; margin-bottom: 4px; }
 .entry + .entry { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
 .entry .langs { font-size: 14px; color: var(--ink-3); letter-spacing: .06em; }
+/* New since the last visit, and up to date */
+.badge-new { display: inline-block; padding: 1px 10px; border-radius: 999px; background: var(--moss); color: #fff; font-family: Federo, serif; font-size: 14px; letter-spacing: .04em; vertical-align: 2px; }
+html[data-theme="night"] .badge-new { color: #0f1512; }
+.day-card.has-new { border-color: var(--moss); box-shadow: 0 0 0 1px var(--moss), var(--shadow); }
+.news-status { display: flex; align-items: center; gap: 8px; margin: -2px 0 14px; color: var(--ink-2); font-style: italic; }
+.news-status.has-new { color: var(--ink); font-style: normal; }
+.news-status .icon { color: var(--moss); }
+/* Reactions */
+.reactions { display: flex; flex-wrap: wrap; gap: 4px; margin: 10px 0 2px; }
+.react { display: inline-flex; align-items: center; justify-content: center; gap: 3px; min-width: 44px; min-height: 44px; padding: 0 7px; border: 1.5px solid var(--line); border-radius: 999px; background: var(--card); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.react .emo { font-size: 21px; line-height: 1; font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; }
+.react .n { font-size: 17px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.react[aria-pressed="true"] { border-color: var(--moss); background: var(--paper-2); }
+.react[aria-pressed="true"] .n { color: var(--ink); font-weight: 600; }
+@media (prefers-reduced-motion: no-preference) { .react:active { transform: scale(.94); } }
 .entry h3 { margin: 2px 0 6px; }
 .entry .text { white-space: pre-wrap; }
 .entry .measures { display: flex; gap: 14px; color: var(--moss); font-variant-numeric: tabular-nums; margin: 6px 0; flex-wrap: wrap; }

@@ -10,7 +10,10 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
 
-  const state = { role: null, facts: null, records: new Map(), lang: store.get('maia-lang') || I.guess(), gateError: '', socket: null, ticker: null };
+  const state = { role: null, facts: null, records: new Map(), lang: store.get('maia-lang') || I.guess(), gateError: '', socket: null, ticker: null, me: null, seenBefore: undefined };
+  // This phone's own random id, so its reactions can be told apart and taken back.
+  const device = (() => { let d = store.get('maia-device'); if (!/^[a-f0-9]{32}$/.test(d || '')) { d = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, '0')).join(''); store.set('maia-device', d); } return d; })();
+  const EMOJI = ['❤️', '🥰', '😂', '🥹', '👏', '🎉'];
   const VIEWS = ['today', 'feeds', 'journal', 'care', 'news'];
   const view = () => { const h = location.hash.replace('#', ''); return VIEWS.includes(h) ? h : 'today'; };
 
@@ -41,6 +44,7 @@
   const journal = () => all('journal').sort((a, b) => b.on.localeCompare(a.on) || b.rev - a.rev);
   const news = () => all('news').sort((a, b) => b.on.localeCompare(a.on) || b.rev - a.rev);
   const photosOf = rec => (rec.photos || []).map(id => state.records.get(id)).filter(p => p && !p.deleted);
+  const reactionsOf = id => { const out = new Map(EMOJI.map(e => [e, { n: 0, mine: false }])); for (const r of all('reaction')) if (r.news === id && out.has(r.emoji)) { const x = out.get(r.emoji); x.n += 1; if (state.me && r.who === state.me) x.mine = true; } return out; };
   const groupByDay = (list, key) => { const groups = new Map(); for (const r of list) { const day = localDay(r[key]); if (!groups.has(day)) groups.set(day, []); groups.get(day).push(r); } return groups; };
 
   // ---- api ------------------------------------------------------------------
@@ -62,8 +66,9 @@
     } catch (error) { toast(error.message); throw error; }
   }
   async function loadRecords() {
-    const { records } = await api('/api/records');
+    const { records, me } = await api('/api/records', { headers: { 'X-Maia-Device': device } });
     state.records = new Map(records.map(r => [r.id, r]));
+    state.me = me || null;
   }
   function connect() {
     if (state.socket || typeof io === 'undefined') return;
@@ -71,7 +76,8 @@
     state.socket.on('maia:record', rec => { const have = state.records.get(rec.id); if (!have || have.rev < rec.rev) { state.records.set(rec.id, rec); render(); } });
     state.socket.on('connect', () => { if (state.role) loadRecords().then(render).catch(() => {}); });
   }
-  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state.role) loadRecords().then(render).catch(() => {}); });
+  // Leaving the page ends a visit: coming back compares the news with what was seen until then.
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { state.seenBefore = undefined; return; } if (state.role) loadRecords().then(render).catch(() => {}); });
 
   // ---- boot ----------------------------------------------------------------
   async function boot() {
@@ -116,19 +122,34 @@
       </section>`;
   }
 
+  // What this phone saw last: the newest post's time when the news was last shown.
+  // Posts written after it are new for this visit; once shown, they count as seen
+  // for the next one. The first visit marks nothing, since everything is new.
+  const SEEN = 'maia-seen';
   function familyPage() {
     const L = state.lang, posts = news();
+    if (state.seenBefore === undefined) state.seenBefore = store.get(SEEN) || null;
+    const latest = posts.reduce((m, p) => (p.at > m ? p.at : m), '');
+    if (latest && latest > (store.get(SEEN) || '') && document.visibilityState === 'visible') store.set(SEEN, latest); // a page left open in the background sees nothing
+    const isNew = p => Boolean(state.seenBefore) && p.at > state.seenBefore;
+    const fresh = posts.filter(isNew).length;
+    const status = !state.seenBefore || !posts.length ? ''
+      : fresh ? `<p class="news-status has-new" role="status"><span class="badge-new">${esc(I.t(L, 'newPost'))}</span> ${esc(I.t(L, 'newSince', { n: fresh }))}</p>`
+        : `<p class="news-status" role="status">${A.icon('check', 'inline')} ${esc(I.t(L, 'upToDate'))}</p>`;
     return `<div class="topbar">${themeButton()}<button class="btn btn-ghost" type="button" data-action="logout" aria-label="${esc(I.t(L, 'signOut'))}" title="${esc(I.t(L, 'signOut'))}">${A.icon('leave')}</button></div>
       ${masthead(L)}${langSwitch()}
       <p class="note" style="text-align:center">${esc(I.t(L, 'familyWelcome'))}</p>
-      <h2>${esc(I.t(L, 'news'))}</h2>
-      ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card" lang="${L === 'zh' ? 'zh-Hant' : L}"><div class="date">${esc(I.dateLong(L, new Date(on + 'T12:00:00')))}</div>${list.map(p => newsPost(p, L)).join('')}</section>`).join('') : `${A.nest()}<p class="empty">${esc(I.t(L, 'noNews'))}</p>`}`;
+      <h2>${esc(I.t(L, 'news'))}</h2>${status}
+      ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card${list.some(isNew) ? ' has-new' : ''}" lang="${L === 'zh' ? 'zh-Hant' : L}"><div class="date">${esc(I.dateLong(L, new Date(on + 'T12:00:00')))}</div>${list.map(p => newsPost(p, L, isNew(p))).join('')}</section>`).join('') : `${A.nest()}<p class="empty">${esc(I.t(L, 'noNews'))}</p>`}`;
   }
-  const newsPost = (p, L) => `<article class="entry">
-    <h3>${esc(I.pick(p.title, L) || I.t(L, 'untitled'))}</h3>
+  const newsPost = (p, L, fresh) => `<article class="entry${fresh ? ' is-new' : ''}">
+    ${fresh ? `<span class="badge-new">${esc(I.t(L, 'newPost'))}</span>` : ''}<h3>${esc(I.pick(p.title, L) || I.t(L, 'untitled'))}</h3>
     <div class="text">${esc(I.pick(p.text, L))}</div>
     ${photoGrid(photosOf(p), I.t(L, 'photoAlt'))}
+    ${reactionRow(p, L)}
   </article>`;
+  // One button per emoji, with how many gave it; this phone's own are pressed.
+  const reactionRow = (p, L) => `<div class="reactions" role="group" aria-label="${esc(I.t(L, 'reactions'))}">${[...reactionsOf(p.id)].map(([e, { n, mine }]) => `<button type="button" class="react" data-action="react" data-id="${p.id}" data-emoji="${e}" aria-pressed="${mine}" aria-label="${esc(I.t(L, 'react', { emoji: e }))}${n ? ` (${n})` : ''}"><span class="emo" aria-hidden="true">${e}</span>${n ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</div>`;
   // Entries of the same day share one card: the date once, then each entry in the order it was written.
   const byDay = list => { const days = new Map(); for (const r of list) { if (!days.has(r.on)) days.set(r.on, []); days.get(r.on).push(r); } for (const l of days.values()) l.sort((a, b) => a.rev - b.rev); return [...days]; };
   const photoGrid = (photos, alt) => photos.length ? `<div class="photos${photos.length === 1 ? ' single' : ''}">${photos.map(p => `<a href="/photos/${p.id}" target="_blank" rel="noopener"><img src="/photos/${p.id}" alt="${esc(alt)}" loading="lazy" width="${p.w || ''}" height="${p.h || ''}"></a>`).join('')}</div>` : '';
@@ -311,7 +332,7 @@
       <div class="row"><button class="btn btn-primary" type="button" data-action="add-news">${A.icon('news')}Write some news</button></div>
       <div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="family-link">${A.icon('share')}Share the family link</button></div>
       <p class="note" style="margin:6px 0 0;font-size:16px">The link carries the family password and opens the news in one tap. Anyone who has it can read the news.</p>
-      ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card"><div class="date">${fmtDay(on)}</div>${list.map(p => `<article class="entry"><div class="langs">${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), NAME)}
+      ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card"><div class="date">${fmtDay(on)}</div>${list.map(p => `<article class="entry"><div class="langs">${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), NAME)}${reactionRow(p, 'en')}
         <div class="entry-actions"><button class="btn" type="button" data-action="edit-news" data-id="${p.id}">${A.icon('pen')}Edit</button></div></article>`).join('')}</section>`).join('') : `${A.nest()}<p class="empty">Nothing told yet.</p>`}`;
   }
 
@@ -456,7 +477,7 @@
   const actions = {
     theme() { const next = document.documentElement.dataset.theme === 'night' ? 'day' : 'night'; document.documentElement.dataset.theme = next; store.set('maia-theme', next); },
     lang(b) { state.lang = b.dataset.lang; store.set('maia-lang', state.lang); render(); },
-    async logout() { try { await post('/api/logout', {}); } catch { /* the cookie goes anyway */ } if (state.socket) { state.socket.disconnect(); state.socket = null; } state.role = null; state.records = new Map(); state.gateError = ''; location.hash = ''; render(); },
+    async logout() { try { await post('/api/logout', {}); } catch { /* the cookie goes anyway */ } if (state.socket) { state.socket.disconnect(); state.socket = null; } state.role = null; state.records = new Map(); state.gateError = ''; state.me = null; state.seenBefore = undefined; location.hash = ''; render(); },
     'start-feed': b => save({ type: 'feed', side: b.dataset.side, start: new Date().toISOString(), end: null, note: '' }),
     'stop-feed': b => { const f = state.records.get(b.dataset.id); if (f) save({ ...f, end: new Date().toISOString() }); },
     'add-feed': () => feedDialog(null),
@@ -472,6 +493,13 @@
     'share-journal': b => { const e = state.records.get(b.dataset.id); if (e) newsDialog(null, { on: e.on, title: { en: e.title }, text: { en: e.text }, photos: [...(e.photos || [])] }); },
     'add-news': () => newsDialog(null),
     'edit-news': b => newsDialog(state.records.get(b.dataset.id)),
+    async react(b) {
+      const mine = b.getAttribute('aria-pressed') === 'true';
+      try {
+        const { record } = await post('/api/react', { news: b.dataset.id, emoji: b.dataset.emoji, device, on: !mine });
+        state.records.set(record.id, record); render();
+      } catch (error) { toast(error.message); }
+    },
     async 'family-link'() {
       let url;
       try { ({ url } = await api('/api/family-link')); } catch (error) { toast(error.message); return; }

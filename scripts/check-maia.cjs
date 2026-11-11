@@ -328,6 +328,45 @@ async function browser() {
     assert.equal(await page.locator('#view-journal .day-card').count(), 1, 'two journal pages of one day share a card');
     assert.equal(await page.locator('#view-journal .day-card > .date').count(), 1, 'the date is written once');
 
+    // Reactions: each phone gives an emoji once and can take it back; everyone sees the count live.
+    const heart = '.entry:first-of-type .react[data-emoji="❤️"]';
+    await family.click(heart);
+    await family.waitForSelector(`${heart}[aria-pressed=true]`);
+    assert.equal(await family.locator(`${heart} .n`).textContent(), '1');
+    await linked.waitForSelector(`${heart} .n`, { timeout: 5000 });
+    await linked.click(heart);
+    await family.waitForFunction(sel => document.querySelector(`${sel} .n`)?.textContent === '2', heart, { timeout: 5000 });
+    assert.equal(await family.locator(`${heart}`).getAttribute('aria-pressed'), 'true', 'the other phone\'s heart is not mine');
+    await page.click('a[href="#news"]'); await page.waitForSelector('#view-news');
+    assert.equal(await page.locator(`#view-news ${heart} .n`).textContent(), '2', 'the parents see the reactions');
+    await family.click(heart);
+    await family.waitForSelector(`${heart}[aria-pressed=false]`);
+    assert.equal(await family.locator(`${heart} .n`).textContent(), '1', 'taken back');
+    await page.waitForFunction(sel => document.querySelector(`#view-news ${sel} .n`)?.textContent === '1', heart, { timeout: 5000 });
+    const firstNews = await family.evaluate(() => window.MaiaApp.news().find(p => p.title.en === 'First days').id);
+    assert.equal(await family.evaluate(id => fetch('/api/react', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ news: id, emoji: '💩', device: 'a'.repeat(32), on: true }) }).then(r => r.status), firstNews), 400, 'only the six reactions');
+    assert.equal(await page.evaluate(() => fetch('/api/records', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"type":"reaction"}' }).then(r => r.status)), 400, 'reactions only through their own door');
+
+    // New since the last visit: the first visit marks nothing; then the phone is up to date; a later post is new once.
+    await family.reload(); await family.waitForSelector('.day-card');
+    assert.match(await family.locator('.news-status').textContent(), /You are up to date/);
+    assert.equal(await family.locator('.badge-new').count(), 0);
+    // The family phone leaves the page in the background; the post written meanwhile waits for its return.
+    const hide = p => p.evaluate(state => { Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state }); document.dispatchEvent(new Event('visibilitychange')); }, 'hidden');
+    const show = p => p.evaluate(() => { delete document.visibilityState; document.dispatchEvent(new Event('visibilitychange')); });
+    await hide(family);
+    await page.click('[data-action=add-news]'); await page.waitForSelector('dialog[open]');
+    await page.fill('dialog input[name=title_en]', 'A walk'); await page.click('dialog button[type=submit]');
+    await page.waitForSelector('dialog[open]', { state: 'detached' });
+    await family.waitForFunction(() => document.querySelectorAll('.entry').length === 3, null, { timeout: 5000 });
+    await show(family);
+    await family.waitForSelector('.news-status.has-new', { timeout: 5000 });
+    assert.match(await family.locator('.news-status').textContent(), /1 new post since your last visit/);
+    assert.deepEqual(await family.locator('.entry.is-new h3').allTextContents(), ['A walk'], 'only the unseen post is marked');
+    assert.equal(await family.locator('.day-card.has-new').count(), 1);
+    await family.reload(); await family.waitForSelector('.day-card');
+    assert.match(await family.locator('.news-status').textContent(), /You are up to date/, 'seen once, no longer new');
+
     // Care: an appointment shows on Today and can be ticked done.
     await page.click('a[href="#care"]'); await page.waitForSelector('#view-care');
     await page.click('[data-action=add-appointment]'); await page.waitForSelector('dialog[open]');

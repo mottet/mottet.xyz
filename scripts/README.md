@@ -322,7 +322,16 @@ Two passwords in `.maia-secrets.json` give two roles through a signed cookie:
 `/?key=<family password>` lets a reader in as family and redirects to `/`, so
 the parents can share one link (the News tab has a share button for it); the
 parents password never works that way, and a parent who opens the link keeps
-their role. Wrong keys count as failed logins. Every record
+their role. Wrong keys count as failed logins.
+
+Everyone let in can react to a news post with one of six emoji (`POST
+/api/react`, record type `reaction`, visible to both roles and live). Each
+phone keeps a random id in `localStorage`; records carry only a keyed hash of
+it (`who`), so a phone sees which reactions are its own and nobody can take
+back another phone's. The family page marks posts written since this phone
+last looked at the news (`maia-seen` in `localStorage`, the newest post's
+creation time, saved only while the page is visible), says how many are new,
+or that the reader is up to date; the first visit marks nothing. Every record
 is one JSON line appended to `data/maia/records.jsonl` (`id`, `type`, `rev`,
 `at`, `by` and the type's own fields; the latest line per id wins and
 `deleted: true` hides one), loaded into memory at start and broadcast on the
