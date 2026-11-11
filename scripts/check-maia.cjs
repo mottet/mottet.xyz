@@ -104,6 +104,10 @@ async function reminders() {
   assert.deepEqual(keys([appt], '2026-11-09T13:00:00+01:00', [phone('p1', { vitamin: false, appointments: false })]), []);
   // A feed running forty minutes; none for two and a half hours, then every thirty minutes; silence after twelve.
   const run = { id: 'f1', type: 'feed', side: 'right', start: '2026-11-08T14:00:00+01:00', end: null };
+  const continued = { ...run, pauses: [{ start: '2026-11-08T14:20:00+01:00', end: '2026-11-08T14:50:00+01:00' }] };
+  assert.deepEqual(keys([continued], '2026-11-08T15:05:00+01:00', [phone('p1', { vitamin: false })]), [], 'the gap before a continued feed does not count');
+  assert.deepEqual(keys([continued], '2026-11-08T15:11:00+01:00', [phone('p1', { vitamin: false })]), ['long:f1>p1']);
+  assert.deepEqual(keys([{ ...run, pauses: [{ start: '2026-11-08T14:10:00+01:00', end: null }] }], '2026-11-08T14:41:00+01:00', [phone('p1', { vitamin: false })]), ['long:f1>p1'], 'a feed left paused still rings');
   assert.deepEqual(keys([run], '2026-11-08T14:39:00+01:00', noVit), []);
   const planLong = Push.plan({ records: records([run]), subscriptions: noVit, now: T('2026-11-08T14:41:00+01:00') });
   assert.deepEqual(planLong.map(r => r.key), ['long:f1']);
@@ -257,6 +261,15 @@ async function browser() {
     await page.waitForSelector('[data-action=start-feed][data-side=left]', { timeout: 5000 });
     assert.match(await page.locator('#view-today .note').first().textContent(), /Last feed just now: right, 0 min\. Next, left\./);
     assert.equal(await page.locator('[data-action=start-feed][data-side=left]').getAttribute('class'), 'btn btn-big btn-primary', 'the other side is suggested');
+    // Stopped too early: the last feed can be continued, from either phone; the gap becomes a pause.
+    await other.waitForSelector('[data-action=continue-feed]', { timeout: 5000 });
+    await page.click('[data-action=continue-feed]');
+    await other.waitForSelector('[data-action=stop-feed]', { timeout: 5000 });
+    assert.match(await page.locator('#feed-now').textContent(), /Feeding, right/, 'the same feed, on the same side');
+    assert.equal(await page.evaluate(() => window.MaiaApp.feeds().length), 1, 'no new feed');
+    assert.equal(await page.evaluate(() => window.MaiaApp.feeds()[0].pauses.filter(p => p.end).length), 3, 'the gap is kept as a pause');
+    await page.click('[data-action=stop-feed]');
+    await other.waitForSelector('[data-action=start-feed][data-side=left]', { timeout: 5000 });
     await page.click('[data-action=vitamin]');
     await page.waitForSelector('[data-action=vitamin][aria-pressed=true]');
     await other.waitForSelector('[data-action=vitamin][aria-pressed=true]', { timeout: 5000 });
@@ -269,7 +282,7 @@ async function browser() {
     assert.match(await page.locator('.rhythm .rhythm-stats').textContent(), /1\s*feeds in 24 h/);
     const markBox = await page.locator('.rhythm .feed-mark').boundingBox();
     await page.touchscreen.tap(markBox.x + markBox.width / 2, markBox.y + markBox.height / 2);
-    assert.match(await page.locator('.chart-tip').textContent(), /^Right, \d\d:\d\d–\d\d:\d\d · 0 min \(2 pauses\)$/);
+    assert.match(await page.locator('.chart-tip').textContent(), /^Right, \d\d:\d\d–\d\d:\d\d · 0 min \(3 pauses\)$/);
     assert.equal(await page.evaluate(() => window.MaiaApp.feeds()[0].pauses.every(p => p.end)), true, 'stopping while paused closes the pause');
     assert.equal(await page.locator('.chart-tip').isVisible(), true, 'a tap shows the tooltip and it stays');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth === innerWidth), true, 'the charts fit the phone');

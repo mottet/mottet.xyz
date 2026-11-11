@@ -43,6 +43,8 @@
   const pausedIn = (f, x, y) => pausesOf(f).reduce((s, p) => s + Math.max(0, Math.min(y, p.end ? Date.parse(p.end) : (f.end ? Date.parse(f.end) : Date.now())) - Math.max(x, Date.parse(p.start))), 0);
   const activeIn = (f, x, y) => { const a = Math.max(x, Date.parse(f.start)), b = Math.min(y, f.end ? Date.parse(f.end) : Date.now()); return b > a ? (b - a) - pausedIn(f, a, b) : 0; };
   const feedMs = f => activeIn(f, -Infinity, Infinity);
+  // A feed stopped too early can be continued for this long after it ended; the gap becomes a pause.
+  const CONTINUE_MS = 60 * 60000;
   const cares = () => all('care').sort((a, b) => new Date(b.at) - new Date(a.at));
   const vitaminToday = () => cares().find(c => c.kind === 'vitamin' && localDay(c.at) === today()) || null;
   const appointments = () => all('appointment').sort((a, b) => new Date(a.at || 0) - new Date(b.at || 0));
@@ -179,6 +181,7 @@
         <div class="row">${isPaused(run) ? `<button class="btn btn-big btn-primary" type="button" data-action="resume-feed" data-id="${run.id}">${A.icon('play')}Resume</button>` : `<button class="btn btn-big" type="button" data-action="pause-feed" data-id="${run.id}">${A.icon('pause')}Pause</button>`}<button class="btn btn-big btn-bark" type="button" data-action="stop-feed" data-id="${run.id}">${A.icon('stop')}Stop</button></div>
         <div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="edit-feed" data-id="${run.id}">${A.icon('pen')}Fix the start or add a note</button></div>`
       : `<p class="note">${last ? `Last feed ${ago(last.end)}: ${last.side}, ${duration(feedMs(last))}. Next, ${suggest}.` : 'No feed logged yet. Tap a side when she starts.'}</p>
+        ${last && Date.now() - Date.parse(last.end) < CONTINUE_MS ? `<div class="row" style="margin-bottom:8px"><button class="btn" type="button" data-action="continue-feed" data-id="${last.id}">${A.icon('play')}Continue the last feed (${last.side})</button></div>` : ''}
         <div class="row"><button class="btn btn-big ${suggest === 'left' ? 'btn-primary' : ''}" type="button" data-action="start-feed" data-side="left">${A.icon('left')}Left</button><button class="btn btn-big ${suggest === 'right' ? 'btn-primary' : ''}" type="button" data-action="start-feed" data-side="right">${A.icon('right')}Right</button></div>
         <div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="start-feed" data-side="both">${A.icon('both')}Both sides</button><button class="btn" type="button" data-action="add-feed">${A.icon('plus')}A past feed</button></div>`}
     </section>
@@ -490,6 +493,7 @@
     'start-feed': b => save({ type: 'feed', side: b.dataset.side, start: new Date().toISOString(), end: null, note: '' }),
     'stop-feed': b => { const f = state.records.get(b.dataset.id); if (!f) return; const now = new Date().toISOString(); save({ ...f, end: now, pauses: pausesOf(f).map(p => (p.end ? p : { ...p, end: now })) }); },
     'pause-feed': b => { const f = state.records.get(b.dataset.id); if (f && !f.end && !isPaused(f)) save({ ...f, pauses: [...pausesOf(f), { start: new Date().toISOString(), end: null }] }); },
+    'continue-feed': b => { const f = state.records.get(b.dataset.id); if (!f || !f.end || running()) return; save({ ...f, end: null, pauses: [...pausesOf(f), { start: f.end, end: new Date().toISOString() }] }); },
     'resume-feed': b => { const f = state.records.get(b.dataset.id); if (f && isPaused(f)) { const now = new Date().toISOString(); save({ ...f, pauses: pausesOf(f).map(p => (p.end ? p : { ...p, end: now })) }); } },
     'add-feed': () => feedDialog(null),
     'edit-feed': b => feedDialog(state.records.get(b.dataset.id)),

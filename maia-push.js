@@ -83,7 +83,10 @@ function plan({ records, subscriptions, now = Date.now(), sent = {}, timezone = 
   const feeds = live.filter(r => r.type === 'feed');
   const running = feeds.filter(f => !f.end).sort((a, b) => Date.parse(a.start) - Date.parse(b.start))[0];
   if (running) {
-    const ms = now - Date.parse(running.start);
+    // Finished pauses do not count (a feed continued after a stop carries the gap
+    // as one); an open pause does, so a feed left paused by mistake still rings.
+    const rested = (Array.isArray(running.pauses) ? running.pauses : []).filter(p => p && p.start && p.end).reduce((s, p) => s + Math.max(0, Date.parse(p.end) - Date.parse(p.start)), 0);
+    const ms = now - Date.parse(running.start) - rested;
     if (ms >= LONG_FEED_MS) due(`long:${running.id}`, s => s.settings.longFeed, { title: 'Still feeding?', body: `On ${side(running)} since ${clock(timezone, running.start)}, ${spell(ms)} ago.`, url: '/#today', tag: 'feed' });
   } else {
     const last = feeds.filter(f => f.end).sort((a, b) => Date.parse(b.end) - Date.parse(a.end))[0];
