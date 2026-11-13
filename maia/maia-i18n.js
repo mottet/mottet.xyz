@@ -10,7 +10,7 @@
       born: 'Born on {date} at {time}', measures: '{weight} kg and {height} cm', age: 'Today she is {age}',
       days: { one: '{n} day old', other: '{n} days old' }, weeks: '{w} weeks and {d} days old', weeksOnly: '{w} weeks old', months: '{m} months and {d} days old', monthsOnly: '{m} months old',
       news: 'News', noNews: 'No news yet. Her parents are busy.', signOut: 'Leave', language: 'Language', theme: 'Night and day',
-      untitled: 'A day', photoAlt: 'A photo of Maïa', familyWelcome: 'Her parents write here when they can, with photos. Come back often.',
+      untitled: 'A day', photoAlt: 'A photo of Maïa', prevPhoto: 'Previous photo', nextPhoto: 'Next photo', photoOf: 'Photo {i} of {n}', familyWelcome: 'Her parents write here when they can, with photos. Come back often.',
       newPost: 'New', newSince: { one: '{n} new post since your last visit', other: '{n} new posts since your last visit' }, upToDate: 'You are up to date: you have seen all the news.', react: 'React with {emoji}', reactions: 'Reactions',
     },
     fr: {
@@ -19,7 +19,7 @@
       born: 'Née le {date} à {time}', measures: '{weight} kg et {height} cm', age: 'Aujourd’hui elle a {age}',
       days: { one: '{n} jour', other: '{n} jours' }, weeks: '{w} semaines et {d} jours', weeksOnly: '{w} semaines', months: '{m} mois et {d} jours', monthsOnly: '{m} mois',
       news: 'Nouvelles', noNews: 'Pas encore de nouvelles. Ses parents sont occupés.', signOut: 'Sortir', language: 'Langue', theme: 'Nuit et jour',
-      untitled: 'Une journée', photoAlt: 'Une photo de Maïa', familyWelcome: 'Ses parents écrivent ici quand ils le peuvent, avec des photos. Revenez souvent.',
+      untitled: 'Une journée', photoAlt: 'Une photo de Maïa', prevPhoto: 'Photo précédente', nextPhoto: 'Photo suivante', photoOf: 'Photo {i} sur {n}', familyWelcome: 'Ses parents écrivent ici quand ils le peuvent, avec des photos. Revenez souvent.',
       newPost: 'Nouveau', newSince: { one: '{n} nouvelle publication depuis votre dernière visite', other: '{n} nouvelles publications depuis votre dernière visite' }, upToDate: 'Vous êtes à jour : vous avez tout lu.', react: 'Réagir avec {emoji}', reactions: 'Réactions',
     },
     zh: {
@@ -28,7 +28,7 @@
       born: '{date} {time} 出生', measures: '{weight} 公斤，{height} 公分', age: '今天她 {age}',
       days: { one: '{n} 天大', other: '{n} 天大' }, weeks: '{w} 週又 {d} 天大', weeksOnly: '{w} 週大', months: '{m} 個月又 {d} 天大', monthsOnly: '{m} 個月大',
       news: '近況', noNews: '還沒有新消息，爸爸媽媽正忙著。', signOut: '離開', language: '語言', theme: '日夜',
-      untitled: '一天', photoAlt: 'Maïa 的照片', familyWelcome: '爸爸媽媽有空時會在這裡寫下近況和照片，常回來看看。',
+      untitled: '一天', photoAlt: 'Maïa 的照片', prevPhoto: '上一張照片', nextPhoto: '下一張照片', photoOf: '第 {i} 張，共 {n} 張', familyWelcome: '爸爸媽媽有空時會在這裡寫下近況和照片，常回來看看。',
       newPost: '新', newSince: { one: '自上次來訪後有 {n} 則新消息', other: '自上次來訪後有 {n} 則新消息' }, upToDate: '您已看完所有近況。', react: '用 {emoji} 回應', reactions: '回應',
     },
   };

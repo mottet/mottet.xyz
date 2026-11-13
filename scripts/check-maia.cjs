@@ -308,6 +308,21 @@ async function browser() {
     await page.click('[data-action=share-journal]'); await page.waitForSelector('dialog[open]');
     if (await page.locator('dialog details.recent').count()) assert.equal(await page.locator('dialog details.recent').getAttribute('open'), null, 'recent photos start folded');
     assert.equal(await page.inputValue('dialog input[name=title_en]'), 'First days');
+    // Several photos on one news: add two more, move the last one earlier, take the middle one back.
+    const icon = n => ({ name: `i${n}.png`, mimeType: 'image/png', buffer: fs.readFileSync(path.join(__dirname, '..', 'maia', `icon-${n}.png`)) });
+    await page.setInputFiles('dialog input[type=file]', [icon(512), icon(192)]);
+    await page.waitForFunction(() => document.querySelectorAll('dialog .thumb.attached').length === 3, null, { timeout: 10000 });
+    assert.match(await page.locator('dialog [data-add-label]').textContent(), /Add more photos/);
+    const attachedSrcs = () => page.locator('dialog .thumb.attached img').evaluateAll(l => l.map(i => i.getAttribute('src')));
+    const [j, a, b] = await attachedSrcs();
+    assert.equal(j, photoUrl, 'the journal photo comes first');
+    assert.equal(await page.locator('dialog .thumb.attached').first().locator('[data-earlier]').count(), 0, 'the first photo cannot move earlier');
+    await page.locator('dialog .thumb.attached').nth(2).locator('[data-earlier]').click();
+    assert.deepEqual(await attachedSrcs(), [j, b, a]);
+    await page.locator('dialog .thumb.attached').nth(1).locator('[data-detach]').click();
+    assert.deepEqual(await attachedSrcs(), [j, a], 'a tap on the cross takes one photo back');
+    await page.locator('dialog .thumb.attached img').first().click();
+    assert.equal(await page.locator('dialog .thumb.attached').count(), 2, 'a tap on the picture itself removes nothing');
     await page.fill('dialog input[name=title_fr]', 'Premiers jours'); await page.fill('dialog textarea[name=text_fr]', 'Elle dort.');
     await page.fill('dialog input[name=title_zh]', '頭幾天');
     await page.click('dialog button[type=submit]'); await page.waitForSelector('dialog[open]', { state: 'detached' });
@@ -325,7 +340,16 @@ async function browser() {
     assert.equal(await family.locator('.entry h3').textContent(), 'First days');
     assert.equal(await family.locator('.entry .text').textContent(), 'She sleeps.');
     assert.equal(await family.evaluate(async url => (await fetch(url)).status, photoUrl), 200, 'the photo went to the family with the news');
-    assert.equal(await family.evaluate(async () => (await fetch('/api/records')).json().then(b => b.records.map(r => r.type).sort().join(','))), 'news,photo', 'nothing else leaks');
+    assert.equal(await family.evaluate(async url => (await fetch(url)).status, b), 404, 'a photo taken back before publishing stays with the parents');
+    assert.equal(await family.evaluate(async () => (await fetch('/api/records')).json().then(r => r.records.map(x => x.type).sort().join(','))), 'news,photo,photo', 'nothing else leaks');
+    // The two photos of the news are a gallery: whole photos, a count, arrows.
+    assert.deepEqual(await family.locator('.entry .gallery .slide img').evaluateAll(l => l.map(i => i.getAttribute('src'))), [j, a]);
+    assert.equal(await family.locator('.entry .gallery .count').textContent(), '1 / 2');
+    assert.equal(await family.locator('.entry .gallery [data-dir="-1"]').isDisabled(), true);
+    assert.match(await family.locator('.entry .gallery [data-dir="1"]').getAttribute('aria-label'), /Next photo/);
+    await family.click('.entry .gallery [data-dir="1"]');
+    await family.waitForFunction(() => document.querySelector('.entry .gallery .count').textContent === '2 / 2', null, { timeout: 5000 });
+    assert.equal(await family.locator('.entry .gallery [data-dir="1"]').isDisabled(), true, 'no further than the last photo');
     assert.equal(await family.evaluate(async () => (await fetch('/api/records', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"type":"feed"}' })).status), 403, 'the family cannot write');
     // The family link: the family password in the address lets a reader in, then leaves the address bar.
     const linked = await phone();
@@ -344,10 +368,10 @@ async function browser() {
     // Live for the family too: a second post appears without a reload.
     await page.click('[data-action=add-news]'); await page.waitForSelector('dialog[open]');
     assert.equal(await page.locator('dialog details.recent').getAttribute('open'), null, 'recent photos start folded');
-    assert.match(await page.locator('dialog details.recent summary').textContent(), /Recent photos \(1\)/);
-    assert.equal(await page.locator('dialog [data-attach]').isVisible(), false);
+    assert.match(await page.locator('dialog details.recent summary').textContent(), /Recent photos \(3\)/);
+    assert.equal(await page.locator('dialog [data-attach]').first().isVisible(), false);
     await page.click('dialog details.recent summary');
-    assert.equal(await page.locator('dialog [data-attach]').isVisible(), true, 'one tap unfolds them');
+    assert.equal(await page.locator('dialog [data-attach]').first().isVisible(), true, 'one tap unfolds them');
     await page.fill('dialog input[name=title_en]', 'A smile'); await page.click('dialog button[type=submit]');
     await family.waitForFunction(() => document.querySelectorAll('.entry').length === 2, null, { timeout: 5000 });
     // The same day is one section: one card, its date once, the two posts in the order they were written.

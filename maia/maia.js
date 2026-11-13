@@ -101,10 +101,12 @@
   // ---- rendering -------------------------------------------------------------
   function render() {
     if (tipFor) hideTip();
+    const swiped = new Map([...app.querySelectorAll('[data-gallery]')].map(g => [g.dataset.gallery, g.querySelector('.slides').scrollLeft]));
     document.documentElement.lang = state.role === 'parents' ? 'en' : (state.lang === 'zh' ? 'zh-Hant' : state.lang);
     if (!state.role) app.innerHTML = gate();
     else if (state.role === 'family') app.innerHTML = familyPage();
     else app.innerHTML = parentsPage();
+    for (const g of app.querySelectorAll('[data-gallery]')) { const left = swiped.get(g.dataset.gallery); if (left) { g.querySelector('.slides').scrollLeft = left; galleryMark(g); } }
     tick();
   }
   const themeButton = () => `<button class="btn btn-ghost" type="button" data-action="theme" aria-label="${esc(I.t(state.lang, 'theme'))}" title="${esc(I.t(state.lang, 'theme'))}">${A.icon('sun', 'when-day')}${A.icon('moon', 'when-night')}</button>`;
@@ -153,14 +155,32 @@
   const newsPost = (p, L, fresh) => `<article class="entry${fresh ? ' is-new' : ''}">
     ${fresh ? `<span class="badge-new">${esc(I.t(L, 'newPost'))}</span>` : ''}<h3>${esc(I.pick(p.title, L) || I.t(L, 'untitled'))}</h3>
     <div class="text">${esc(I.pick(p.text, L))}</div>
-    ${photoGrid(photosOf(p), I.t(L, 'photoAlt'))}
+    ${photoGrid(photosOf(p), I.t(L, 'photoAlt'), L, p.id)}
     ${reactionRow(p, L)}
   </article>`;
   // One button per emoji, with how many gave it; this phone's own are pressed.
   const reactionRow = (p, L) => `<div class="reactions" role="group" aria-label="${esc(I.t(L, 'reactions'))}">${[...reactionsOf(p.id)].map(([e, { n, mine }]) => `<button type="button" class="react" data-action="react" data-id="${p.id}" data-emoji="${e}" aria-pressed="${mine}" aria-label="${esc(I.t(L, 'react', { emoji: e }))}${n ? ` (${n})` : ''}"><span class="emo" aria-hidden="true">${e}</span>${n ? `<span class="n">${n}</span>` : ''}</button>`).join('')}</div>`;
   // Entries of the same day share one card: the date once, then each entry in the order it was written.
   const byDay = list => { const days = new Map(); for (const r of list) { if (!days.has(r.on)) days.set(r.on, []); days.get(r.on).push(r); } for (const l of days.values()) l.sort((a, b) => a.rev - b.rev); return [...days]; };
-  const photoGrid = (photos, alt) => photos.length ? `<div class="photos${photos.length === 1 ? ' single' : ''}">${photos.map(p => `<a href="/photos/${p.id}" target="_blank" rel="noopener"><img src="/photos/${p.id}" alt="${esc(alt)}" loading="lazy" width="${p.w || ''}" height="${p.h || ''}"></a>`).join('')}</div>` : '';
+  // One photo shows whole; several become a gallery to swipe, each photo whole, with a count and arrows.
+  const photoLink = (p, alt) => `<a href="/photos/${p.id}" target="_blank" rel="noopener"><img src="/photos/${p.id}" alt="${esc(alt)}" loading="lazy" width="${p.w || ''}" height="${p.h || ''}"></a>`;
+  const photoGrid = (photos, alt, L = 'en', key = '') => {
+    if (!photos.length) return '';
+    if (photos.length === 1) return `<div class="photos single">${photoLink(photos[0], alt)}</div>`;
+    const n = photos.length;
+    return `<div class="gallery" data-gallery="${esc(key)}">
+      <div class="slides" tabindex="0" role="group" aria-label="${esc(alt)} (${n})">${photos.map((p, i) => `<div class="slide" aria-label="${esc(I.t(L, 'photoOf', { i: i + 1, n }))}">${photoLink(p, alt)}</div>`).join('')}</div>
+      <div class="gallery-bar"><button class="btn btn-ghost" type="button" data-action="slide" data-dir="-1" aria-label="${esc(I.t(L, 'prevPhoto'))}" disabled>‹</button><span class="dots" aria-hidden="true">${photos.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</span><span class="count" aria-live="polite">1 / ${n}</span><button class="btn btn-ghost" type="button" data-action="slide" data-dir="1" aria-label="${esc(I.t(L, 'nextPhoto'))}">›</button></div>
+    </div>`;
+  };
+  // Which photo a gallery shows, from how far it has been swiped.
+  const galleryAt = g => { const s = g.querySelector('.slides'); return Math.max(0, Math.min(s.children.length - 1, Math.round(s.scrollLeft / (s.clientWidth || 1)))); };
+  const galleryMark = g => {
+    const n = g.querySelector('.slides').children.length, i = galleryAt(g);
+    g.querySelector('.count').textContent = `${i + 1} / ${n}`;
+    g.querySelectorAll('.dots i').forEach((d, k) => d.classList.toggle('on', k === i));
+    const [prev, next] = g.querySelectorAll('[data-action=slide]'); prev.disabled = i === 0; next.disabled = i === n - 1;
+  };
 
   function parentsPage() {
     const v = view();
@@ -321,7 +341,7 @@
     return `<h2>Journal</h2><div class="row"><button class="btn btn-primary" type="button" data-action="add-journal">${A.icon('pen')}Write today</button></div>
       ${entries.length ? byDay(entries).map(([on, list]) => `<section class="card day-card"><div class="date">${fmtDay(on)}</div>${list.map(e => `<article class="entry">${e.title ? `<h3>${esc(e.title)}</h3>` : ''}
         ${(e.weight || e.height || e.head) ? `<div class="measures">${e.weight ? `<span>${I.number('en', e.weight / 1000, 3)} kg</span>` : ''}${e.height ? `<span>${e.height} cm</span>` : ''}${e.head ? `<span>head ${e.head} cm</span>` : ''}</div>` : ''}
-        <div class="text">${esc(e.text)}</div>${photoGrid(photosOf(e), NAME)}
+        <div class="text">${esc(e.text)}</div>${photoGrid(photosOf(e), NAME, 'en', e.id)}
         <div class="entry-actions"><button class="btn" type="button" data-action="edit-journal" data-id="${e.id}">${A.icon('pen')}Edit</button><button class="btn" type="button" data-action="share-journal" data-id="${e.id}">${A.icon('news')}Tell the family</button></div></article>`).join('')}</section>`).join('')
       : `${A.nest()}<p class="empty">The first page is still blank.</p>`}`;
   }
@@ -341,7 +361,7 @@
       <div class="row"><button class="btn btn-primary" type="button" data-action="add-news">${A.icon('news')}Write some news</button></div>
       <div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="family-link">${A.icon('share')}Share the family link</button></div>
       <p class="note" style="margin:6px 0 0;font-size:16px">The link carries the family password and opens the news in one tap. Anyone who has it can read the news.</p>
-      ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card"><div class="date">${fmtDay(on)}</div>${list.map(p => `<article class="entry"><div class="langs">${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), NAME)}${reactionRow(p, 'en')}
+      ${posts.length ? byDay(posts).map(([on, list]) => `<section class="card day-card"><div class="date">${fmtDay(on)}</div>${list.map(p => `<article class="entry"><div class="langs">${I.LANGS.filter(l => p.title[l] || p.text[l]).map(l => l.toUpperCase()).join(' ') || 'empty'}</div><h3>${esc(I.pick(p.title, 'en') || 'Untitled')}</h3><div class="text">${esc(I.pick(p.text, 'en'))}</div>${photoGrid(photosOf(p), NAME, 'en', p.id)}${reactionRow(p, 'en')}
         <div class="entry-actions"><button class="btn" type="button" data-action="edit-news" data-id="${p.id}">${A.icon('pen')}Edit</button></div></article>`).join('')}</section>`).join('') : `${A.nest()}<p class="empty">Nothing told yet.</p>`}`;
   }
 
@@ -435,13 +455,18 @@
     // The recent photos stay folded until asked for, and stay as they were left while photos come and go.
     let recentOpen = false;
     const draw = () => {
+      dlg.querySelector('[data-add-label]').textContent = ids.length ? 'Add more photos' : 'Add photos';
       const fold = strip.querySelector('details.recent'); if (fold) recentOpen = fold.open;
       const attached = ids.map(id => state.records.get(id)).filter(Boolean);
       const others = reuse ? all('photo').sort((a, b) => b.rev - a.rev).filter(p => !ids.includes(p.id)).slice(0, 12) : [];
-      strip.innerHTML = `${attached.length ? `<div class="photos">${attached.map(p => `<button class="thumb" type="button" data-detach="${p.id}" aria-label="Remove this photo" aria-pressed="true"><img src="/photos/${p.id}" alt=""></button>`).join('')}</div>` : '<p class="note">No photo attached.</p>'}
+      strip.innerHTML = `${attached.length ? `<p class="note" style="margin:0">${attached.length} photo${attached.length > 1 ? 's' : ''} attached${attached.length > 1 ? ', shown in this order' : ''}.</p><div class="photos">${attached.map((p, i) => `<div class="thumb attached"><img src="/photos/${p.id}" alt="Photo ${i + 1}"><button class="thumb-btn remove" type="button" data-detach="${p.id}" aria-label="Remove photo ${i + 1}"><span aria-hidden="true">×</span></button>${i ? `<button class="thumb-btn earlier" type="button" data-earlier="${p.id}" aria-label="Move photo ${i + 1} earlier">‹</button>` : ''}</div>`).join('')}</div>` : '<p class="note">No photo attached.</p>'}
         ${others.length ? `<details class="recent"${recentOpen ? ' open' : ''}><summary>Recent photos (${others.length})</summary><p class="note" style="margin-top:8px">Tap a photo to attach it:</p><div class="photos">${others.map(p => `<button class="thumb" type="button" data-attach="${p.id}" aria-label="Attach this photo"><img src="/photos/${p.id}" alt="" loading="lazy"></button>`).join('')}</div></details>` : ''}`;
     };
-    strip.addEventListener('click', event => { const b = event.target.closest('[data-detach],[data-attach]'); if (!b) return; if (b.dataset.detach) ids.splice(ids.indexOf(b.dataset.detach), 1); else ids.push(b.dataset.attach); draw(); });
+    strip.addEventListener('click', event => { const b = event.target.closest('[data-detach],[data-attach],[data-earlier]'); if (!b) return;
+      if (b.dataset.detach) ids.splice(ids.indexOf(b.dataset.detach), 1);
+      else if (b.dataset.earlier) { const i = ids.indexOf(b.dataset.earlier); if (i > 0) [ids[i - 1], ids[i]] = [ids[i], ids[i - 1]]; }
+      else ids.push(b.dataset.attach);
+      draw(); });
     input.addEventListener('change', async () => {
       const files = [...input.files]; input.value = '';
       for (const [i, file] of files.entries()) {
@@ -452,7 +477,7 @@
     });
     draw();
   }
-  const photoField = () => `<div class="field"><span>Photos</span><div data-strip></div><label class="btn" style="margin-top:8px">${A.icon('photo')}Add photos<input type="file" accept="image/*" multiple class="visually-hidden"></label></div>`;
+  const photoField = () => `<div class="field"><span>Photos</span><div data-strip></div><label class="btn" style="margin-top:8px">${A.icon('photo')}<span data-add-label>Add photos</span><input type="file" accept="image/*" multiple class="visually-hidden"></label></div>`;
 
   function journalDialog(rec) {
     const isNew = !rec;
@@ -482,12 +507,13 @@
       },
       onRemove: () => save({ id: rec.id, deleted: true }),
     });
-    photoStrip(dlg, ids, { audience: 'family', reuse: true });
+    photoStrip(dlg, ids, { audience: 'parents', reuse: true }); // publishing the news hands its photos to the family; one taken back stays private
   }
 
   // ---- actions --------------------------------------------------------------
   const actions = {
     theme() { const next = document.documentElement.dataset.theme === 'night' ? 'day' : 'night'; document.documentElement.dataset.theme = next; store.set('maia-theme', next); },
+    slide(b) { const s = b.closest('[data-gallery]').querySelector('.slides'); s.scrollBy({ left: Number(b.dataset.dir) * s.clientWidth, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); },
     lang(b) { state.lang = b.dataset.lang; store.set('maia-lang', state.lang); render(); },
     async logout() { try { await post('/api/logout', {}); } catch { /* the cookie goes anyway */ } if (state.socket) { state.socket.disconnect(); state.socket = null; } state.role = null; state.records = new Map(); state.gateError = ''; state.me = null; state.seenBefore = undefined; location.hash = ''; render(); },
     'start-feed': b => save({ type: 'feed', side: b.dataset.side, start: new Date().toISOString(), end: null, note: '' }),
@@ -585,6 +611,7 @@
   app.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') hideTip(); }); // a finger lifting also leaves
   app.addEventListener('pointerup', e => { if (e.pointerType === 'mouse') return; const el = e.target.closest('[data-tip]'); if (el && el !== tipFor) showTip(el, e.clientX, e.clientY); else hideTip(); });
   window.addEventListener('scroll', () => { if (tipFor) hideTip(); }, { passive: true });
+  app.addEventListener('scroll', e => { const g = e.target.classList && e.target.classList.contains('slides') && e.target.closest('[data-gallery]'); if (g) galleryMark(g); }, { capture: true, passive: true });
   window.addEventListener('hashchange', render);
   window.MaiaApp = { state, render, save, feeds, feedMs, running, journal, news, cares, appointments, elapsed, duration, ago, push };
   boot();

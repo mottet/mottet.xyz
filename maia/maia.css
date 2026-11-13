@@ -232,3 +232,26 @@ dialog .actions .btn-danger { margin-right: auto; }
   dialog[open] { animation: rise .18s ease-out; }
   @keyframes rise { from { transform: translateY(12px); opacity: 0; } }
 }
+
+/* Several photos in one post: swipe from one to the next, each shown whole. */
+.gallery { margin: 10px 0 4px; }
+.gallery .slides { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; border-radius: 10px; border: 1px solid var(--line); background: var(--paper-2); }
+.gallery .slides::-webkit-scrollbar { display: none; }
+.gallery .slides:focus-visible { outline: 3px solid var(--moss); outline-offset: 2px; }
+.gallery .slide { flex: 0 0 100%; scroll-snap-align: center; scroll-snap-stop: always; display: flex; align-items: center; justify-content: center; height: min(70vh, 520px); }
+.gallery .slide a { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.gallery .slide img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.gallery-bar { display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px; }
+.gallery-bar .btn { min-width: 44px; min-height: 44px; padding: 0; font-size: 26px; line-height: 1; }
+.gallery-bar .btn:disabled { opacity: .3; cursor: default; }
+.gallery-bar .dots { display: flex; gap: 6px; }
+.gallery-bar .dots i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.gallery-bar .dots i.on { background: var(--moss); }
+.gallery-bar .count { min-width: 3.5em; text-align: center; color: var(--ink-2); font-variant-numeric: tabular-nums; font-size: 15px; }
+
+/* Attached photos in the editor: the picture itself does nothing, the buttons on it do. */
+.photos .thumb.attached { overflow: hidden; cursor: default; }
+.photos .thumb.attached img { border: 0; width: 100%; height: 100%; object-fit: cover; }
+.thumb-btn { position: absolute; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: rgba(20, 24, 18, .72); color: #fff; font-size: 24px; line-height: 1; cursor: pointer; }
+.thumb-btn.remove { top: 6px; right: 6px; }
+.thumb-btn.earlier { bottom: 6px; left: 6px; }
