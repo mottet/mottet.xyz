@@ -43,6 +43,15 @@
   const pausedIn = (f, x, y) => pausesOf(f).reduce((s, p) => s + Math.max(0, Math.min(y, p.end ? Date.parse(p.end) : (f.end ? Date.parse(f.end) : Date.now())) - Math.max(x, Date.parse(p.start))), 0);
   const activeIn = (f, x, y) => { const a = Math.max(x, Date.parse(f.start)), b = Math.min(y, f.end ? Date.parse(f.end) : Date.now()); return b > a ? (b - a) - pausedIn(f, a, b) : 0; };
   const feedMs = f => activeIn(f, -Infinity, Infinity);
+  // The stretches of a feed when she was really at the breast: start to end, pauses cut out.
+  const activeSpans = f => {
+    const end = f.end ? Date.parse(f.end) : Date.now();
+    const cuts = pausesOf(f).map(p => [Date.parse(p.start), p.end ? Date.parse(p.end) : end]).sort((x, y) => x[0] - y[0]);
+    const out = []; let at = Date.parse(f.start);
+    for (const [ps, pe] of cuts) { if (ps > at) out.push([at, Math.min(ps, end)]); at = Math.max(at, pe); }
+    if (end > at) out.push([at, end]);
+    return out.filter(([a, b]) => b > a);
+  };
   // A feed stopped too early can be continued for this long after it ended; the gap becomes a pause.
   const CONTINUE_MS = 60 * 60000;
   const cares = () => all('care').sort((a, b) => new Date(b.at) - new Date(a.at));
@@ -290,9 +299,12 @@
     const strip = back => {
       const from = dayStart(now, back), day = localDay(from);
       const marks = list.filter(f => inDay(f, from) > 0).map(f => {
-        const [a, b] = span(f), x = Math.max(a, from), y = Math.min(b, from + DAY_MS);
+        const [a, b] = span(f);
         const tip = `${sideName(f.side)}, ${fmtTime(a)}${f.end ? `–${fmtTime(b)}` : isPaused(f) ? ', paused' : ', still going'} · ${duration(feedMs(f))}${pausesOf(f).length ? ` (${pausesOf(f).length} pause${pausesOf(f).length > 1 ? 's' : ''})` : ''}`;
-        return `<span class="feed-mark side-${f.side}${f.end ? '' : ' running'}" style="left:${((x - from) / DAY_MS * 100).toFixed(2)}%;width:${((y - x) / DAY_MS * 100).toFixed(2)}%" data-tip="${esc(tip)}"></span>`;
+        // Only the time at the breast is drawn; a pause leaves the strip empty.
+        const pieces = activeSpans(f), lastPiece = pieces[pieces.length - 1];
+        return pieces.map(piece => { const x = Math.max(piece[0], from), y = Math.min(piece[1], from + DAY_MS); return y > x ? [piece, x, y] : null; }).filter(Boolean)
+          .map(([piece, x, y]) => `<span class="feed-mark side-${f.side}${!f.end && !isPaused(f) && piece === lastPiece ? ' running' : ''}" style="left:${((x - from) / DAY_MS * 100).toFixed(2)}%;width:${((y - x) / DAY_MS * 100).toFixed(2)}%" data-tip="${esc(tip)}"></span>`).join('');
       }).join('');
       const count = list.filter(f => { const s = Date.parse(f.start); return s >= from && s < from + DAY_MS; }).length;
       const label = back === 0 ? 'Today' : new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric' }).format(new Date(from));
@@ -613,6 +625,6 @@
   window.addEventListener('scroll', () => { if (tipFor) hideTip(); }, { passive: true });
   app.addEventListener('scroll', e => { const g = e.target.classList && e.target.classList.contains('slides') && e.target.closest('[data-gallery]'); if (g) galleryMark(g); }, { capture: true, passive: true });
   window.addEventListener('hashchange', render);
-  window.MaiaApp = { state, render, save, feeds, feedMs, running, journal, news, cares, appointments, elapsed, duration, ago, push };
+  window.MaiaApp = { state, render, save, feeds, feedMs, activeSpans, running, journal, news, cares, appointments, elapsed, duration, ago, push };
   boot();
 })();

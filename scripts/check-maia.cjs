@@ -257,6 +257,7 @@ async function browser() {
     await page.click('[data-action=pause-feed]'); await other.waitForSelector('[data-action=resume-feed]', { timeout: 5000 });
     const t0 = Date.parse('2026-11-07T10:00:00Z'), m = 60000;
     assert.equal(await page.evaluate(f => window.MaiaApp.feedMs(f), { start: new Date(t0).toISOString(), end: new Date(t0 + 30 * m).toISOString(), pauses: [{ start: new Date(t0 + 10 * m).toISOString(), end: new Date(t0 + 15 * m).toISOString() }] }), 25 * m, 'paused minutes do not count'); 
+    assert.deepEqual(await page.evaluate(f => window.MaiaApp.activeSpans(f), { start: new Date(t0).toISOString(), end: new Date(t0 + 30 * m).toISOString(), pauses: [{ start: new Date(t0 + 10 * m).toISOString(), end: new Date(t0 + 15 * m).toISOString() }] }), [[t0, t0 + 10 * m], [t0 + 15 * m, t0 + 30 * m]], 'the strip draws the feed without its pause');
     await other.click('[data-action=stop-feed]');
     await page.waitForSelector('[data-action=start-feed][data-side=left]', { timeout: 5000 });
     assert.match(await page.locator('#view-today .note').first().textContent(), /Last feed just now: right, 0 min\. Next, left\./);
@@ -277,10 +278,12 @@ async function browser() {
     // The rhythm: a strip for today with the feed on it, the day's bar, a tooltip on tap, and the page still fits the phone.
     await page.waitForSelector('.rhythm');
     assert.equal(await page.locator('.rhythm .strip:not(.strip-axis)').count(), 1, 'one strip: the log began today');
-    assert.equal(await page.locator('.rhythm .feed-mark.side-right').count(), 1);
+    const pieces = await page.locator('.rhythm .feed-mark.side-right').evaluateAll(l => l.map(el => el.dataset.tip));
+    assert.ok(pieces.length > 1, 'a feed with pauses is drawn in pieces, the pauses left empty');
+    assert.equal(new Set(pieces).size, 1, 'every piece tells the same feed');
     assert.equal(await page.locator('.rhythm .bar-col').count(), 1);
     assert.match(await page.locator('.rhythm .rhythm-stats').textContent(), /1\s*feeds in 24 h/);
-    const markBox = await page.locator('.rhythm .feed-mark').boundingBox();
+    const markBox = await page.locator('.rhythm .feed-mark').first().boundingBox();
     await page.touchscreen.tap(markBox.x + markBox.width / 2, markBox.y + markBox.height / 2);
     assert.match(await page.locator('.chart-tip').textContent(), /^Right, \d\d:\d\d–\d\d:\d\d · 0 min \(3 pauses\)$/);
     assert.equal(await page.evaluate(() => window.MaiaApp.feeds()[0].pauses.every(p => p.end)), true, 'stopping while paused closes the pause');
