@@ -52,6 +52,22 @@
     if (end > at) out.push([at, end]);
     return out.filter(([a, b]) => b > a);
   };
+  // Switching side keeps the same feed: each switch is {at, to}, and `side` is the side she is on now.
+  const switchesOf = f => (Array.isArray(f.switches) ? f.switches : []);
+  const other = s => (s === 'left' ? 'right' : 'left');
+  const firstSide = f => { const w = switchesOf(f); return w.length ? other(w[0].to) : f.side; };
+  const sidesText = f => [firstSide(f), ...switchesOf(f).map(w => w.to)].join(' → ');
+  // The time at the breast, cut where she changed side: [from, to, side].
+  const sidedSpans = f => {
+    const marks = switchesOf(f).map(w => [Date.parse(w.at), w.to]).sort((x, y) => x[0] - y[0]);
+    const out = [];
+    for (const [a, b] of activeSpans(f)) {
+      let at = a, side = firstSide(f);
+      for (const [t, to] of marks) { if (t <= a) { side = to; continue; } if (t >= b) break; out.push([at, t, side]); at = t; side = to; }
+      out.push([at, b, side]);
+    }
+    return out.filter(([a, b]) => b > a);
+  };
   // A feed stopped too early can be continued for this long after it ended; the gap becomes a pause.
   const CONTINUE_MS = 60 * 60000;
   const cares = () => all('care').sort((a, b) => new Date(b.at) - new Date(a.at));
@@ -206,13 +222,13 @@
     const suggest = last ? (last.side === 'left' ? 'right' : last.side === 'right' ? 'left' : 'either side') : 'either side';
     return `<section class="card" aria-labelledby="feed-now">
       <div class="card-head"><h2 id="feed-now" style="margin:0">${run ? `${isPaused(run) ? 'Paused' : 'Feeding'}, ${run.side}` : 'Feeding'}</h2>${run ? `<span class="pill">since ${fmtTime(run.start)}</span>` : ''}</div>
-      ${run ? `<div class="timer${isPaused(run) ? ' paused' : ''}" data-feed="${run.id}">${elapsed(feedMs(run))}<small>${isPaused(run) ? `paused at ${fmtTime(pausesOf(run).find(p => !p.end).start)}` : run.side === 'both' ? 'both sides' : `${run.side} side`}</small></div>
+      ${run ? `<div class="timer${isPaused(run) ? ' paused' : ''}" data-feed="${run.id}">${elapsed(feedMs(run))}<small>${isPaused(run) ? `paused at ${fmtTime(pausesOf(run).find(p => !p.end).start)}` : run.side === 'both' ? 'both sides' : `${run.side} side${switchesOf(run).length ? ` since ${fmtTime(switchesOf(run)[switchesOf(run).length - 1].at)}` : ''}`}</small></div>
         <div class="row">${isPaused(run) ? `<button class="btn btn-big btn-primary" type="button" data-action="resume-feed" data-id="${run.id}">${A.icon('play')}Resume</button>` : `<button class="btn btn-big" type="button" data-action="pause-feed" data-id="${run.id}">${A.icon('pause')}Pause</button>`}<button class="btn btn-big btn-bark" type="button" data-action="stop-feed" data-id="${run.id}">${A.icon('stop')}Stop</button></div>
-        <div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="edit-feed" data-id="${run.id}">${A.icon('pen')}Fix the start or add a note</button></div>`
-      : `<p class="note">${last ? `Last feed ${ago(last.end)}: ${last.side}, ${duration(feedMs(last))}. Next, ${suggest}.` : 'No feed logged yet. Tap a side when she starts.'}</p>
+        ${run.side === 'both' ? '' : `<div class="row" style="margin-top:8px"><button class="btn btn-big" type="button" data-action="switch-side" data-id="${run.id}">${A.icon(other(run.side))}Switch to ${other(run.side)}</button></div>`}<div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="edit-feed" data-id="${run.id}">${A.icon('pen')}Fix the start or add a note</button></div>`
+      : `<p class="note">${last ? `Last feed ${ago(last.end)}: ${sidesText(last)}, ${duration(feedMs(last))}. Next, ${suggest}.` : 'No feed logged yet. Tap a side when she starts.'}</p>
         ${last && Date.now() - Date.parse(last.end) < CONTINUE_MS ? `<div class="row" style="margin-bottom:8px"><button class="btn" type="button" data-action="continue-feed" data-id="${last.id}">${A.icon('play')}Continue the last feed (${last.side})</button></div>` : ''}
         <div class="row"><button class="btn btn-big ${suggest === 'left' ? 'btn-primary' : ''}" type="button" data-action="start-feed" data-side="left">${A.icon('left')}Left</button><button class="btn btn-big ${suggest === 'right' ? 'btn-primary' : ''}" type="button" data-action="start-feed" data-side="right">${A.icon('right')}Right</button></div>
-        <div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="start-feed" data-side="both">${A.icon('both')}Both sides</button><button class="btn" type="button" data-action="add-feed">${A.icon('plus')}A past feed</button></div>`}
+        <div class="row" style="margin-top:8px"><button class="btn" type="button" data-action="add-feed">${A.icon('plus')}A past feed</button></div>`}
     </section>
     <section class="card" aria-label="Today">
       <div class="stat-row"><div class="stat"><b>${todays.length}</b><span>feeds today</span></div><div class="stat"><b>${duration(todays.reduce((s, f) => s + feedMs(f), 0))}</b><span>at the breast</span></div><div class="stat"><b>${I.age('en', facts().born).replace(' old', '')}</b><span>old</span></div></div>
@@ -300,11 +316,11 @@
       const from = dayStart(now, back), day = localDay(from);
       const marks = list.filter(f => inDay(f, from) > 0).map(f => {
         const [a, b] = span(f);
-        const tip = `${sideName(f.side)}, ${fmtTime(a)}${f.end ? `–${fmtTime(b)}` : isPaused(f) ? ', paused' : ', still going'} · ${duration(feedMs(f))}${pausesOf(f).length ? ` (${pausesOf(f).length} pause${pausesOf(f).length > 1 ? 's' : ''})` : ''}`;
+        const tip = `${switchesOf(f).length ? sidesText(f).replace(/^./, c => c.toUpperCase()) : sideName(f.side)}, ${fmtTime(a)}${f.end ? `–${fmtTime(b)}` : isPaused(f) ? ', paused' : ', still going'} · ${duration(feedMs(f))}${pausesOf(f).length ? ` (${pausesOf(f).length} pause${pausesOf(f).length > 1 ? 's' : ''})` : ''}`;
         // Only the time at the breast is drawn; a pause leaves the strip empty.
-        const pieces = activeSpans(f), lastPiece = pieces[pieces.length - 1];
+        const pieces = sidedSpans(f), lastPiece = pieces[pieces.length - 1];
         return pieces.map(piece => { const x = Math.max(piece[0], from), y = Math.min(piece[1], from + DAY_MS); return y > x ? [piece, x, y] : null; }).filter(Boolean)
-          .map(([piece, x, y]) => `<span class="feed-mark side-${f.side}${!f.end && !isPaused(f) && piece === lastPiece ? ' running' : ''}" style="left:${((x - from) / DAY_MS * 100).toFixed(2)}%;width:${((y - x) / DAY_MS * 100).toFixed(2)}%" data-tip="${esc(tip)}"></span>`).join('');
+          .map(([piece, x, y]) => `<span class="feed-mark side-${piece[2]}${!f.end && !isPaused(f) && piece === lastPiece ? ' running' : ''}" style="left:${((x - from) / DAY_MS * 100).toFixed(2)}%;width:${((y - x) / DAY_MS * 100).toFixed(2)}%" data-tip="${esc(tip)}"></span>`).join('');
       }).join('');
       const count = list.filter(f => { const s = Date.parse(f.start); return s >= from && s < from + DAY_MS; }).length;
       const label = back === 0 ? 'Today' : new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric' }).format(new Date(from));
@@ -344,7 +360,7 @@
     const groups = groupByDay(feeds(), 'start');
     return `<h2>Feeds</h2>${rhythmCard()}<div class="row"><button class="btn" type="button" data-action="add-feed">${A.icon('plus')}Add a past feed</button></div>
       ${groups.size ? [...groups].map(([day, list]) => `<div class="day-head"><span>${fmtDay(day)}</span><small>${list.length} feed${list.length > 1 ? 's' : ''}, ${duration(list.reduce((s, f) => s + feedMs(f), 0))}</small></div>
-        <ul class="list card" style="padding:4px 16px">${list.map(f => `<li><button class="rowbtn" type="button" data-action="edit-feed" data-id="${f.id}" aria-label="Edit the ${f.side} feed at ${fmtTime(f.start)}">${A.icon(f.side)}<span class="when">${fmtTime(f.start)}</span><span class="what">${f.side}${isPaused(f) ? ' · paused' : ''}${f.note ? `<small>${esc(f.note)}</small>` : ''}</span><span class="amount" ${f.end ? '' : `data-feed="${f.id}"`}>${f.end ? duration(feedMs(f)) : elapsed(feedMs(f))}</span></button></li>`).join('')}</ul>`).join('')
+        <ul class="list card" style="padding:4px 16px">${list.map(f => `<li><button class="rowbtn" type="button" data-action="edit-feed" data-id="${f.id}" aria-label="Edit the ${f.side} feed at ${fmtTime(f.start)}">${A.icon(f.side)}<span class="when">${fmtTime(f.start)}</span><span class="what">${sidesText(f)}${isPaused(f) ? ' · paused' : ''}${f.note ? `<small>${esc(f.note)}</small>` : ''}</span><span class="amount" ${f.end ? '' : `data-feed="${f.id}"`}>${f.end ? duration(feedMs(f)) : elapsed(feedMs(f))}</span></button></li>`).join('')}</ul>`).join('')
       : `${A.nest()}<p class="empty">Nothing logged yet.</p>`}`;
   }
 
@@ -414,8 +430,8 @@
     rec = rec || { side: lastDone() && lastDone().side === 'left' ? 'right' : 'left', start: new Date(Date.now() - 15 * 60000).toISOString(), end: new Date().toISOString(), note: '' };
     dialog({
       title: isNew ? 'A past feed' : 'This feed', remove: isNew ? null : 'Delete this feed',
-      body: `${select('Side', 'side', [['left', 'Left'], ['right', 'Right'], ['both', 'Both sides']], rec.side)}<div class="fields-2">${field('Started', 'start', 'datetime-local', toInput(rec.start), 'required')}${field('Ended', 'end', 'datetime-local', rec.end ? toInput(rec.end) : '', rec.end ? '' : 'placeholder="still going"')}</div>${area('Note', 'note', rec.note, 'rows="2"')}`,
-      onSubmit: d => save({ ...rec, type: 'feed', side: d.side, start: fromInput(d.start), end: fromInput(d.end), note: d.note.trim() }),
+      body: `${select(switchesOf(rec).length ? 'Side at the end' : 'Side', 'side', [['left', 'Left'], ['right', 'Right'], ['both', 'Both sides']], rec.side)}${switchesOf(rec).length ? `<p class="note" style="margin:-4px 0 10px">${esc(sidesText(rec))}, switched at ${switchesOf(rec).map(w => fmtTime(w.at)).join(', ')}. Changing the side forgets the switches.</p>` : ''}<div class="fields-2">${field('Started', 'start', 'datetime-local', toInput(rec.start), 'required')}${field('Ended', 'end', 'datetime-local', rec.end ? toInput(rec.end) : '', rec.end ? '' : 'placeholder="still going"')}</div>${area('Note', 'note', rec.note, 'rows="2"')}`,
+      onSubmit: d => save({ ...rec, type: 'feed', side: d.side, switches: d.side === rec.side ? switchesOf(rec) : [], start: fromInput(d.start), end: fromInput(d.end), note: d.note.trim() }),
       onRemove: () => save({ id: rec.id, deleted: true }),
     });
   }
@@ -533,6 +549,7 @@
     'pause-feed': b => { const f = state.records.get(b.dataset.id); if (f && !f.end && !isPaused(f)) save({ ...f, pauses: [...pausesOf(f), { start: new Date().toISOString(), end: null }] }); },
     'continue-feed': b => { const f = state.records.get(b.dataset.id); if (!f || !f.end || running()) return; save({ ...f, end: null, pauses: [...pausesOf(f), { start: f.end, end: new Date().toISOString() }] }); },
     'resume-feed': b => { const f = state.records.get(b.dataset.id); if (f && isPaused(f)) { const now = new Date().toISOString(); save({ ...f, pauses: pausesOf(f).map(p => (p.end ? p : { ...p, end: now })) }); } },
+    'switch-side': b => { const f = state.records.get(b.dataset.id); if (!f || f.end || f.side === 'both') return; const to = other(f.side); save({ ...f, side: to, switches: [...switchesOf(f), { at: new Date().toISOString(), to }] }); },
     'add-feed': () => feedDialog(null),
     'edit-feed': b => feedDialog(state.records.get(b.dataset.id)),
     vitamin() { const v = vitaminToday(); return v ? save({ id: v.id, deleted: true }) : save({ type: 'care', kind: 'vitamin', name: 'Vitamin D', dose: '', at: new Date().toISOString(), note: '' }); },
@@ -625,6 +642,6 @@
   window.addEventListener('scroll', () => { if (tipFor) hideTip(); }, { passive: true });
   app.addEventListener('scroll', e => { const g = e.target.classList && e.target.classList.contains('slides') && e.target.closest('[data-gallery]'); if (g) galleryMark(g); }, { capture: true, passive: true });
   window.addEventListener('hashchange', render);
-  window.MaiaApp = { state, render, save, feeds, feedMs, activeSpans, running, journal, news, cares, appointments, elapsed, duration, ago, push };
+  window.MaiaApp = { state, render, save, feeds, feedMs, activeSpans, sidedSpans, running, journal, news, cares, appointments, elapsed, duration, ago, push };
   boot();
 })();

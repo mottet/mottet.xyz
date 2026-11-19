@@ -107,7 +107,7 @@ const ids = v => Array.isArray(v) ? v.filter(x => typeof x === 'string' && ID.te
 
 // What each type keeps of a record the phone sends. Anything else is dropped.
 const SHAPES = {
-  feed: r => ({ side: ['left', 'right', 'both'].includes(r.side) ? r.side : 'left', start: iso(r.start) || new Date().toISOString(), end: iso(r.end), note: str(r.note, 500), pauses: Array.isArray(r.pauses) ? r.pauses.slice(0, 30).map(p => ({ start: iso(p && p.start), end: iso(p && p.end) })).filter(p => p.start) : [] }),
+  feed: r => ({ side: ['left', 'right', 'both'].includes(r.side) ? r.side : 'left', start: iso(r.start) || new Date().toISOString(), end: iso(r.end), note: str(r.note, 500), pauses: Array.isArray(r.pauses) ? r.pauses.slice(0, 30).map(p => ({ start: iso(p && p.start), end: iso(p && p.end) })).filter(p => p.start) : [], switches: Array.isArray(r.switches) ? r.switches.slice(0, 30).map(x => ({ at: iso(x && x.at), to: x && ['left', 'right'].includes(x.to) ? x.to : null })).filter(x => x.at && x.to) : [] }),
   care: r => ({ kind: r.kind === 'medicine' ? 'medicine' : 'vitamin', name: str(r.name, 80) || 'Vitamin D', dose: str(r.dose, 80), at: iso(r.at) || new Date().toISOString(), note: str(r.note, 500) }),
   appointment: r => ({ title: str(r.title, 120), at: iso(r.at), place: str(r.place, 120), note: str(r.note, 1000), done: Boolean(r.done) }),
   journal: r => ({ on: day(r.on) || new Date().toISOString().slice(0, 10), title: str(r.title, 120), text: str(r.text, 8000), photos: ids(r.photos), weight: num(r.weight), height: num(r.height), head: num(r.head) }),

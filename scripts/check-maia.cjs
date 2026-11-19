@@ -44,6 +44,7 @@ async function unit() {
   assert.deepEqual(Maia.SHAPES.news({ on: '2026-11-07', title: { fr: 'A', de: 'B' }, text: 'no', photos: ['cccccccc', 'bad id'] }), { on: '2026-11-07', title: { fr: 'A' }, text: {}, photos: ['cccccccc'] });
   assert.equal(Maia.SHAPES.journal({ on: '7 nov', weight: '3500' }).weight, null, 'numbers must be numbers');
   assert.deepEqual(Maia.SHAPES.feed({ start: '2026-11-07T10:00:00Z', pauses: [{ start: '2026-11-07T10:05:00Z', end: null }, { start: 'nope' }, 'x'] }).pauses, [{ start: '2026-11-07T10:05:00.000Z', end: null }], 'a feed keeps its pauses, an open one included');
+  assert.deepEqual(Maia.SHAPES.feed({ start: '2026-11-07T10:00:00Z', side: 'right', switches: [{ at: '2026-11-07T10:10:00Z', to: 'right' }, { at: '2026-11-07T10:20:00Z', to: 'both' }, 'x'] }).switches, [{ at: '2026-11-07T10:10:00.000Z', to: 'right' }], 'a feed keeps its side switches');
   // The cookie: signed, with a role and an expiry; a changed byte is nobody.
   const secrets = tmp() + '/s.json';
   fs.writeFileSync(secrets, JSON.stringify({ parents: 'parents-word', family: 'family-word', cookieSecret: 'c'.repeat(32) }));
@@ -455,9 +456,22 @@ async function browser() {
     assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'night', 'night stays after a reload, and so does the tab');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.click('a[href="#today"]'); await page.waitForSelector('#view-today');
-    await page.click('[data-action=start-feed][data-side=both]'); await page.waitForSelector('.timer');
+    // No "both sides" to start with; during a feed, one tap switches side and it stays the same feed.
+    assert.equal(await page.locator('[data-action=start-feed][data-side=both]').count(), 0, 'no both-sides button before a feed');
+    const feedsBefore = await page.evaluate(() => window.MaiaApp.feeds().length);
+    await page.click('[data-action=start-feed][data-side=left]'); await page.waitForSelector('.timer');
     assert.match(await page.locator('.timer').textContent(), /^\d+:\d\d/);
+    assert.match(await page.locator('[data-action=switch-side]').textContent(), /Switch to right/);
+    await page.click('[data-action=switch-side]');
+    await page.waitForFunction(() => document.querySelector('#feed-now').textContent === 'Feeding, right');
+    assert.match(await page.locator('[data-action=switch-side]').textContent(), /Switch to left/, 'and back again');
+    assert.match(await page.locator('.timer small').textContent(), /^right side since \d\d:\d\d$/);
+    assert.equal(await page.evaluate(() => window.MaiaApp.feeds().length), feedsBefore + 1, 'a switch is not a new feed');
+    assert.deepEqual(await page.evaluate(() => window.MaiaApp.running().switches.map(w => w.to)), ['right'], 'the server keeps the switch');
     await page.click('[data-action=stop-feed]'); await page.waitForSelector('[data-action=start-feed]');
+    assert.match(await page.locator('#view-today .note').first().textContent(), /: left → right, .*Next, left\./, 'the next side follows the side she ended on');
+    const t1 = Date.parse('2026-11-07T10:00:00Z'), mm = 60000;
+    assert.deepEqual(await page.evaluate(f => window.MaiaApp.sidedSpans(f), { side: 'right', start: new Date(t1).toISOString(), end: new Date(t1 + 30 * mm).toISOString(), switches: [{ at: new Date(t1 + 12 * mm).toISOString(), to: 'right' }], pauses: [{ start: new Date(t1 + 10 * mm).toISOString(), end: new Date(t1 + 14 * mm).toISOString() }] }), [[t1, t1 + 10 * mm, 'left'], [t1 + 14 * mm, t1 + 30 * mm, 'right']], 'the strip colours each side, pauses left out');
 
     // Leaving clears the cookie.
     await page.click('[data-action=logout]'); await page.waitForSelector('[data-form=login]');
