@@ -10,9 +10,11 @@ and shows up at once on both phones, in the strips and in the reminders.
 
 - **Glance** (swipe up from the watch face): `Maïa` over
   `1h 42m ago · R 18 min`, or `Feeding R · 12 min` while a feed runs. It reads
-  the last summary the watch kept; a background job fetches a fresh one every
-  five minutes (the shortest Connect IQ allows), and the minutes count on from
-  the watch's own clock in between.
+  the last summary the watch kept, asks the site for a fresh one each time it
+  comes on screen (if its copy is over 30 seconds old) and once a minute while
+  it stays there, so a feed started on a phone shows up. A background job also
+  fetches one every five minutes (the shortest Connect IQ allows), and the
+  minutes count on from the watch's own clock in between.
 - **Full screen** (tap the glance): the last feed (how long ago it ended, its
   times, sides and minutes at the breast) with **Left** / **Right** at the
   bottom, the suggested side in green. While a feed runs: a live clock, the
@@ -21,6 +23,9 @@ and shows up at once on both phones, in the strips and in the reminders.
   Pause and Refresh included. The watch buzzes once the site has written it.
   The screen asks the site again every 30 seconds while open, so a feed
   started on a phone appears.
+- **Last 5 feeds** (swipe up on the full screen, or from the menu): the five
+  finished feeds before, newest first, as `Thu 22:10  18 min  L>R` (the day
+  only for another day than today). Swipe down or back to return.
 
 A Switch or Stop carries the id of the feed the screen showed; if a phone has
 started or stopped a feed since, the site refuses it and the screen shows the
@@ -82,7 +87,8 @@ settings then show in Garmin Connect.
 
 ## The endpoint
 
-- `GET /api/watch`: `{ ok, now, next, running, last }`, times in Unix seconds.
+- `GET /api/watch`: `{ ok, now, next, running, last, recent }`, times in Unix
+  seconds; `recent` is the five newest finished feeds, shaped like `last`.
   `running` is `{ id, side, first, switches, start, active, paused, sideSince }`
   and `last` is `{ id, side, first, switches, start, end, active }` (`active` is
   seconds at the breast, pauses cut out; `side` is the side at the end, `first`

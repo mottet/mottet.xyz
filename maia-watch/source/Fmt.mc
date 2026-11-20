@@ -49,6 +49,17 @@ module Fmt {
         return i.hour.format("%02d") + ":" + i.min.format("%02d");
     }
 
+    // 14:05 today, "Thu 14:05" on another day
+    function dayTime(s as Number) as String {
+        var then = Gregorian.info(new Time.Moment(s), Time.FORMAT_MEDIUM);
+        var today = Gregorian.info(Time.now(), Time.FORMAT_MEDIUM);
+        var t = then.hour.format("%02d") + ":" + then.min.format("%02d");
+        if (then.day == today.day && then.month.equals(today.month) && then.year == today.year) {
+            return t;
+        }
+        return then.day_of_week + " " + t;
+    }
+
     function letter(side) as String {
         if ("left".equals(side)) {
             return "L";

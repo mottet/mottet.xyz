@@ -11,7 +11,7 @@ module Cache {
             "fetchedAt" => Time.now().value()
         };
         // Storage takes no nulls inside a dictionary: an absent key is "none".
-        var keys = ["next", "running", "last"];
+        var keys = ["next", "running", "last", "recent"];
         for (var i = 0; i < keys.size(); i++) {
             var v = summary[keys[i]];
             if (v != null) {

@@ -119,6 +119,11 @@ async function watch() {
     s.put({ id: 'gggggggg', type: 'feed', side: 'right', start: '2026-11-07T11:00:00Z', end: null, pauses: [{ start: '2026-11-07T11:04:00Z', end: null }], switches: [{ at: '2026-11-07T11:02:00Z', to: 'right' }] });
     const sum = Maia.watchSummary(s, Date.parse('2026-11-07T11:10:00Z'));
     assert.equal(sum.last.active, 25 * 60); assert.equal(sum.next, 'right');
+    assert.deepEqual(sum.recent.map(f => f.id), ['ffffffff'], 'the list holds finished feeds only');
+    for (let i = 0; i < 7; i++) s.put({ id: `h${i}hhhhhhh`, type: 'feed', side: 'left', start: `2026-11-06T0${i}:00:00Z`, end: `2026-11-06T0${i}:20:00Z` });
+    const five = Maia.watchSummary(s, Date.parse('2026-11-07T11:10:00Z')).recent;
+    assert.deepEqual(five.map(f => f.id), ['ffffffff', 'h6hhhhhhh', 'h5hhhhhhh', 'h4hhhhhhh', 'h3hhhhhhh'], 'the five newest, newest first');
+    assert.equal(five[1].end - five[1].start, 20 * 60);
     assert.equal(sum.running.active, 4 * 60, 'an open pause stops the clock'); assert.equal(sum.running.paused, true);
     assert.equal(sum.running.first, 'left'); assert.equal(sum.running.sideSince, Date.parse('2026-11-07T11:02:00Z') / 1000);
     // No token in the secrets: the watch is off, and wrong tokens count as failed logins.

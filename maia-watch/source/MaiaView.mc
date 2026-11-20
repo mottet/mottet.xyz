@@ -71,6 +71,10 @@ class MaiaView extends WatchUi.View {
             refresh();
             return;
         }
+        if (action.equals("recent")) {
+            showRecent();
+            return;
+        }
         if (busy) {
             return;
         }
@@ -115,6 +119,11 @@ class MaiaView extends WatchUi.View {
         WatchUi.requestUpdate();
     }
 
+    function showRecent() as Void {
+        var list = new MaiaRecentView(self);
+        WatchUi.pushView(list, new MaiaRecentDelegate(), WatchUi.SLIDE_UP);
+    }
+
     // ---- what the screen shows ------------------------------------------
 
     function running() as Dictionary? {
@@ -151,7 +160,7 @@ class MaiaView extends WatchUi.View {
     function actions() as Array {
         var run = running();
         if (run == null) {
-            return [["start-left", "Start left"], ["start-right", "Start right"], ["refresh", "Refresh"]];
+            return [["start-left", "Start left"], ["start-right", "Start right"], ["recent", "Last 5 feeds"], ["refresh", "Refresh"]];
         }
         var out = [];
         if (!"both".equals(run["side"])) {
@@ -159,6 +168,7 @@ class MaiaView extends WatchUi.View {
         }
         out.add((run["paused"] as Boolean) ? ["resume", "Resume"] : ["pause", "Pause"]);
         out.add(["stop", "Stop"]);
+        out.add(["recent", "Last 5 feeds"]);
         out.add(["refresh", "Refresh"]);
         return out;
     }
@@ -259,6 +269,12 @@ class MaiaDelegate extends WatchUi.BehaviorDelegate {
 
     function onSelect() as Boolean {
         return false;
+    }
+
+    // Swiping up shows the last five feeds.
+    function onNextPage() as Boolean {
+        view.showRecent();
+        return true;
     }
 
     // The action button (top right) opens the menu.

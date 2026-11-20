@@ -140,6 +140,8 @@ function watchSummary(store, now = Date.now()) {
     now: Math.floor(now / 1000),
     running: run ? { ...brief(run), paused: isPaused(run), sideSince: w.length ? secs(w[w.length - 1].at) : secs(run.start) } : null,
     last: last ? { ...brief(last), end: secs(last.end) } : null,
+    // The finished feeds before, newest first, for the watch's list.
+    recent: feeds.filter(f => f.end).slice(0, 5).map(f => ({ ...brief(f), end: secs(f.end) })),
     // The side to offer first, as on the phone: the other one from where the
     // last feed ended, or either (null) after none or one on both sides.
     next: last && last.side !== 'both' ? otherSide(last.side) : null,

@@ -8,7 +8,7 @@ import Toybox.Lang;
 //   { ok, now, next: "left"|"right"|null,
 //     running: { id, side, first, switches, start, active, paused, sideSince } | null,
 //     last: { id, side, first, switches, start, end, active } | null }
-(:background)
+(:background :glance)
 module Api {
     const DEFAULT_URL = "https://maia.mottet.xyz";
 
