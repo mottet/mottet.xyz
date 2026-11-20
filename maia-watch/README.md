@@ -15,9 +15,18 @@ and shows up at once on both phones, in the strips and in the reminders.
   it stays there, so a feed started on a phone shows up. A background job also
   fetches one every five minutes (the shortest Connect IQ allows), and the
   minutes count on from the watch's own clock in between.
-- **Full screen** (tap the glance): the last feed (how long ago it ended, its
-  times, sides and minutes at the breast) with **Left** / **Right** at the
-  bottom, the suggested side in green. While a feed runs: a live clock, the
+- **Full screen** (tap the glance), in the site's night colours: the site's
+  blue tit perched on a leafy branch across the top. It sleeps (with drifting
+  z's) for two and a half hours after a feed, then wakes; bobs while she
+  feeds; rests while paused; and smiles with a rising heart when the site
+  takes a start, a switch or a stop. Between feeds a thin arc round the edge
+  fills over those two and a half hours (moss, then sun, then blush once it
+  is past); during a feed a ring of leaves grows one a minute, each in the
+  colour of the side she was on (green left, blue right, as on the strips),
+  forty to the lap like the 40-minute reminder, golden after that.
+- Idle, it shows the last feed (how long ago it ended, its start, minutes at
+  the breast and sides) with **Left** / **Right** at the bottom, the
+  suggested side filled. While a feed runs: a live clock, the
   side, and **Switch** / **Stop**; while paused, **Resume** / **Stop**. A tap
   above the buttons, or the action button, opens a menu with every action,
   Pause and Refresh included. The watch buzzes once the site has written it.
@@ -84,6 +93,16 @@ token is built in. To change it from the phone instead, upload the `.iq`
 (`monkeyc -e -f monkey.jungle -y developer_key.der -o bin/maia.iq`) to the
 Connect IQ store as a private beta app: the Site address and Watch token
 settings then show in Garmin Connect.
+
+## The pictures
+
+`art/build-art.cjs` draws the tit in its four moods, the branch and the sprig
+from the site's own drawings (`maia/maia-art.js`) in its dark-theme colours,
+and renders them to `resources/drawables/` with headless Chrome:
+
+```sh
+node art/build-art.cjs
+```
 
 ## The endpoint
 

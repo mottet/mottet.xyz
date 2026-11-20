@@ -126,6 +126,7 @@ async function watch() {
     assert.equal(five[1].end - five[1].start, 20 * 60);
     assert.equal(sum.running.active, 4 * 60, 'an open pause stops the clock'); assert.equal(sum.running.paused, true);
     assert.equal(sum.running.first, 'left'); assert.equal(sum.running.sideSince, Date.parse('2026-11-07T11:02:00Z') / 1000);
+    assert.deepEqual(sum.running.turns, [2 * 60], 'the switch came two minutes into the feed');
     // No token in the secrets: the watch is off, and wrong tokens count as failed logins.
     fs.writeFileSync(secrets, JSON.stringify({ parents: 'parents-word', family: 'family-word', cookieSecret: 'c'.repeat(32) }));
     assert.equal((await ask('GET')).status, 503);

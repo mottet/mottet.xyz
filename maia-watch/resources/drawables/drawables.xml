@@ -1,3 +1,10 @@
 <drawables>
     <bitmap id="LauncherIcon" filename="launcher_icon.png"/>
+    <!-- Made by art/build-art.cjs from the site's own drawings. -->
+    <bitmap id="Branch" filename="branch.png"/>
+    <bitmap id="Sprig" filename="sprig.png"/>
+    <bitmap id="TitSleep" filename="tit_sleep.png"/>
+    <bitmap id="TitAwake" filename="tit_awake.png"/>
+    <bitmap id="TitRest" filename="tit_rest.png"/>
+    <bitmap id="TitHappy" filename="tit_happy.png"/>
 </drawables>

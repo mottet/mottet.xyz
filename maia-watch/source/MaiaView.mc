@@ -2,18 +2,19 @@ import Toybox.Attention;
 import Toybox.Communications;
 import Toybox.Graphics;
 import Toybox.Lang;
+import Toybox.Math;
 import Toybox.System;
 import Toybox.Timer;
 import Toybox.WatchUi;
 
-// The full screen. Idle: the last feed, then Left / Right with the suggested
-// side lit. Running: a live clock, then Switch / Stop (Resume / Stop while
-// paused). The upper part or the action button opens a menu with everything,
-// pause and refresh included.
+// The full screen: the site's blue tit on a branch, asleep between feeds,
+// awake and bobbing while she feeds, resting while paused. Idle: the last
+// feed, a quiet arc round the edge for the time since, then Left / Right with
+// the suggested side filled. Running: a live clock, a ring of leaves that
+// grows a leaf a minute in the side's colour, then Switch / Stop (Resume /
+// Stop while paused). The upper part or the action button opens a menu with
+// everything, pause and refresh included.
 class MaiaView extends WatchUi.View {
-    const GREEN = 0x3FA34D;
-    const BARK = 0xB5523B;
-    const GREY = 0x333333;
     const REFETCH_TICKS = 30; // ask the site again every half minute while open
 
     var summary as Dictionary? = null;
@@ -38,6 +39,10 @@ class MaiaView extends WatchUi.View {
         if (timer != null) {
             timer.stop();
             timer = null;
+        }
+        if (heartTimer != null) {
+            heartTimer.stop();
+            heartAt = 0;
         }
     }
 
@@ -99,8 +104,13 @@ class MaiaView extends WatchUi.View {
         }
         if (code == 200) {
             message = null;
-            if (lastAction != null && Attention has :vibrate) {
-                Attention.vibrate([new Attention.VibeProfile(60, 150)]);
+            if (lastAction != null) {
+                if (Attention has :vibrate) {
+                    Attention.vibrate([new Attention.VibeProfile(60, 150)]);
+                }
+                if (!lastAction.equals("pause")) {
+                    startHeart();
+                }
             }
         } else if (data instanceof Dictionary && data["message"] instanceof String) {
             message = code == 401 ? "Wrong watch token" : data["message"] as String;
@@ -136,24 +146,26 @@ class MaiaView extends WatchUi.View {
         return l instanceof Dictionary ? l : null;
     }
 
-    // The two big buttons at the bottom: [id, label, colour], or one for Stop
-    // alone on a feed on both sides.
+    // The two buttons at the bottom: [id, label, colour, filled, ink], or one
+    // for Stop alone on a feed on both sides.
     function buttons() as Array {
         var run = running();
         if (run == null) {
             var next = summary != null ? summary["next"] : null;
             return [
-                ["start-left", "LEFT", "left".equals(next) ? GREEN : GREY],
-                ["start-right", "RIGHT", "right".equals(next) ? GREEN : GREY]
+                ["start-left", "Left", Pal.LEFT, "left".equals(next), Pal.INK],
+                ["start-right", "Right", Pal.RIGHT, "right".equals(next), Pal.INK]
             ];
         }
         if (run["paused"] as Boolean) {
-            return [["resume", "RESUME", GREEN], ["stop", "STOP", BARK]];
+            return [["resume", "Resume", Pal.MOSS, true, Pal.PAPER], ["stop", "Stop", Pal.BARK, true, Pal.PAPER]];
         }
         if ("both".equals(run["side"])) {
-            return [["stop", "STOP", BARK]];
+            return [["stop", "Stop", Pal.BARK, true, Pal.PAPER]];
         }
-        return [["switch", "SWITCH", GREY], ["stop", "STOP", BARK]];
+        // Switch is outlined in the colour of the side it goes to.
+        var to = "left".equals(run["side"]) ? "right" : "left";
+        return [["switch", "Switch", Pal.side(to), false, Pal.INK], ["stop", "Stop", Pal.BARK, true, Pal.PAPER]];
     }
 
     // The actions for the menu.
@@ -173,11 +185,7 @@ class MaiaView extends WatchUi.View {
         return out;
     }
 
-    function buttonTop(dc as Dc) as Number {
-        return dc.getHeight() * 64 / 100;
-    }
-
-    // Which button a tap at (x, y) lands on, or null.
+    // Which button a tap at (x, y) lands on, or null: the lower third, split down the middle.
     function buttonAt(x as Number, y as Number) as String? {
         var w = System.getDeviceSettings().screenWidth, h = System.getDeviceSettings().screenHeight;
         if (y < h * 64 / 100) {
@@ -188,58 +196,137 @@ class MaiaView extends WatchUi.View {
         return hit[0] as String;
     }
 
+    // ---- the little bird ----------------------------------------------------
+
+    hidden var bitmaps as Dictionary = {};
+    hidden var heartAt as Number = 0; // System.getTimer() when the heart began, 0 for none
+    hidden var heartTimer as Timer.Timer? = null;
+    const HEART_MS = 1400;
+
+    hidden function bitmap(id) as WatchUi.BitmapResource {
+        var b = bitmaps[id];
+        if (b == null) {
+            b = WatchUi.loadResource(id);
+            bitmaps.put(id, b);
+        }
+        return b as WatchUi.BitmapResource;
+    }
+
+    // A heart rises from the bird when the site has taken a start, a switch or a stop.
+    function startHeart() as Void {
+        heartAt = System.getTimer();
+        if (heartTimer == null) {
+            heartTimer = new Timer.Timer();
+        }
+        heartTimer.start(method(:onHeartTick), 60, true);
+    }
+
+    function onHeartTick() as Void {
+        if (System.getTimer() - heartAt > HEART_MS) {
+            heartAt = 0;
+            heartTimer.stop();
+        }
+        WatchUi.requestUpdate();
+    }
+
+    // Asleep between feeds (awake again once it has been two and a half
+    // hours), awake and bobbing while she feeds, resting while paused, and
+    // happy while the heart rises.
+    hidden function mood() {
+        if (heartAt != 0) {
+            return Rez.Drawables.TitHappy;
+        }
+        var run = running();
+        if (run != null) {
+            return (run["paused"] as Boolean) ? Rez.Drawables.TitRest : Rez.Drawables.TitAwake;
+        }
+        var done = last();
+        if (done != null && Fmt.now() - (done["end"] as Number) < 150 * 60) {
+            return Rez.Drawables.TitSleep;
+        }
+        return Rez.Drawables.TitAwake;
+    }
+
+    // ---- drawing ------------------------------------------------------------
+
     function onUpdate(dc as Dc) as Void {
         var w = dc.getWidth(), h = dc.getHeight(), cx = w / 2;
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_BLACK);
+        if (dc has :setAntiAlias) {
+            dc.setAntiAlias(true);
+        }
+        dc.setColor(Pal.INK, Pal.PAPER);
         dc.clear();
         var center = Graphics.TEXT_JUSTIFY_CENTER | Graphics.TEXT_JUSTIFY_VCENTER;
         var fetchedAt = summary != null ? summary["fetchedAt"] as Number : 0;
         var run = running(), done = last();
 
+        // Around the edge: the leaves of this feed, or the time since the last.
+        if (run != null) {
+            Art.leafRing(dc, run, Fmt.active(run, fetchedAt));
+        } else if (done != null) {
+            Art.sinceArc(dc, Fmt.now() - (done["end"] as Number));
+        }
+
+        // The branch across the top and the tit on it.
+        var top = h * 3 / 100;
+        var perchX = cx, perchY = top + Art.PERCH_Y;
+        dc.drawBitmap(cx - Art.PERCH_X, top, bitmap(Rez.Drawables.Branch));
+        var bob = run != null && !(run["paused"] as Boolean) && heartAt == 0 && ticks % 2 == 1 ? -3 : 0;
+        var titX = perchX - Art.TIT_FEET_X, titY = perchY - Art.TIT_FEET_Y + bob;
+        dc.drawBitmap(titX, titY, bitmap(mood()));
+        var sleeping = run == null && heartAt == 0 && done != null && Fmt.now() - (done["end"] as Number) < 150 * 60;
+        if (sleeping) {
+            // z, z z, z z z, then quiet, a second each
+            dc.setColor(Pal.INK3, Graphics.COLOR_TRANSPARENT);
+            var zs = [[titX + 100, titY + 40, Graphics.FONT_XTINY], [titX + 112, titY + 24, Graphics.FONT_TINY], [titX + 126, titY + 6, Graphics.FONT_SMALL]];
+            for (var i = 0; i < ticks % 4; i++) {
+                var z = zs[i] as Array;
+                dc.drawText(z[0] as Number, z[1] as Number, z[2] as Graphics.FontType, "z", center);
+            }
+        }
+        if (heartAt != 0) {
+            var t = (System.getTimer() - heartAt).toFloat() / HEART_MS;
+            Art.heart(dc, titX + 92.0 + 6.0 * Math.sin(t * 9.0), titY + 30.0 - 46.0 * t, 9.5 + 5.0 * t);
+        }
+
+        // The words.
         if (summary == null) {
-            dc.drawText(cx, h * 38 / 100, Graphics.FONT_SMALL, busy ? "Loading..." : "No data yet", center);
+            dc.setColor(Pal.INK2, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h * 47 / 100, Graphics.FONT_SMALL, busy ? "Loading..." : "No data yet", center);
         } else if (run != null) {
             var paused = run["paused"] as Boolean;
-            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h * 16 / 100, Graphics.FONT_XTINY, (paused ? "PAUSED · " : "FEEDING · ") + Fmt.name(run["side"]).toUpper(), center);
-            dc.setColor(paused ? Graphics.COLOR_LT_GRAY : Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h * 34 / 100, Graphics.FONT_NUMBER_MEDIUM, Fmt.clock(Fmt.active(run, fetchedAt)), center);
-            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            var detail = "since " + Fmt.time(run["start"] as Number);
-            if ((run["switches"] as Number) > 0) {
-                detail += " · " + Fmt.sides(run);
+            dc.setColor(paused ? Pal.INK3 : Pal.INK, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h * 46 / 100, Graphics.FONT_NUMBER_MEDIUM, Fmt.clock(Fmt.active(run, fetchedAt)), center);
+            dc.setColor(paused ? Pal.INK3 : Pal.side(run["side"]), Graphics.COLOR_TRANSPARENT);
+            var detail = (paused ? "Resting · " : "") + Fmt.name(run["side"]) + " · since " + Fmt.time(run["start"] as Number);
+            if ((run["switches"] as Number) > 0 && !paused) {
+                detail = Fmt.name(run["side"]) + " since " + Fmt.time(run["sideSince"] as Number);
             }
-            dc.drawText(cx, h * 49 / 100, Graphics.FONT_XTINY, detail, center);
+            dc.drawText(cx, h * 57 / 100, Graphics.FONT_XTINY, detail, center);
         } else if (done != null) {
-            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h * 16 / 100, Graphics.FONT_XTINY, "LAST FEED", center);
-            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h * 31 / 100, Graphics.FONT_MEDIUM, Fmt.ago(done["end"] as Number), center);
-            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h * 42 / 100, Graphics.FONT_XTINY, Fmt.time(done["start"] as Number) + "-" + Fmt.time(done["end"] as Number) + " · " + Fmt.sides(done), center);
-            dc.drawText(cx, h * 50 / 100, Graphics.FONT_XTINY, Fmt.span(done["active"] as Number) + " at the breast", center);
+            dc.setColor(Pal.INK, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h * 45 / 100, Graphics.FONT_MEDIUM, Fmt.ago(done["end"] as Number), center);
+            dc.setColor(Pal.INK3, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h * 55 / 100, Graphics.FONT_XTINY, Fmt.time(done["start"] as Number) + " · " + Fmt.span(done["active"] as Number) + " · " + Fmt.sides(done), center);
         } else {
-            dc.drawText(cx, h * 38 / 100, Graphics.FONT_SMALL, "No feed yet", center);
+            dc.setColor(Pal.INK2, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h * 47 / 100, Graphics.FONT_SMALL, "No feed yet", center);
         }
 
-        // A line for what is going on: sending, or what went wrong.
+        // What is going on: sending, or what went wrong.
         if (busy || message != null) {
-            dc.setColor(message != null ? 0xFFAA55 : Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(cx, h * 58 / 100, Graphics.FONT_XTINY, message != null ? message : "Sending...", center);
+            dc.setColor(message != null ? Pal.DANGER : Pal.INK3, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(cx, h * 63 / 100, Graphics.FONT_XTINY, message != null ? message : "Sending...", center);
         }
 
-        // The buttons, cut by the round edge at the bottom.
-        var top = buttonTop(dc), gap = 6;
+        // The buttons, rounded, inside the ring.
         var b = buttons();
+        var by = h * 68 / 100, bh = h * 14 / 100, gap = 10, half = w * 31 / 100;
         for (var i = 0; i < b.size(); i++) {
-            var x0 = b.size() == 1 ? 0 : (i == 0 ? 0 : cx + gap / 2);
-            var x1 = b.size() == 1 ? w : (i == 0 ? cx - gap / 2 : w);
             var button = b[i] as Array;
-            dc.setColor(busy ? GREY : (button[2] as Number), Graphics.COLOR_TRANSPARENT);
-            dc.fillRectangle(x0, top, x1 - x0, h - top);
-            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-            var lx = b.size() == 1 ? cx : (i == 0 ? cx - w / 5 : cx + w / 5);
-            dc.drawText(lx, top + (h - top) * 2 / 5, Graphics.FONT_SMALL, button[1] as String, center);
+            var x0 = b.size() == 1 ? cx - half / 2 - 10 : (i == 0 ? cx - half - gap / 2 : cx + gap / 2);
+            var bw = b.size() == 1 ? half + 20 : half;
+            Art.pill(dc, x0, by, bw, bh, busy ? Pal.LINE : button[2] as Number, button[3] as Boolean, button[1] as String, button[4] as Number);
         }
     }
 }

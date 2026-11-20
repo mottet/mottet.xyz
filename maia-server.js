@@ -123,8 +123,8 @@ const pausesOf = f => (Array.isArray(f.pauses) ? f.pauses : []);
 const switchesOf = f => (Array.isArray(f.switches) ? f.switches : []);
 const otherSide = s => (s === 'left' ? 'right' : 'left');
 const isPaused = f => !f.end && pausesOf(f).some(p => !p.end);
-function activeMs(f, now) {
-  const end = f.end ? Date.parse(f.end) : now, start = Date.parse(f.start);
+function activeMs(f, now, upTo = Infinity) {
+  const end = Math.min(upTo, f.end ? Date.parse(f.end) : now), start = Date.parse(f.start);
   const paused = pausesOf(f).reduce((s, p) => s + Math.max(0, Math.min(end, p.end ? Date.parse(p.end) : end) - Math.max(start, Date.parse(p.start))), 0);
   return Math.max(0, end - start - paused);
 }
@@ -138,7 +138,8 @@ function watchSummary(store, now = Date.now()) {
   return {
     ok: true,
     now: Math.floor(now / 1000),
-    running: run ? { ...brief(run), paused: isPaused(run), sideSince: w.length ? secs(w[w.length - 1].at) : secs(run.start) } : null,
+    // `turns`: seconds at the breast when each switch came, for the watch's ring of leaves.
+    running: run ? { ...brief(run), paused: isPaused(run), sideSince: w.length ? secs(w[w.length - 1].at) : secs(run.start), turns: w.map(x => Math.floor(activeMs(run, now, Date.parse(x.at)) / 1000)) } : null,
     last: last ? { ...brief(last), end: secs(last.end) } : null,
     // The finished feeds before, newest first, for the watch's list.
     recent: feeds.filter(f => f.end).slice(0, 5).map(f => ({ ...brief(f), end: secs(f.end) })),
