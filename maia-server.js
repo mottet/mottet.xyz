@@ -115,6 +115,58 @@ const SHAPES = {
   photo: r => ({ audience: r.audience === 'family' ? 'family' : 'parents' }),
 };
 
+// ---- the watch's view of the feeds ------------------------------------------
+// The same rules as the phone (maia/maia.js): pauses do not count, a switch
+// keeps the same feed and `side` is the side she is on now.
+const feedsOf = store => [...store.records.values()].filter(r => r.type === 'feed' && !r.deleted).sort((a, b) => Date.parse(b.start) - Date.parse(a.start));
+const pausesOf = f => (Array.isArray(f.pauses) ? f.pauses : []);
+const switchesOf = f => (Array.isArray(f.switches) ? f.switches : []);
+const otherSide = s => (s === 'left' ? 'right' : 'left');
+const isPaused = f => !f.end && pausesOf(f).some(p => !p.end);
+function activeMs(f, now) {
+  const end = f.end ? Date.parse(f.end) : now, start = Date.parse(f.start);
+  const paused = pausesOf(f).reduce((s, p) => s + Math.max(0, Math.min(end, p.end ? Date.parse(p.end) : end) - Math.max(start, Date.parse(p.start))), 0);
+  return Math.max(0, end - start - paused);
+}
+const secs = iso => Math.floor(Date.parse(iso) / 1000);
+function watchSummary(store, now = Date.now()) {
+  const feeds = feedsOf(store);
+  const run = feeds.find(f => !f.end), last = feeds.find(f => f.end);
+  const firstSide = f => { const w = switchesOf(f); return w.length ? otherSide(w[0].to) : f.side; };
+  const brief = f => ({ id: f.id, side: f.side, first: firstSide(f), switches: switchesOf(f).length, start: secs(f.start), active: Math.floor(activeMs(f, now) / 1000) });
+  const w = run && switchesOf(run);
+  return {
+    ok: true,
+    now: Math.floor(now / 1000),
+    running: run ? { ...brief(run), paused: isPaused(run), sideSince: w.length ? secs(w[w.length - 1].at) : secs(run.start) } : null,
+    last: last ? { ...brief(last), end: secs(last.end) } : null,
+    // The side to offer first, as on the phone: the other one from where the
+    // last feed ended, or either (null) after none or one on both sides.
+    next: last && last.side !== 'both' ? otherSide(last.side) : null,
+  };
+}
+// One button press from the watch: the record to write, or why not. `feed` is
+// the running feed the watch saw, so a stale screen cannot stop or switch a
+// feed someone started since on a phone.
+function watchAction(store, action, seen, now = new Date()) {
+  const at = now.toISOString();
+  const run = feedsOf(store).find(f => !f.end);
+  if (action === 'start-left' || action === 'start-right') {
+    if (run) return { status: 409, error: 'A feed is already running.' };
+    return { rec: { id: newId(), type: 'feed', at, ...SHAPES.feed({ side: action.slice(6), start: at, end: null }) } };
+  }
+  if (!['switch', 'stop', 'pause', 'resume'].includes(action)) return { status: 400, error: 'Unknown action.' };
+  if (!run) return { status: 409, error: 'No feed is running.' };
+  if (seen && seen !== run.id) return { status: 409, error: 'The running feed changed on a phone.' };
+  const closePauses = () => pausesOf(run).map(p => (p.end ? p : { ...p, end: at }));
+  if (action === 'stop') return { rec: { ...run, end: at, pauses: closePauses() } };
+  if (action === 'pause') return isPaused(run) ? { status: 409, error: 'Already paused.' } : { rec: { ...run, pauses: [...pausesOf(run), { start: at, end: null }] } };
+  if (action === 'resume') return isPaused(run) ? { rec: { ...run, pauses: closePauses() } } : { status: 409, error: 'Not paused.' };
+  if (run.side === 'both') return { status: 409, error: 'This feed is on both sides.' };
+  const to = otherSide(run.side);
+  return { rec: { ...run, side: to, switches: [...switchesOf(run), { at, to }] } };
+}
+
 module.exports = function maia(options = {}) {
   // MAIA_DATA and MAIA_SECRETS let a check run against a folder of its own.
   const dir = options.dir || process.env.MAIA_DATA || path.join(__dirname, 'data', 'maia');
@@ -238,6 +290,39 @@ module.exports = function maia(options = {}) {
     res.json({ ok: true, record: rec });
   });
 
+  // The watch: a Connect IQ widget on a Garmin, which cannot keep the cookie,
+  // so it sends the `watch` token from .maia-secrets.json as a Bearer header.
+  // It reads a short summary and sends button presses; the feed logic stays
+  // here and writes the same records the phones write, so the watch never
+  // drifts from them. Times are Unix seconds, which a watch reads directly.
+  const watchOk = (req, res) => {
+    const token = req.secrets && typeof req.secrets.watch === 'string' && req.secrets.watch.length >= 24 ? req.secrets.watch : '';
+    if (!token) { res.status(503).json({ ok: false, message: 'No watch token on this server: add "watch" (24 characters or more) to .maia-secrets.json.' }); return false; }
+    const address = req.ip, now = Date.now();
+    const recent = (failures.get(address) || []).filter(t => now - t < LOGIN_WINDOW_MS);
+    if (recent.length >= LOGIN_TRIES) { res.status(429).json({ ok: false, message: 'Too many tries. Wait a quarter of an hour.' }); return false; }
+    const [kind, given] = (req.get('authorization') || '').split(' ');
+    if (kind === 'Bearer' && given && same(given, token)) return true;
+    failures.set(address, recent.concat(now));
+    res.status(401).json({ ok: false, message: 'wrong' });
+    return false;
+  };
+  router.get('/api/watch', (req, res) => {
+    if (!watchOk(req, res)) return;
+    res.set('Cache-Control', 'no-store');
+    res.json(watchSummary(store));
+  });
+  router.post('/api/watch', express.json({ limit: '1kb' }), (req, res) => {
+    if (!watchOk(req, res)) return;
+    res.set('Cache-Control', 'no-store');
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const result = watchAction(store, str(body.action, 20), str(body.feed, 32));
+    if (result.error) return res.status(result.status).json({ ...watchSummary(store), ok: false, message: result.error });
+    const rec = store.put({ ...result.rec, by: 'parents', via: 'watch' });
+    broadcast(rec);
+    res.json(watchSummary(store));
+  });
+
   // Reminders: each parents' phone leaves its subscription and its choices.
   router.post('/api/push/state', express.json({ limit: '4kb' }), (req, res) => {
     if (!needParents(req, res)) return;
@@ -313,3 +398,5 @@ module.exports.forFamily = forFamily;
 module.exports.SHAPES = SHAPES;
 module.exports.sign = sign;
 module.exports.EMOJI = EMOJI;
+module.exports.watchSummary = watchSummary;
+module.exports.watchAction = watchAction;

@@ -1,0 +1,7 @@
+# Holds the watch token: written by build.sh
+resources/settings/properties.xml
+bin/
+*.prg
+*.iq
+developer_key*
+.watch-token

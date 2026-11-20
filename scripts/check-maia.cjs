@@ -72,7 +72,62 @@ async function unit() {
   assert.equal(I.t('zh', 'days', { n: 3 }), '3 天大');
   assert.match(I.t('fr', 'born', { date: '4 novembre 2026', time: '20:44' }), /Née le 4 novembre 2026 à 20:44/);
   await reminders();
-  console.log('PASS unit: the store, record shapes, the cookie, her age, the three languages and the reminders');
+  await watch();
+  console.log('PASS unit: the store, record shapes, the cookie, her age, the three languages, the reminders and the watch');
+}
+
+// The watch: a token, a summary in Unix seconds, and button presses that
+// write the same feed records the phones write and reach them live.
+async function watch() {
+  const token = 'w'.repeat(32);
+  const secrets = tmp() + '/s.json';
+  fs.writeFileSync(secrets, JSON.stringify({ parents: 'parents-word', family: 'family-word', cookieSecret: 'c'.repeat(32), watch: token }));
+  const site = Maia({ dir: tmp(), secrets, send: async () => {}, log: () => {} });
+  const seen = [];
+  site.attach({ of: () => ({ use() {}, on() {}, to: room => ({ emit: (ev, rec) => seen.push(`${room}:${rec.type}`) }) }) });
+  site.push.stop();
+  const app = express(); app.use(site.middleware);
+  const server = await new Promise(r => { const s = app.listen(0, '127.0.0.1', () => r(s)); });
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const ask = (method, body, auth = `Bearer ${token}`) => fetch(base + '/api/watch', { method, headers: { host: 'maia.localhost', 'content-type': 'application/json', ...(auth ? { authorization: auth } : {}) }, body: body && JSON.stringify(body) }).then(async r => ({ status: r.status, body: await r.json() }));
+  try {
+    assert.equal((await ask('GET', null, null)).status, 401, 'no token, no summary');
+    assert.equal((await ask('GET', null, 'Bearer nope')).status, 401);
+    let r = await ask('GET');
+    assert.equal(r.status, 200); assert.equal(r.body.running, null); assert.equal(r.body.last, null); assert.equal(r.body.next, null, 'either side before the first feed');
+    assert.equal((await ask('POST', { action: 'stop' })).status, 409, 'nothing to stop');
+    r = await ask('POST', { action: 'start-right' });
+    assert.equal(r.body.running.side, 'right'); assert.equal(r.body.running.paused, false);
+    const id = r.body.running.id;
+    const rec = site.store.records.get(id);
+    assert.equal(rec.type, 'feed'); assert.equal(rec.by, 'parents'); assert.equal(rec.via, 'watch'); assert.equal(rec.end, null);
+    assert.deepEqual(seen, ['parents:feed'], 'the phones hear of it, the family does not');
+    assert.equal((await ask('POST', { action: 'start-left' })).status, 409, 'one feed at a time');
+    assert.equal((await ask('POST', { action: 'switch', feed: 'someotherfeed' })).status, 409, 'a stale screen changes nothing');
+    r = await ask('POST', { action: 'switch', feed: id });
+    assert.equal(r.body.running.side, 'left'); assert.equal(r.body.running.first, 'right'); assert.equal(r.body.running.switches, 1);
+    assert.equal(r.body.running.id, id, 'a switch keeps the same feed');
+    r = await ask('POST', { action: 'pause', feed: id });
+    assert.equal(r.body.running.paused, true);
+    r = await ask('POST', { action: 'stop', feed: id });
+    assert.equal(r.body.running, null); assert.equal(r.body.last.id, id); assert.equal(r.body.last.side, 'left'); assert.equal(r.body.next, 'right');
+    assert.ok(site.store.records.get(id).pauses.every(p => p.end), 'stopping closes the pause');
+    assert.equal((await ask('POST', { action: 'dance' })).status, 400);
+    // The summary's own sums: pauses cut out, as on the phone.
+    const s = Maia.openStore(tmp());
+    s.put({ id: 'ffffffff', type: 'feed', side: 'left', start: '2026-11-07T10:00:00Z', end: '2026-11-07T10:30:00Z', pauses: [{ start: '2026-11-07T10:10:00Z', end: '2026-11-07T10:15:00Z' }] });
+    s.put({ id: 'gggggggg', type: 'feed', side: 'right', start: '2026-11-07T11:00:00Z', end: null, pauses: [{ start: '2026-11-07T11:04:00Z', end: null }], switches: [{ at: '2026-11-07T11:02:00Z', to: 'right' }] });
+    const sum = Maia.watchSummary(s, Date.parse('2026-11-07T11:10:00Z'));
+    assert.equal(sum.last.active, 25 * 60); assert.equal(sum.next, 'right');
+    assert.equal(sum.running.active, 4 * 60, 'an open pause stops the clock'); assert.equal(sum.running.paused, true);
+    assert.equal(sum.running.first, 'left'); assert.equal(sum.running.sideSince, Date.parse('2026-11-07T11:02:00Z') / 1000);
+    // No token in the secrets: the watch is off, and wrong tokens count as failed logins.
+    fs.writeFileSync(secrets, JSON.stringify({ parents: 'parents-word', family: 'family-word', cookieSecret: 'c'.repeat(32) }));
+    assert.equal((await ask('GET')).status, 503);
+    fs.writeFileSync(secrets, JSON.stringify({ parents: 'parents-word', family: 'family-word', cookieSecret: 'c'.repeat(32), watch: token }));
+    for (let i = 0; i < 8; i++) await ask('GET', null, 'Bearer nope');
+    assert.equal((await ask('GET', null, 'Bearer nope')).status, 429, 'ten wrong tokens and the door shuts');
+  } finally { server.close(); }
 }
 
 // The reminders: what the planner says is due, once each, in her time zone.

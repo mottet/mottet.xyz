@@ -1,0 +1,13 @@
+<resources>
+    <!-- Editable from the Garmin Connect app when the widget comes from the
+         Connect IQ store (a private beta is enough); a sideloaded build keeps
+         the defaults that build.sh writes into properties.xml. -->
+    <settings>
+        <setting propertyKey="@Properties.serverUrl" title="@Strings.ServerUrlTitle">
+            <settingConfig type="alphaNumeric"/>
+        </setting>
+        <setting propertyKey="@Properties.watchToken" title="@Strings.TokenTitle">
+            <settingConfig type="alphaNumeric"/>
+        </setting>
+    </settings>
+</resources>

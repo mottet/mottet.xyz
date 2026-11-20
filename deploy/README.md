@@ -73,7 +73,9 @@ in order (`sudo sh deploy/deploy-maia.sh`, once DNS points here). It needs:
   ```
 
   It is read on every request, so passwords change without a restart. Without
-  it the gate answers 503 and nobody can log in.
+  it the gate answers 503 and nobody can log in. An optional `"watch"` token
+  (24 characters or more) lets the Garmin widget in (`../maia-watch/README.md`);
+  without it `/api/watch` answers 503.
 
 Records live in `data/maia/records.jsonl`, photos in `data/maia/photos/` and
 the reminders (push subscriptions and the VAPID key pair) in
