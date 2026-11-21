@@ -7,8 +7,9 @@
 //   node art/build-art.cjs            (CHROME=/path/to/chrome to choose one)
 //
 // tit_sleep, tit_awake, tit_rest and tit_happy are 120 px squares whose feet
-// touch y = 113 at x = 62 (TIT_FEET in MaiaArt.mc); branch is 416 x 150 and
-// the tit perches at (208, 119) on it; sprig sits under the list's title.
+// touch y = 113 at x = 62 (Art.TIT_FEET_* in Art.mc); branch is 416 x 150 and
+// the tit perches at (208, 119) on it; sprig sits under the list's title;
+// launcher_icon is the 70 px app icon.
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -68,7 +69,13 @@ const sprig = () => ({ w: 160, h: 32, svg: `<svg xmlns="http://www.w3.org/2000/s
   ${[[44, 12, -30, .45], [60, 13, 30, .45], [76, 12, 200, .45], [28, 12, 210, .35], [92, 12, -20, .35]].map(a => leaf(...a)).join('')}
 </svg>` });
 
+// The app's icon (menu and glance): the awake tit alone on transparency,
+// cropped to its own outline (tail -24 to beak 21, cap -20 to toes 23) so it
+// fills the 70 px square the Venu 2 asks for.
+const icon = () => ({ w: 70, h: 70, svg: `<svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="-25.3 -22 48 48">${tit('awake')}</svg>` });
+
 const ART = {
+  launcher_icon: icon(),
   tit_sleep: titSvg('sleep'), tit_awake: titSvg('awake'), tit_rest: titSvg('rest'), tit_happy: titSvg('happy'),
   branch: branch(), sprig: sprig(),
 };

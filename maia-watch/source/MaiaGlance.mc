@@ -63,6 +63,9 @@ class MaiaGlance extends WatchUi.GlanceView {
         dc.drawText(0, h / 4, Graphics.FONT_GLANCE, "Maïa", Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
         var running = s != null && s["running"] instanceof Dictionary;
         dc.setColor(running ? Pal.MOSS : Pal.INK2, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(0, h * 3 / 4, Graphics.FONT_GLANCE, Fmt.glance(s), Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
+        // a smaller letter when the line is longer than the glance is wide
+        var line = Fmt.glance(s);
+        var font = dc.getTextWidthInPixels(line, Graphics.FONT_GLANCE) > dc.getWidth() ? Graphics.FONT_XTINY : Graphics.FONT_GLANCE;
+        dc.drawText(0, h * 3 / 4, font, line, Graphics.TEXT_JUSTIFY_LEFT | Graphics.TEXT_JUSTIFY_VCENTER);
     }
 }
