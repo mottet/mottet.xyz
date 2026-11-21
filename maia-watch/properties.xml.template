@@ -1,5 +1,5 @@
 <resources>
-    <!-- build.sh copies this to resources/settings/properties.xml (gitignored)
+    <!-- build.sh copies this to shared-resources/settings/properties.xml (gitignored)
          with the token filled in. -->
     <properties>
         <property id="serverUrl" type="string">https://maia.mottet.xyz</property>

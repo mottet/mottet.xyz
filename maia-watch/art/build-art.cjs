@@ -2,7 +2,7 @@
 
 // Draws the watch's pictures from the site's own blue tit and leaves
 // (maia/maia-art.js), in the site's night colours, and renders them to PNG
-// with headless Chrome into resources/drawables:
+// with headless Chrome into shared-resources/drawables:
 //
 //   node art/build-art.cjs            (CHROME=/path/to/chrome to choose one)
 //
@@ -15,7 +15,7 @@ const os = require('os');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const OUT = path.join(__dirname, '..', 'resources', 'drawables');
+const OUT = path.join(__dirname, '..', 'shared-resources', 'drawables');
 const CHROME = process.env.CHROME || 'google-chrome';
 
 // The site's dark theme (maia/maia.css).

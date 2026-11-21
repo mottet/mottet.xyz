@@ -379,7 +379,7 @@ made on first use, so a restart repeats nothing. A phone that answers 404 or
 holds a frozen copy of the records and must stay silent. On an iPhone push only works from the home-screen app, and
 the card says so.
 
-A Garmin Venu 2 widget (`../maia-watch/`, Connect IQ) shows the last feed in
+A Garmin Venu 2 widget and watch face (`../maia-watch/`, Connect IQ) show the last feed in
 the glance list and starts, switches, pauses and stops one. It cannot keep the
 cookie, so it sends the `watch` token from `.maia-secrets.json` as a Bearer
 header to `GET` / `POST /api/watch`, which answers a short summary in Unix

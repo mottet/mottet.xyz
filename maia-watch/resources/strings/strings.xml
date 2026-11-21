@@ -1,5 +1,3 @@
 <resources>
     <string id="AppName">Maïa</string>
-    <string id="ServerUrlTitle">Site address</string>
-    <string id="TokenTitle">Watch token</string>
 </resources>

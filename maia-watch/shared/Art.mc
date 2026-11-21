@@ -1,6 +1,7 @@
 import Toybox.Graphics;
 import Toybox.Lang;
 import Toybox.Math;
+import Toybox.WatchUi;
 
 // The site's night colours (maia/maia.css, dark theme).
 (:glance)
@@ -32,8 +33,49 @@ module Pal {
     }
 }
 
-// Drawing helpers for the screens.
+// Drawing helpers for the screens (the widget's and the watch face's).
 module Art {
+    const SLEEP_S = 150 * 60; // the tit sleeps this long after a feed, as long as the phones wait to remind
+
+    function runningOf(s as Dictionary?) as Dictionary? {
+        var r = s != null ? s["running"] : null;
+        return r instanceof Dictionary ? r : null;
+    }
+
+    function lastOf(s as Dictionary?) as Dictionary? {
+        var l = s != null ? s["last"] : null;
+        return l instanceof Dictionary ? l : null;
+    }
+
+    // Asleep for two and a half hours after a feed, then awake again.
+    function asleep(s as Dictionary?) as Boolean {
+        var done = lastOf(s);
+        return runningOf(s) == null && done != null && Fmt.now() - (done["end"] as Number) < SLEEP_S;
+    }
+
+    // The tit's picture: happy while a heart rises, awake while she feeds,
+    // resting while paused, asleep after a feed.
+    function mood(s as Dictionary?, happy as Boolean) as ResourceId {
+        if (happy) {
+            return Rez.Drawables.TitHappy;
+        }
+        var run = runningOf(s);
+        if (run != null) {
+            return (run["paused"] as Boolean) ? Rez.Drawables.TitRest : Rez.Drawables.TitAwake;
+        }
+        return asleep(s) ? Rez.Drawables.TitSleep : Rez.Drawables.TitAwake;
+    }
+
+    // The ring round the edge for a summary: leaves during a feed, the arc between.
+    function edge(dc as Dc, s as Dictionary?) as Void {
+        var run = runningOf(s), done = lastOf(s);
+        if (run != null) {
+            leafRing(dc, run, Fmt.active(run, s["fetchedAt"] as Number));
+        } else if (done != null) {
+            sinceArc(dc, Fmt.now() - (done["end"] as Number));
+        }
+    }
+
     // The tit pictures' feet are at (62, 113) in their 120 px square, and the
     // branch's perch at (208, 119) in its 416 x 150 picture.
     const TIT_FEET_X = 62;

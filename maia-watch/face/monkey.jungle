@@ -1,0 +1,4 @@
+# The watch face; it shares ../shared and ../shared-resources with the widget.
+project.manifest = manifest.xml
+base.sourcePath = source;../shared
+base.resourcePath = resources;../shared-resources

@@ -1,1 +1,5 @@
+# The widget. The watch face is face/monkey.jungle; both share shared/ and
+# shared-resources/ (pictures, settings, and the token build.sh writes).
 project.manifest = manifest.xml
+base.sourcePath = source;shared
+base.resourcePath = resources;shared-resources

@@ -229,24 +229,6 @@ class MaiaView extends WatchUi.View {
         WatchUi.requestUpdate();
     }
 
-    // Asleep between feeds (awake again once it has been two and a half
-    // hours), awake and bobbing while she feeds, resting while paused, and
-    // happy while the heart rises.
-    hidden function mood() {
-        if (heartAt != 0) {
-            return Rez.Drawables.TitHappy;
-        }
-        var run = running();
-        if (run != null) {
-            return (run["paused"] as Boolean) ? Rez.Drawables.TitRest : Rez.Drawables.TitAwake;
-        }
-        var done = last();
-        if (done != null && Fmt.now() - (done["end"] as Number) < 150 * 60) {
-            return Rez.Drawables.TitSleep;
-        }
-        return Rez.Drawables.TitAwake;
-    }
-
     // ---- drawing ------------------------------------------------------------
 
     function onUpdate(dc as Dc) as Void {
@@ -261,11 +243,7 @@ class MaiaView extends WatchUi.View {
         var run = running(), done = last();
 
         // Around the edge: the leaves of this feed, or the time since the last.
-        if (run != null) {
-            Art.leafRing(dc, run, Fmt.active(run, fetchedAt));
-        } else if (done != null) {
-            Art.sinceArc(dc, Fmt.now() - (done["end"] as Number));
-        }
+        Art.edge(dc, summary);
 
         // The branch across the top and the tit on it.
         var top = h * 3 / 100;
@@ -273,8 +251,8 @@ class MaiaView extends WatchUi.View {
         dc.drawBitmap(cx - Art.PERCH_X, top, bitmap(Rez.Drawables.Branch));
         var bob = run != null && !(run["paused"] as Boolean) && heartAt == 0 && ticks % 2 == 1 ? -3 : 0;
         var titX = perchX - Art.TIT_FEET_X, titY = perchY - Art.TIT_FEET_Y + bob;
-        dc.drawBitmap(titX, titY, bitmap(mood()));
-        var sleeping = run == null && heartAt == 0 && done != null && Fmt.now() - (done["end"] as Number) < 150 * 60;
+        dc.drawBitmap(titX, titY, bitmap(Art.mood(summary, heartAt != 0)));
+        var sleeping = heartAt == 0 && Art.asleep(summary);
         if (sleeping) {
             // z, z z, z z z, then quiet, a second each
             dc.setColor(Pal.INK3, Graphics.COLOR_TRANSPARENT);

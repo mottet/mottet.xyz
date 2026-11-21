@@ -1,7 +1,8 @@
 # Maïa on the watch
 
-A Connect IQ widget for the Garmin Venu 2 (and 2S, 2 Plus) that shows the last
-feed and starts, switches, pauses and stops one. It talks to
+Two Connect IQ apps for the Garmin Venu 2 (and 2S, 2 Plus): a widget that
+shows the last feed and starts, switches, pauses and stops one, and a watch
+face with the time and the feed. It talks to
 `maia.mottet.xyz/api/watch` (see `../maia-server.js`); the feed rules live on
 the server, so a feed started on the watch is the same record a phone writes
 and shows up at once on both phones, in the strips and in the reminders.
@@ -35,6 +36,19 @@ and shows up at once on both phones, in the strips and in the reminders.
 - **Last 5 feeds** (swipe up on the full screen, or from the menu): the five
   finished feeds before, newest first, as `Thu 22:10  18 min  L>R` (the day
   only for another day than today). Swipe down or back to return.
+
+- **Watch face** (`face/`, *Maïa face*): the tit on its branch as in the
+  widget, the time (12 or 24 hours, as the watch is set), the date, the feed
+  (`Feeding · R · 23 min` in the side's colour, `Fed 51 min ago · R`, pink once
+  it has been two and a half hours), a small battery (moss, sun under 20 %,
+  red under 10 %) and the phone (moss when Garmin Connect is reachable, struck
+  through in red when not), inside the same ring of leaves or arc. A watch
+  face cannot go online itself, so its background job fetches the summary
+  every five minutes; a feed started on a phone shows within five minutes, or
+  at once in the widget. With the always-on display, while the watch sleeps
+  it shows only the time and the feed in dim grey, drifting a few pixels each
+  minute so the AMOLED screen does not burn in. It cannot start or stop a
+  feed: swipe to the widget for that.
 
 A Switch or Stop carries the id of the feed the screen showed; if a phone has
 started or stopped a feed since, the site refuses it and the screen shows the
@@ -71,22 +85,27 @@ token.
 3. Build with the token baked in:
 
    ```sh
-   MAIA_WATCH_TOKEN=$(cat .watch-token) sh build.sh   # or: sh build.sh run, for the simulator
+   MAIA_WATCH_TOKEN=$(cat .watch-token) sh build.sh   # or: sh build.sh run / run-face, for the simulator
    ```
 
-   `.watch-token` (gitignored) keeps this checkout's copy of the token; the
+   It writes `bin/maia.prg` (the widget) and `bin/maia-face.prg` (the watch
+   face). The two share `shared/` (the site, the cache, the words, the
+   colours and drawings) and `shared-resources/` (pictures, settings and the
+   token). `.watch-token` (gitignored) keeps this checkout's copy of the token; the
    same value goes in `.maia-secrets.json` on the server. For the simulator,
    `MAIA_URL=http://localhost:<port>` points it at a local server, and
    Settings › Use Device HTTPS Requirements must be off.
 
-   `resources/settings/properties.xml` (gitignored) is written from
+   `shared-resources/settings/properties.xml` (gitignored) is written from
    `properties.xml.template` with the token.
-4. Sideload: plug the watch in by USB and copy `bin/maia.prg` to
-   `GARMIN/APPS/` on it, then unplug. On a Mac use Garmin Express or
+4. Sideload: plug the watch in by USB and copy `bin/maia.prg` and
+   `bin/maia-face.prg` to `GARMIN/APPS/` on it, then unplug. On a Mac use Garmin Express or
    [OpenMTP](https://openmtp.ganeshrvel.com/); on Linux the watch mounts over
    MTP (`gio mount -li`, or the file manager).
 5. On the watch, swipe up to the glances, add Maïa from **Edit**, and open it
-   once: that registers the background refresh.
+   once: that registers the background refresh. For the face, hold the screen
+   (or Settings › Watch Face) and choose *Maïa face*; its first summary comes
+   within five minutes.
 
 A sideloaded widget cannot be configured from Garmin Connect, which is why the
 token is built in. To change it from the phone instead, upload the `.iq`
@@ -98,7 +117,7 @@ settings then show in Garmin Connect.
 
 `art/build-art.cjs` draws the tit in its four moods, the branch and the sprig
 from the site's own drawings (`maia/maia-art.js`) in its dark-theme colours,
-and renders them to `resources/drawables/` with headless Chrome:
+and renders them to `shared-resources/drawables/` with headless Chrome:
 
 ```sh
 node art/build-art.cjs

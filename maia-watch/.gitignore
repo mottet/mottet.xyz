@@ -1,5 +1,5 @@
 # Holds the watch token: written by build.sh
-resources/settings/properties.xml
+shared-resources/settings/properties.xml
 bin/
 *.prg
 *.iq
