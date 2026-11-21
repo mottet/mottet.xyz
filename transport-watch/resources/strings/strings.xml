@@ -1,0 +1,13 @@
+<strings>
+    <string id="AppName">Prochains passages</string>
+    <string id="ServerTitle">Server</string>
+    <string id="TokenTitle">Watch token</string>
+    <string id="Stop1Title">Stop 1 – MonitoringRef</string>
+    <string id="Line1Title">Stop 1 – LineRef (optional)</string>
+    <string id="Name1Title">Stop 1 – Label</string>
+    <string id="Badge1Title">Stop 1 – Line badge</string>
+    <string id="Stop2Title">Stop 2 – MonitoringRef</string>
+    <string id="Line2Title">Stop 2 – LineRef (optional)</string>
+    <string id="Name2Title">Stop 2 – Label</string>
+    <string id="Badge2Title">Stop 2 – Line badge</string>
+</strings>

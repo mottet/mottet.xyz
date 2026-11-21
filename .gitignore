@@ -69,6 +69,8 @@ typings/
 # ignores any folder named data anywhere, which is why Flux's raw downloads
 # live in data/flux/ (ignored) and its emitted shards in flux/graph/ (kept).
 .maia-secrets.json
+# The PRIM API key and the transport watch's token (transport-server.js)
+.transport-secrets.json
 data/
 # Flux benchmark: third-party libraries fetched by scripts/bench-flux-setup.sh
 flux/bench/vendor/

@@ -11,6 +11,9 @@ app.use(maia.middleware);
 // Flux, the money flows of the public administrations, the same way (flux-server.js).
 const flux = require('./flux-server.js')();
 app.use(flux.middleware);
+// Next RER and bus passages for the Garmin app in transport-watch/ (transport-server.js).
+const transport = require('./transport-server.js')();
+app.use('/api/transport', transport.router);
 
 app.use(express.static(__dirname + '/public', {
 	setHeaders: (res, path) => {

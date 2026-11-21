@@ -1,0 +1,12 @@
+<settings>
+    <setting propertyKey="@Properties.serverUrl" title="@Strings.ServerTitle"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.watchToken" title="@Strings.TokenTitle"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.name1" title="@Strings.Name1Title"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.badge1" title="@Strings.Badge1Title"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.stop1Ref" title="@Strings.Stop1Title"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.line1Ref" title="@Strings.Line1Title"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.name2" title="@Strings.Name2Title"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.badge2" title="@Strings.Badge2Title"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.stop2Ref" title="@Strings.Stop2Title"><settingConfig type="alphaNumeric"/></setting>
+    <setting propertyKey="@Properties.line2Ref" title="@Strings.Line2Title"><settingConfig type="alphaNumeric"/></setting>
+</settings>

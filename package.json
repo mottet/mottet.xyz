@@ -16,6 +16,7 @@
     "test:glyphs": "node scripts/check-glyphs.cjs",
     "test:maia": "node scripts/check-maia.cjs",
     "test:flux": "node scripts/check-flux.cjs",
+    "test:transport": "node scripts/check-transport.cjs",
     "bench:flux": "node scripts/bench-flux.cjs",
     "flux:build": "node --no-warnings flux-pipeline/run.cjs",
     "test": "echo \"Error: no test specified\" && exit 1",

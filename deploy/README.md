@@ -116,3 +116,18 @@ sudo sh deploy/install-services.sh
 sudo certbot --nginx --non-interactive --agree-tos \
   --register-unsafely-without-email --redirect -d mottet.xyz -d www.mottet.xyz
 ```
+
+## /api/transport (the Garmin next-passages app)
+
+`transport-server.js` answers `mottet.xyz/api/transport/next` for the watch
+app in `../transport-watch/`: it asks Île-de-France Mobilités' PRIM API for a
+stop and sends back only the next departures. It writes nothing, so the
+systemd unit and Nginx are unchanged. It needs `.transport-secrets.json`
+beside `server.js` (gitignored, mode 600) with the PRIM API key and the
+watch's token (read on every request, no restart needed):
+
+```json
+{ "primKey": "...", "watch": "<24 characters or more>" }
+```
+
+Without it the endpoint answers 503. See `../transport-watch/README.md`.

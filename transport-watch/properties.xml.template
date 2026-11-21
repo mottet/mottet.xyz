@@ -1,0 +1,18 @@
+<resources>
+    <!-- build.sh copies this to resources/settings/properties.xml (gitignored)
+         with the token filled in. -->
+    <properties>
+        <property id="serverUrl" type="string">https://mottet.xyz</property>
+        <property id="watchToken" type="string">@TOKEN@</property>
+
+        <property id="stop1Ref" type="string">STIF:StopArea:SP:43234:</property>
+        <property id="line1Ref" type="string">STIF:Line::C01742:</property>
+        <property id="name1" type="string">Le Parc de St-Maur</property>
+        <property id="badge1" type="string">RER A</property>
+
+        <property id="stop2Ref" type="string">STIF:StopArea:SP:58258:</property>
+        <property id="line2Ref" type="string">STIF:Line::C01276:</property>
+        <property id="name2" type="string">Cimetière (St-Maur)</property>
+        <property id="badge2" type="string">306</property>
+    </properties>
+</resources>
